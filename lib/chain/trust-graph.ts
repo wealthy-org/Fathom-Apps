@@ -64,6 +64,11 @@ export interface AttesterSummary {
 export interface DisputeSummary {
   reporter: Address;
   status: string;
+  /**
+   * Id kanonik on-chain dari FathomDisputeRegistry (Fase 9). Null = baris
+   * off-chain — edge dispute tetap terbedakan tanpa mengubah bentuk edge.
+   */
+  disputeId: string | null;
   openedAt: Date | null;
 }
 
@@ -288,6 +293,7 @@ async function fetchSocialEdges(address: Address): Promise<{
         .select({
           reporter: disputes.reporterAddress,
           status: disputes.status,
+          registryId: disputes.registryId,
           openedAt: disputes.openedAt,
         })
         .from(disputes)
@@ -318,6 +324,7 @@ async function fetchSocialEdges(address: Address): Promise<{
       disputes: disputeRows.map((r) => ({
         reporter: r.reporter as Address,
         status: r.status,
+        disputeId: r.registryId,
         openedAt: r.openedAt,
       })),
       vouches: vouchRows.map((r) => ({

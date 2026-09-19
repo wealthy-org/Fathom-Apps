@@ -306,20 +306,40 @@ export const disputes = pgTable(
     reporterAddress: char("reporter_address", { length: 42 })
       .notNull()
       .references(() => wallets.address),
-    reason: text("reason").notNull(),
-    evidence: text("evidence").notNull(),
+    reason: text("reason"),
+    evidence: text("evidence"),
     // Payload kanonik + tanda tangan reporter, agar report bisa diverifikasi ulang.
-    message: text("message").notNull(),
-    signature: char("signature", { length: 132 }).notNull(),
+    // Nullable = baris on-chain dari registry (Fase 9) tanpa payload form;
+    // baris off-chain selalu terisi.
+    message: text("message"),
+    signature: char("signature", { length: 132 }),
     status: varchar("status", { length: 16 }).notNull().default("open"),
     openedAt: timestamptz("opened_at").notNull().defaultNow(),
     resolvedAt: timestamptz("resolved_at"),
     resolutionNote: text("resolution_note"),
+    // Komitmen on-chain dari FathomDisputeRegistry: hash reason + referensi
+    // evidence (teks penuh off-chain). Baris off-chain selalu null.
+    reasonHash: char("reason_hash", { length: 66 }),
+    evidenceRef: char("evidence_ref", { length: 66 }),
+    // Identitas on-chain dari FathomDisputeRegistry (Fase 9). Semua null =
+    // baris off-chain (form) tanpa padanan registry — bukan data hilang.
+    registryId: varchar("registry_id", { length: 64 }),
+    chainId: integer("chain_id"),
+    txHash: char("tx_hash", { length: 66 }),
+    blockNumber: bigint("block_number", { mode: "number" }),
+    logIndex: integer("log_index"),
   },
   (t) => [
     index("idx_disputes_target").on(t.targetAddress, t.status),
     // Cegah satu reporter membanjiri target yang sama dengan dispute berulang.
     unique("disputes_reporter_target").on(t.reporterAddress, t.targetAddress),
+    // Identitas event kanonik (chain_id + tx_hash + log_index) — indexer idempoten.
+    unique("disputes_onchain_identity").on(
+      t.registryId,
+      t.chainId,
+      t.txHash,
+      t.logIndex,
+    ),
   ],
 );
 

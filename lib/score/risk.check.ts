@@ -153,7 +153,7 @@ const days = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
     r.states.find((s) => s.id === "suspicious_vouch_clustering")?.status,
     "not_evaluable",
   );
-  assert.equal(r.states.length, 8, "kedelapan slot signal harus hadir");
+  assert.equal(r.states.length, 9, "kesembilan slot signal harus hadir");
 }
 
 // 6. Terlalu sedikit counterparty → concentration not_evaluable (bukan detected).
@@ -303,9 +303,53 @@ const days = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
     "flagged_counterparty_exposure",
     "malicious_contract_interaction",
     "high_sybil_similarity",
+    "active_disputes",
   ] as const) {
     assert.equal(r.states.find((s) => s.id === id)?.status, "not_evaluable");
   }
+}
+
+// 13. Active disputes: open/disputed → detected dengan evidence; resolved
+//     atau kosong → clear (bukan clear palsu — data evaluable).
+{
+  const base = stats({ firstTxAt: days(400), txCount: 900 });
+  const open = assessRisk(SUBJECT, base, graph({}), NOW, {
+    disputes: [
+      { reporter: OTHER, status: "open", registryId: "3", txHash: null },
+    ],
+  });
+  const openState = open.states.find((s) => s.id === "active_disputes");
+  assert.equal(openState?.status, "detected");
+  assert.equal(openState?.evidence?.activeDisputes, 1);
+  assert.ok(
+    open.signals.some((s) => s.type === "active_disputes"),
+    "detected wajib masuk signals",
+  );
+
+  const disputed = assessRisk(SUBJECT, base, graph({}), NOW, {
+    disputes: [{ reporter: OTHER, status: "disputed", registryId: null, txHash: null }],
+  });
+  assert.equal(
+    disputed.states.find((s) => s.id === "active_disputes")?.status,
+    "detected",
+  );
+
+  const resolved = assessRisk(SUBJECT, base, graph({}), NOW, {
+    disputes: [
+      { reporter: OTHER, status: "upheld", registryId: "3", txHash: null },
+      { reporter: OTHER, status: "dismissed", registryId: "4", txHash: null },
+    ],
+  });
+  assert.equal(
+    resolved.states.find((s) => s.id === "active_disputes")?.status,
+    "clear",
+  );
+
+  const none = assessRisk(SUBJECT, base, graph({}), NOW, { disputes: [] });
+  assert.equal(
+    none.states.find((s) => s.id === "active_disputes")?.status,
+    "clear",
+  );
 }
 
 console.log("risk.check: ok");

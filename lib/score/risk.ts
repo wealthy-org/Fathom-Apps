@@ -13,6 +13,10 @@ import { evaluateFlaggedCounterpartyExposure } from "@/lib/score/risk-flagged-ex
 import type { MaliciousContract } from "@/lib/score/malicious-contract-provider";
 import { evaluateMaliciousContractInteraction } from "@/lib/score/risk-malicious-contract";
 import { evaluateHighSybilSimilarity } from "@/lib/score/risk-sybil";
+import {
+  evaluateActiveDisputes,
+  type ActiveDisputePoint,
+} from "@/lib/score/risk-active-disputes";
 
 /**
  * Risk Engine (Spec 05). Pure, tanpa I/O — sama seperti proofs.ts.
@@ -34,7 +38,8 @@ export type RiskSignalType =
   | "suspicious_vouch_clustering"
   | "flagged_counterparty_exposure"
   | "malicious_contract_interaction"
-  | "high_sybil_similarity";
+  | "high_sybil_similarity"
+  | "active_disputes";
 
 export type RiskSeverity = "low" | "medium" | "high";
 export type RiskStatus = "detected" | "clear" | "not_evaluable";
@@ -102,6 +107,11 @@ const DEFINITIONS: SignalDefinition[] = [
   {
     id: "high_sybil_similarity",
     label: "High sybil similarity",
+    severity: "medium",
+  },
+  {
+    id: "active_disputes",
+    label: "Active disputes",
     severity: "medium",
   },
 ];
@@ -231,7 +241,7 @@ function evaluateConcentration(graph: TrustGraphSummary): Evaluation {
 export interface RiskAssessment {
   /** Hanya signal yang benar-benar terdeteksi. */
   signals: RiskSignal[];
-  /** Kedelapan slot, termasuk yang clear dan not_evaluable. */
+  /** Kesembilan slot, termasuk yang clear dan not_evaluable. */
   states: RiskState[];
 }
 
@@ -244,10 +254,15 @@ export interface RiskInputs {
   transactions?: AbnormalTxPoint[];
   flaggedAddresses?: FlaggedAddress[];
   maliciousContracts?: MaliciousContract[];
+  /**
+   * Dispute terhadap subject (Fase 9, Spec 09). undefined = sumber tidak
+   * tersedia → not_evaluable. Kosong = evaluable, tidak ada dispute → clear.
+   */
+  disputes?: ActiveDisputePoint[];
 }
 
 /**
- * Nilai kedelapan risk signal dari data indexed (Spec 05). Setiap signal yang
+ * Nilai kesembilan risk signal dari data indexed (Spec 05). Setiap signal yang
  * terdeteksi wajib membawa evidence; yang tidak bisa dinilai menyatakan alasannya.
  */
 export function assessRisk(
@@ -282,6 +297,7 @@ export function assessRisk(
       inputs.maliciousContracts,
     ),
     high_sybil_similarity: evaluateHighSybilSimilarity(graph),
+    active_disputes: evaluateActiveDisputes(inputs.disputes),
   };
 
   const signals: RiskSignal[] = [];

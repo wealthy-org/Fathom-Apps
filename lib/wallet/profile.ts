@@ -59,11 +59,25 @@ export interface AttestationView {
 export interface DisputeView {
   id: number;
   reporter: Address;
-  reason: string;
-  evidence: string;
-  message: string;
-  signature: string;
+  // Null = baris on-chain dari registry (Fase 9) tanpa payload form.
+  reason: string | null;
+  evidence: string | null;
+  message: string | null;
+  signature: string | null;
   status: string;
+  /**
+   * Identitas on-chain dari FathomDisputeRegistry. Null = baris off-chain
+   * (form) tanpa padanan registry — bukan data hilang.
+   */
+  onchainIdentity: {
+    registryId: string;
+    chainId: number;
+    txHash: string;
+    blockNumber: number | null;
+    logIndex: number | null;
+    reasonHash: string | null;
+    evidenceRef: string | null;
+  } | null;
   openedAt: string;
 }
 
@@ -258,8 +272,6 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     flaggedAddresses,
     maliciousContracts,
   };
-  const risk = assessRisk(address, stats, graph, new Date(), riskInputs);
-  const riskEvaluable = risk.states.some((state) => state.status !== "not_evaluable");
 
   const disputeRows = await db
     .select({
@@ -270,11 +282,30 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
       message: disputes.message,
       signature: disputes.signature,
       status: disputes.status,
+      registryId: disputes.registryId,
+      chainId: disputes.chainId,
+      txHash: disputes.txHash,
+      blockNumber: disputes.blockNumber,
+      logIndex: disputes.logIndex,
+      reasonHash: disputes.reasonHash,
+      evidenceRef: disputes.evidenceRef,
       openedAt: disputes.openedAt,
     })
     .from(disputes)
     .where(eq(disputes.targetAddress, address))
     .orderBy(desc(disputes.openedAt));
+
+  // Dispute terhadap subject diteruskan ke Risk Engine apa adanya (Fase 9):
+  // detector active_disputes yang menilai, bukan profile. Query yang sama
+  // dipakai untuk render Disputes — tidak ada kalkulasi kedua.
+  riskInputs.disputes = disputeRows.map((row) => ({
+    reporter: row.reporter as Address,
+    status: row.status,
+    registryId: row.registryId,
+    txHash: row.txHash,
+  }));
+  const risk = assessRisk(address, stats, graph, new Date(), riskInputs);
+  const riskEvaluable = risk.states.some((state) => state.status !== "not_evaluable");
 
   return {
     address,
@@ -330,6 +361,18 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
       message: row.message,
       signature: row.signature,
       status: row.status,
+      onchainIdentity:
+        row.registryId !== null && row.chainId !== null && row.txHash !== null
+          ? {
+              registryId: row.registryId,
+              chainId: row.chainId,
+              txHash: row.txHash,
+              blockNumber: row.blockNumber,
+              logIndex: row.logIndex,
+              reasonHash: row.reasonHash,
+              evidenceRef: row.evidenceRef,
+            }
+          : null,
       openedAt: row.openedAt.toISOString(),
     })),
   };

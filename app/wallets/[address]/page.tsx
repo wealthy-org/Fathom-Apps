@@ -44,6 +44,7 @@ const RISK_LABELS: Record<RiskSignalType, string> = {
   flagged_counterparty_exposure: "Flagged counterparty exposure",
   malicious_contract_interaction: "Malicious contract interaction",
   high_sybil_similarity: "High sybil similarity",
+  active_disputes: "Active disputes",
 };
 
 /** Ringkas evidence risk signal untuk tampilan — hanya field primitif. */
@@ -651,8 +652,9 @@ function DisputesSection({
       <h2 className="font-display text-lg">Disputes</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         Signed reports filed against this wallet. A dispute is a claim, not
-        proof of wrongdoing — it never changes reputation or risk here. No
-        resolution process exists yet, so every dispute stays open.
+        proof of wrongdoing — it never changes reputation or risk here.
+        On-chain disputes resolve through the registry lifecycle
+        (open → disputed → upheld/dismissed).
       </p>
 
       {disputes.length === 0 ? (
@@ -667,13 +669,22 @@ function DisputesSection({
               className="shine-border rounded-2xl border border-ink/10 bg-ink/[0.03] p-5"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-display text-base">{dispute.reason}</span>
+                <span className="font-display text-base">
+                  {dispute.reason ??
+                    (dispute.onchainIdentity
+                      ? `On-chain dispute #${dispute.onchainIdentity.registryId}`
+                      : "Dispute")}
+                </span>
                 <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
                   {dispute.status}
+                  {dispute.onchainIdentity ? " · on-chain" : ""}
                 </span>
               </div>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink">
-                {dispute.evidence}
+                {dispute.evidence ??
+                  (dispute.onchainIdentity?.reasonHash
+                    ? `reason hash: ${dispute.onchainIdentity.reasonHash}`
+                    : "No evidence text.")}
               </p>
               <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[11px] text-slate400">
                 <span>
@@ -686,17 +697,34 @@ function DisputesSection({
                   </Link>
                 </span>
                 <span>at: {formatDate(dispute.openedAt)}</span>
+                {dispute.onchainIdentity && (
+                  <span>
+                    registry #{dispute.onchainIdentity.registryId} ·{" "}
+                    <a
+                      href={explorerTransactionUrl(
+                        dispute.onchainIdentity.txHash,
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent-ink hover:underline"
+                    >
+                      {shortAddress(dispute.onchainIdentity.txHash)}
+                    </a>
+                  </span>
+                )}
               </div>
-              <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-slate400">
-                  Verify signature
-                </summary>
-                <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[10px] text-slate400">
-                  {dispute.message}
-                  {"\n"}
-                  {dispute.signature}
-                </pre>
-              </details>
+              {dispute.message !== null && dispute.signature !== null && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-xs text-slate400">
+                    Verify signature
+                  </summary>
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[10px] text-slate400">
+                    {dispute.message}
+                    {"\n"}
+                    {dispute.signature}
+                  </pre>
+                </details>
+              )}
             </li>
           ))}
         </ul>
