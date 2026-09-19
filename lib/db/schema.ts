@@ -381,8 +381,17 @@ export const attestations = pgTable(
     durationMonths: integer("duration_months"),
     // Payload kanonik yang ditandatangani + signature (Spec 07) — attestation
     // bisa diverifikasi ulang, bukan cuma baris DB yang bisa dipalsukan server.
-    message: text("message").notNull(),
-    signature: char("signature", { length: 132 }).notNull(),
+    // Nullable = baris on-chain dari registry (Fase 7) tanpa payload SIWE;
+    // baris off-chain selalu terisi.
+    message: text("message"),
+    signature: char("signature", { length: 132 }),
+    // Identitas on-chain dari FathomAttestationRegistry (Fase 7). Semua null =
+    // baris off-chain (SIWE) tanpa padanan registry — bukan data hilang.
+    registryId: varchar("registry_id", { length: 64 }),
+    chainId: integer("chain_id"),
+    txHash: char("tx_hash", { length: 66 }),
+    blockNumber: bigint("block_number", { mode: "number" }),
+    logIndex: integer("log_index"),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
   (t) => [
@@ -391,6 +400,13 @@ export const attestations = pgTable(
       t.attesterAddress,
       t.subjectAddress,
       t.role,
+    ),
+    // Identitas event kanonik (chain_id + tx_hash + log_index) — indexer idempoten.
+    unique("attestations_onchain_identity").on(
+      t.registryId,
+      t.chainId,
+      t.txHash,
+      t.logIndex,
     ),
     index("idx_attestations_subject").on(t.subjectAddress, t.createdAt),
   ],

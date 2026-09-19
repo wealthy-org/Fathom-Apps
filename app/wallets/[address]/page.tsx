@@ -581,7 +581,7 @@ function AttestationsSection({
                   {attestation.role}
                 </span>
                 <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
-                  signed
+                  {attestation.onchainIdentity ? "on-chain" : "signed"}
                 </span>
               </div>
               <p className="mt-2 text-sm text-ink">
@@ -600,17 +600,35 @@ function AttestationsSection({
                   </Link>
                 </span>
                 <span>at: {formatDate(attestation.createdAt)}</span>
+                {attestation.onchainIdentity && (
+                  <span>
+                    registry #{attestation.onchainIdentity.registryId} ·{" "}
+                    <a
+                      href={explorerTransactionUrl(
+                        attestation.onchainIdentity.txHash,
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent-ink hover:underline"
+                    >
+                      {shortAddress(attestation.onchainIdentity.txHash)}
+                    </a>
+                  </span>
+                )}
               </div>
-              <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-slate400">
-                  Verify signature
-                </summary>
-                <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[10px] text-slate400">
-                  {attestation.message}
-                  {"\n"}
-                  {attestation.signature}
-                </pre>
-              </details>
+              {attestation.message !== null &&
+                attestation.signature !== null && (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-xs text-slate400">
+                      Verify signature
+                    </summary>
+                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[10px] text-slate400">
+                      {attestation.message}
+                      {"\n"}
+                      {attestation.signature}
+                    </pre>
+                  </details>
+                )}
             </li>
           ))}
         </ul>

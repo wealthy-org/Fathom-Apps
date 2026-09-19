@@ -38,8 +38,20 @@ export interface AttestationView {
   role: string;
   relationship: string;
   durationMonths: number | null;
-  message: string;
-  signature: string;
+  // Null = baris on-chain dari registry (Fase 7) tanpa payload SIWE.
+  message: string | null;
+  signature: string | null;
+  /**
+   * Identitas on-chain dari FathomAttestationRegistry. Null = baris off-chain
+   * (SIWE) tanpa padanan registry — bukan data hilang.
+   */
+  onchainIdentity: {
+    registryId: string;
+    chainId: number;
+    txHash: string;
+    blockNumber: number | null;
+    logIndex: number | null;
+  } | null;
   createdAt: string;
 }
 
@@ -139,6 +151,11 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
       durationMonths: attestations.durationMonths,
       message: attestations.message,
       signature: attestations.signature,
+      registryId: attestations.registryId,
+      chainId: attestations.chainId,
+      txHash: attestations.txHash,
+      blockNumber: attestations.blockNumber,
+      logIndex: attestations.logIndex,
       createdAt: attestations.createdAt,
     })
     .from(attestations)
@@ -153,6 +170,14 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     relationship: row.relationship,
     durationMonths: row.durationMonths,
     message: row.message,
+    onchainIdentity:
+      row.registryId !== null && row.chainId !== null && row.txHash !== null
+        ? {
+            registryId: row.registryId,
+            chainId: row.chainId,
+            txHash: row.txHash,
+          }
+        : null,
     createdAt: row.createdAt,
   }));
 
@@ -283,6 +308,18 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
       durationMonths: row.durationMonths,
       message: row.message,
       signature: row.signature,
+      onchainIdentity:
+        row.registryId !== null &&
+        row.chainId !== null &&
+        row.txHash !== null
+          ? {
+              registryId: row.registryId,
+              chainId: row.chainId,
+              txHash: row.txHash,
+              blockNumber: row.blockNumber,
+              logIndex: row.logIndex,
+            }
+          : null,
       createdAt: row.createdAt.toISOString(),
     })),
     disputes: disputeRows.map((row) => ({

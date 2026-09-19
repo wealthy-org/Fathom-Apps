@@ -51,7 +51,12 @@ export interface AttestationProofInput {
   relationship: string;
   durationMonths: number | null;
   /** Pesan kanonik yang ditandatangani — buktinya sendiri, bisa diverifikasi ulang. */
-  message: string;
+  message: string | null;
+  /**
+   * Identitas on-chain dari FathomAttestationRegistry (Fase 7). Null = baris
+   * off-chain (SIWE). Proof memakai txHash sebagai evidence_reference.
+   */
+  onchainIdentity: { registryId: string; chainId: number; txHash: string } | null;
   createdAt: Date;
 }
 
@@ -265,7 +270,9 @@ export function generateProofs(
 
   // Satu proof per attestation: tiap attestation berdiri sendiri dan punya
   // tanda tangan sendiri, jadi paling bisa diperiksa satu per satu (Spec 07).
+  // Baris on-chain (Fase 7) menunjuk ke tx registry sebagai evidence_reference.
   for (const attestation of attestations) {
+    const onchain = attestation.onchainIdentity;
     proofs.push({
       type: "role_attestation",
       source: ATTESTATION_SOURCE,
@@ -275,11 +282,14 @@ export function generateProofs(
         relationship: attestation.relationship,
         durationMonths: attestation.durationMonths,
         attester: attestation.attester,
+        ...(onchain ? { registryId: onchain.registryId } : {}),
       },
       timestamp: attestation.createdAt.toISOString(),
       confidence: THRESHOLDS.proof.confidenceByMethod.indexed,
       verification_method: "indexed",
-      evidence_reference: attestationEvidenceReference(address),
+      evidence_reference: onchain
+        ? explorerTransactionUrl(onchain.txHash)
+        : attestationEvidenceReference(address),
     });
   }
 

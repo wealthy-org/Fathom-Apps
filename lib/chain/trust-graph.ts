@@ -51,6 +51,12 @@ export interface AttesterSummary {
   attester: Address;
   role: string;
   relationship: string;
+  /**
+   * Id kanonik on-chain dari FathomAttestationRegistry (Fase 7). Kosong =
+   * baris off-chain (SIWE) — edge attestation tetap terbedakan dari
+   * transaction/vouch/invitation/dispute tanpa mengubah bentuk edge.
+   */
+  attestationIds: string[];
   createdAt: Date | null;
 }
 
@@ -273,6 +279,7 @@ async function fetchSocialEdges(address: Address): Promise<{
           attester: attestations.attesterAddress,
           role: attestations.role,
           relationship: attestations.relationship,
+          registryId: attestations.registryId,
           createdAt: attestations.createdAt,
         })
         .from(attestations)
@@ -305,6 +312,7 @@ async function fetchSocialEdges(address: Address): Promise<{
         attester: r.attester as Address,
         role: r.role,
         relationship: r.relationship,
+        attestationIds: r.registryId !== null ? [r.registryId] : [],
         createdAt: r.createdAt,
       })),
       disputes: disputeRows.map((r) => ({
