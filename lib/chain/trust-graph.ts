@@ -42,6 +42,9 @@ export interface TrustGraphSummary {
   relationships: RelationshipSummary[];
   /** Hash transaksi pertama yang menyentuh subject — untuk proof wallet_age. */
   firstTxHash: string | null;
+  // Kapan state cache ini ditulis — watermark untuk snapshot Proof.
+  // null hanya bila tidak ada state cache dan fetch gagal.
+  fetchedAt: Date | null;
   /**
    * false = walk tx kena batas halaman. Semua angka adalah lower bound,
    * bukan nilai pasti. Jangan terbitkan proof turunan saat incomplete.
@@ -147,7 +150,11 @@ function firstTxHash(pairs: Map<Address, Aggregate>): string | null {
   return best;
 }
 
-function toSummary(pairs: Map<Address, Aggregate>, complete: boolean): TrustGraphSummary {
+function toSummary(
+  pairs: Map<Address, Aggregate>,
+  complete: boolean,
+  fetchedAt: Date | null,
+): TrustGraphSummary {
   const relationships: RelationshipSummary[] = [...pairs.entries()].map(
     ([counterparty, agg]) => ({
       counterparty,
@@ -171,6 +178,7 @@ function toSummary(pairs: Map<Address, Aggregate>, complete: boolean): TrustGrap
     relationships,
     firstTxHash: firstTxHash(pairs),
     complete,
+    fetchedAt,
   };
 }
 
@@ -270,6 +278,7 @@ async function readCached(address: Address): Promise<TrustGraphSummary | null> {
     relationships,
     firstTxHash: firstTxHash(pairs),
     complete: state.complete,
+    fetchedAt: state.fetchedAt,
   };
 }
 
@@ -300,11 +309,13 @@ class ExplorerTrustGraphProvider implements TrustGraphProvider {
 
     if (!fetched) {
       const cached = await readCached(normalized);
-      return cached ?? toSummary(new Map(), false);
+      return cached ?? toSummary(new Map(), false, null);
     }
 
     const pairs = derive(normalized, fetched.transactions);
-    const summary = toSummary(pairs, fetched.complete);
+    // fetchedAt ditulis ke trustGraphState di bawah — marker memakai momen yang sama.
+    const fetchedAt = new Date();
+    const summary = toSummary(pairs, fetched.complete, fetchedAt);
 
     // counterparties.subjectAddress FK + wallet_relationships FK → subject harus ada.
     await db
@@ -380,11 +391,11 @@ class ExplorerTrustGraphProvider implements TrustGraphProvider {
         subjectAddress: normalized,
         complete: summary.complete,
         source: SOURCE,
-        fetchedAt: new Date(),
+        fetchedAt,
       })
       .onConflictDoUpdate({
         target: trustGraphState.subjectAddress,
-        set: { complete: summary.complete, source: SOURCE, fetchedAt: new Date() },
+        set: { complete: summary.complete, source: SOURCE, fetchedAt },
       });
 
     return summary;

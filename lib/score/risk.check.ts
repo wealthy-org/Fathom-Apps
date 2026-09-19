@@ -14,7 +14,13 @@ const SUBJECT = "0x0000000000000000000000000000000000000001" as Address;
 const OTHER = "0x0000000000000000000000000000000000000002" as Address;
 
 function stats(partial: Partial<OnchainStats>): OnchainStats {
-  return { firstTxAt: null, lastTxAt: null, txCount: null, ...partial };
+  return {
+    firstTxAt: null,
+    lastTxAt: null,
+    txCount: null,
+    fetchedAt: null,
+    ...partial,
+  };
 }
 
 function graph(partial: Partial<TrustGraphSummary>): TrustGraphSummary {
@@ -25,6 +31,7 @@ function graph(partial: Partial<TrustGraphSummary>): TrustGraphSummary {
     relationships: [],
     complete: true,
     firstTxHash: null,
+    fetchedAt: null,
     ...partial,
   };
 }

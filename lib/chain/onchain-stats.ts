@@ -14,6 +14,9 @@ export interface OnchainStats {
   lastTxAt: Date | null;
   // null = riwayat transaksi belum diketahui, bukan 0.
   txCount: number | null;
+  // Kapan baris cache ini ditulis/diambil — watermark untuk snapshot Proof.
+  // null hanya bila tidak ada baris cache dan fetch gagal.
+  fetchedAt: Date | null;
 }
 
 export interface OnchainStatsProvider {
@@ -50,7 +53,12 @@ class ExplorerOnchainStatsProvider implements OnchainStatsProvider {
       .limit(1);
 
     if (row && isFresh(row.fetchedAt)) {
-      return { firstTxAt: row.firstTxAt, lastTxAt: row.lastTxAt, txCount: row.txCount };
+      return {
+        firstTxAt: row.firstTxAt,
+        lastTxAt: row.lastTxAt,
+        txCount: row.txCount,
+        fetchedAt: row.fetchedAt,
+      };
     }
 
     const summary = await fetchAddressTxSummary(normalized);
@@ -60,10 +68,14 @@ class ExplorerOnchainStatsProvider implements OnchainStatsProvider {
         firstTxAt: row?.firstTxAt ?? null,
         lastTxAt: row?.lastTxAt ?? null,
         txCount: row?.txCount ?? null,
+        fetchedAt: row?.fetchedAt ?? null,
       };
     }
 
     await db.insert(wallets).values({ address: normalized }).onConflictDoNothing();
+
+    // Satu timestamp untuk baris + marker — keduanya harus merujuk momen yang sama.
+    const fetchedAt = new Date();
 
     await db
       .insert(walletOnchainStats)
@@ -73,7 +85,7 @@ class ExplorerOnchainStatsProvider implements OnchainStatsProvider {
         lastTxAt: summary.lastTxAt,
         txCount: summary.txCount,
         source: SOURCE,
-        fetchedAt: new Date(),
+        fetchedAt,
       })
       .onConflictDoUpdate({
         target: walletOnchainStats.address,
@@ -82,11 +94,11 @@ class ExplorerOnchainStatsProvider implements OnchainStatsProvider {
           lastTxAt: summary.lastTxAt,
           txCount: summary.txCount,
           source: SOURCE,
-          fetchedAt: new Date(),
+          fetchedAt,
         },
       });
 
-    return summary;
+    return { ...summary, fetchedAt };
   }
 }
 

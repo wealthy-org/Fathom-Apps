@@ -4,6 +4,11 @@ import { attestations, disputes, wallets } from "@/lib/db/schema";
 import { onchainStats } from "@/lib/chain/onchain-stats";
 import { trustGraph, type TrustGraphSummary } from "@/lib/chain/trust-graph";
 import { generateProofs, type Proof } from "@/lib/score/proofs";
+import {
+  readProofs,
+  writeProofs,
+  type ProofMarkers,
+} from "@/lib/score/proof-store";
 import { assessRisk, type RiskSignal, type RiskState } from "@/lib/score/risk";
 import { getDimensions, type DimensionState } from "@/lib/score/dimensions";
 import type { Address } from "@/lib/score/types";
@@ -84,20 +89,43 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
 
   // Proof attestation diterbitkan dari baris tersimpan (query yang sama dipakai
   // untuk render Attestations), jadi tidak ada kalkulasi kedua (Spec 07/11).
-  const proofs = generateProofs(
-    address,
-    stats,
-    graph,
-    attestationRows.map((row) => ({
-      attester: row.attester as Address,
-      role: row.role,
-      relationship: row.relationship,
-      durationMonths: row.durationMonths,
-      message: row.message,
-      createdAt: row.createdAt,
-    })),
-    new Date(),
-  );
+  const attestationInputs = attestationRows.map((row) => ({
+    attester: row.attester as Address,
+    role: row.role,
+    relationship: row.relationship,
+    durationMonths: row.durationMonths,
+    message: row.message,
+    createdAt: row.createdAt,
+  }));
+
+  // Watermark snapshot Proof: ketiga marker harus sama dengan indexed state
+  // live agar baris persisted dianggap current (PRD §26, equality-based).
+  const markers: ProofMarkers = {
+    statsFetchedAt: stats.fetchedAt,
+    graphFetchedAt: graph.fetchedAt,
+    attestationsStamp:
+      attestationRows.length === 0
+        ? null
+        : new Date(
+            Math.max(...attestationRows.map((r) => r.createdAt.getTime())),
+          ),
+  };
+
+  let proofs = await readProofs(address, markers);
+  if (!proofs) {
+    proofs = generateProofs(address, stats, graph, attestationInputs, new Date());
+    // role_attestation ↔ baris attestation dicocokkan via constraint unik
+    // (attester, subject, role) — tidak pernah digabung.
+    await writeProofs(address, proofs, markers, (proof) => {
+      if (proof.type !== "role_attestation") return null;
+      const v = proof.value as { attester: string; role: string };
+      return (
+        attestationRows.find(
+          (r) => r.attester === v.attester && r.role === v.role,
+        )?.id ?? null
+      );
+    });
+  }
 
   // Risk Engine (Spec 05) — dihitung on-the-fly dari data indexed yang sama,
   // bukan kalkulasi kedua atas reputasi (Spec 11 §Boundary).

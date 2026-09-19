@@ -309,6 +309,43 @@ export const attestations = pgTable(
   ],
 );
 
+/**
+ * Persisted Proof snapshot (PRD §26 Proof Storage). Bukan derivasi kedua:
+ * baris ditulis hanya oleh `lib/score/proof-store.ts` dari hasil
+ * `generateProofs()` atas indexed state saat itu. Tiga kolom watermark
+ * (`stats_fetched_at`, `graph_fetched_at`, `attestations_stamp`) menandai
+ * indexed state yang dipakai — snapshot current hanya bila ketiganya sama
+ * dengan marker live. `attestation_id` memberi identitas pada tiap
+ * `role_attestation` (satu baris per attestation, tidak digabung).
+ */
+export const proofs = pgTable(
+  "proofs",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    walletAddress: char("wallet_address", { length: 42 })
+      .notNull()
+      .references(() => wallets.address),
+    proofType: varchar("proof_type", { length: 32 }).notNull(),
+    source: varchar("source", { length: 32 }).notNull(),
+    value: jsonb("value").notNull(),
+    confidence: numeric("confidence", { precision: 5, scale: 4 }).notNull(),
+    verificationMethod: varchar("verification_method", {
+      length: 16,
+    }).notNull(),
+    evidenceReference: text("evidence_reference").notNull(),
+    evidenceReferences: jsonb("evidence_references"),
+    attestationId: bigint("attestation_id", { mode: "number" }).references(
+      () => attestations.id,
+    ),
+    statsFetchedAt: timestamptz("stats_fetched_at"),
+    graphFetchedAt: timestamptz("graph_fetched_at"),
+    attestationsStamp: timestamptz("attestations_stamp"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("idx_proofs_subject").on(t.walletAddress)],
+);
+
 export const scoreSnapshots = pgTable(
   "score_snapshots",
   {
