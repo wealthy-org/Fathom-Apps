@@ -1,64 +1,28 @@
-/**
- * Reputation Score types (Spec 03).
- *
- * Reputation Score is intentionally deferred until the evidence model and
- * scoring inputs are sufficiently concrete. The score is a compression layer
- * over evidence, not the foundation of the product.
- *
- * These types are kept so the shape is ready when the formula is decided; no
- * `computeScore()` and no writer to `score_snapshots` exist yet.
- */
-
+/** Shared, JSON-serializable reputation-score types. */
 export type Address = `0x${string}`;
-
 export type VouchStatus = "active" | "disputed" | "slashed" | "withdrawn";
-export type DisputeStatus = "open" | "dismissed" | "upheld";
-export type BadgeStatus = "unverified" | "community_verified";
 
-export type ScoreTriggerEvent =
-  | "vouch_received"
-  | "review_received"
-  | "dispute_opened"
-  | "dispute_resolved"
-  | "badge_verified"
-  | "invite_bonus"
-  | "manual_recalc"
-  | "onchain_refresh";
+export type ScoreDimensionId =
+  | "economic_history"
+  | "counterparty_history"
+  | "contract_history"
+  | "community_trust"
+  | "risk_signals";
 
-/** Data mentah yang dibutuhkan untuk menghitung skor. Tidak ada I/O di dalam score engine. */
+export type ScoreTriggerEvent = "onchain_refresh" | "manual_recalc";
+
 export interface ScoreInput {
   address: Address;
-  onchain: {
-    firstTxAt: Date | null;
-    txCount: number;
-  };
-  vouchesReceived: Array<{
-    fromAddress: Address;
-    stakeAmount: bigint;
-    status: VouchStatus;
-    createdAt: Date;
-  }>;
-  reviewsReceived: Array<{ rating: number }>;
-  invitedBy: Address | null;
-  verifiedBadgeCount: number;
-  hasActiveDispute: boolean;
+  evaluatedAt: string;
+  onchain: { firstTxAt: string | null; txCount: number | null; volumeWei: string | null };
+  counterparty: { available: boolean; uniqueCount: number | null; repeatCount: number | null; longestRelationshipDays: number | null };
+  verifiedProtocolProofs: string[];
+  community: { vouches: Array<{ from: Address; to: Address; stakeAmountWei: string; status: string; createdAt: string }>; attestations: string[] };
+  risk: { evaluable: boolean; detected: Array<{ id: string; severity: "low" | "medium" | "high"; evidenceReference: string }> };
+  proofReferences: Partial<Record<ScoreDimensionId, string[]>>;
 }
 
-/** Rincian tiap komponen skor. Disimpan apa adanya ke score_snapshots.breakdown. */
-export interface ScoreBreakdown {
-  baselineOnchain: number;
-  totalVouchWeighted: number;
-  reviewScore: number;
-  bonusInvite: number;
-  bonusRoleBadge: number;
-  disputePenalty: number; // angka negatif, atau 0
-  subtotalBeforePenalty: number;
-}
-
-export interface ScoreResult {
-  address: Address;
-  totalScore: number;
-  breakdown: ScoreBreakdown;
-  formulaVersion: string; // dinaikkan tiap bobot formula berubah
-  computedAt: Date;
-}
+export interface DimensionResult { id: ScoreDimensionId; contribution: number; available: boolean; proofReferences: string[]; explanation: string }
+export interface ScoreBreakdown { dimensions: DimensionResult[]; riskAdjustment: DimensionResult }
+export interface TierResult { id: string; label: string; minScore: number; maxScore: number }
+export interface ScoreResult { address: Address; totalScore: number; tier: TierResult; formulaVersion: string; breakdown: ScoreBreakdown; computedAt: string }

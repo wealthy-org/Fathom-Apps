@@ -49,6 +49,17 @@ const RISK_LABELS: Record<RiskSignalType, string> = {
   active_disputes: "Active disputes",
 };
 
+const SCORE_DIMENSION_LABELS: Record<
+  WalletProfile["reputation"]["breakdown"]["dimensions"][number]["id"],
+  string
+> = {
+  economic_history: "Economic history",
+  counterparty_history: "Counterparty history",
+  contract_history: "Contract history",
+  community_trust: "Community trust",
+  risk_signals: "Risk signals",
+};
+
 /** Ringkas evidence risk signal untuk tampilan — hanya field primitif. */
 function formatRiskEvidence(evidence: Record<string, unknown>): string {
   const parts: string[] = [];
@@ -1013,6 +1024,45 @@ function RiskSection({
   );
 }
 
+function ScoreSection({ reputation }: { reputation: WalletProfile["reputation"] }) {
+  const items = [
+    ...reputation.breakdown.dimensions,
+    reputation.breakdown.riskAdjustment,
+  ];
+  return (
+    <section className="mt-10" aria-labelledby="reputation-score">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 id="reputation-score" className="font-display text-lg">Reputation Score</h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate400">
+            A provisional compression of the evidence on this profile, not a trust decision.
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="font-display text-3xl text-accent-ink">{reputation.totalScore}</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">{reputation.tier.label} · {reputation.formulaVersion}</div>
+        </div>
+      </div>
+      <ul className="mt-5 space-y-3">
+        {items.map((dimension) => (
+          <li key={dimension.id} className="shine-border rounded-2xl border border-ink/10 bg-ink/[0.03] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-display text-base">{SCORE_DIMENSION_LABELS[dimension.id]}</span>
+              <span className="font-mono text-sm text-ink">{dimension.available ? `${dimension.contribution >= 0 ? "+" : ""}${dimension.contribution}` : "Unavailable"}</span>
+            </div>
+            <p className="mt-2 text-sm text-slate400">{dimension.explanation}</p>
+            {dimension.proofReferences.length > 0 && (
+              <Link href="#why-evidence" className="mt-2 inline-block font-mono text-[11px] text-accent-ink hover:underline">
+                Why → evidence ({dimension.proofReferences.length})
+              </Link>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -1146,6 +1196,8 @@ export default async function WalletProfilePage({
           signals={profile.riskSignals}
         />
 
+        <ScoreSection reputation={profile.reputation} />
+
         <VouchesSection
           address={address}
           vouches={profile.vouches}
@@ -1159,7 +1211,7 @@ export default async function WalletProfilePage({
 
         <DisputesSection address={address} disputes={profile.disputes} />
 
-        <section className="mt-10">
+        <section id="why-evidence" className="mt-10">
           <h2 className="font-display text-lg">Recent Proofs</h2>
           <p className="mt-2 max-w-2xl text-sm text-slate400">
             Each proof records what is asserted, its source, and how to inspect

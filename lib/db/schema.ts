@@ -478,12 +478,16 @@ export const scoreSnapshots = pgTable(
     address: char("address", { length: 42 })
       .notNull()
       .references(() => wallets.address),
+    formulaVersion: varchar("formula_version", { length: 32 }).notNull(),
     totalScore: integer("total_score").notNull(),
     breakdown: jsonb("breakdown").$type<ScoreBreakdown>().notNull(),
     triggerEvent: varchar("trigger_event", { length: 32 }).notNull(),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
-  (t) => [index("idx_snapshots_address_time").on(t.address, t.createdAt)],
+  (t) => [
+    index("idx_snapshots_address_time").on(t.address, t.createdAt),
+    index("idx_snapshots_dedupe").on(t.address, t.formulaVersion, t.totalScore, t.triggerEvent),
+  ],
 );
 
 export const indexerState = pgTable(

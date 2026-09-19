@@ -1,5 +1,5 @@
 export const THRESHOLDS = {
-  formulaVersion: "1.0.0",
+  formulaVersion: "1.0.0-provisional",
 
   chain: {
     // Confirmation depth indexer — jangan proses blok paling ujung untuk menghindari reorg
@@ -102,6 +102,71 @@ export const THRESHOLDS = {
     sybilMinOverlapShare: 0.7,
     // high_sybil_similarity: minimal counterparty bersama sebelum dinilai.
     sybilMinSharedCounterparties: 3,
+  },
+
+  score: {
+    // PROVISIONAL — ScoreStrategyV1 (Spec 10), bukan formula final Fathom.
+    // Ganti bobot/kap di sini, bukan di strategi. V1 = compression layer
+    // evidence-based; missing data tidak memberi kontribusi positif.
+    formulaVersion: "1.0.0-provisional",
+    maxScore: 1000,
+    dimensions: {
+      economicHistory: {
+        maxPoints: 250,
+        walletAgeMaxPoints: 100,
+        walletAgeFullAtDays: 365,
+        txCountMaxPoints: 100,
+        txCountFullAt: 100,
+        volumeMaxPoints: 50,
+        volumeFullAtWei: "1000000000000000000",
+      },
+      counterpartyHistory: {
+        maxPoints: 200,
+        uniqueMaxPoints: 100,
+        uniqueFullAt: 10,
+        repeatMaxPoints: 50,
+        repeatFullAt: 5,
+        longevityMaxPoints: 50,
+        longevityFullAtDays: 365,
+      },
+      contractHistory: {
+        maxPoints: 150,
+        maxPointsPerProtocol: 50,
+        maxCountedProtocols: 3,
+      },
+      communityTrust: {
+        maxPoints: 300,
+        vouchMaxPoints: 200,
+        vouchCapWei: "1000000000000000000",
+        vouchDecayDays: 365,
+        attestationMaxPoints: 100,
+        attestationMaxCounted: 3,
+      },
+      riskSignals: {
+        maxPenalty: 300,
+        low: 20,
+        medium: 50,
+        high: 100,
+      },
+    },
+    vouchFarming: {
+      minActiveVouches: 3,
+      reciprocalPairs: 2,
+      topVoucherShare: 0.5,
+      singleDiscount: 0.5,
+      bothDiscount: 0.25,
+    },
+  },
+
+  tier: {
+    // PROVISIONAL — TierStrategyV1 (Spec 10), bukan ambang final Fathom.
+    // unavailable = null tier (tidak pernah menebak tier).
+    boundaries: [
+      { minScore: 750, id: "exceptional", label: "Exceptional" },
+      { minScore: 500, id: "established", label: "Established" },
+      { minScore: 250, id: "emerging", label: "Emerging" },
+      { minScore: 0, id: "new", label: "New" },
+    ],
   },
 
   baseline: {

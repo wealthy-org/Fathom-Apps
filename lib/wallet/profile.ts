@@ -27,7 +27,11 @@ import { flaggedAddressProvider, type FlaggedAddress } from "@/lib/score/flagged
 import { maliciousContractProvider, type MaliciousContract } from "@/lib/score/malicious-contract-provider";
 import type { AbnormalTxPoint } from "@/lib/score/risk-abnormal";
 import { getDimensions, type DimensionState } from "@/lib/score/dimensions";
-import type { Address } from "@/lib/score/types";
+import { buildScoreInput, computeScore } from "@/lib/score/score-engine";
+import { ScoreStrategyV1 } from "@/lib/score/score-strategy";
+import { tierStrategyV1 } from "@/lib/score/tier-strategy";
+import { writeScoreSnapshot } from "@/lib/score/score-snapshot";
+import type { Address, ScoreResult } from "@/lib/score/types";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -122,6 +126,8 @@ export interface WalletProfile {
   attestations: AttestationView[];
   disputes: DisputeView[];
   vouches: VouchView[];
+  /** Provisional compression of displayed evidence; never canonical truth. */
+  reputation: ScoreResult;
   /**
    * State index registry vouch (Fase 5). Null = indexer belum pernah jalan
    * (no-index) — bedakan dari confirmed-zero (sudah jalan, tabel vouches
@@ -348,6 +354,40 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     .where(or(eq(vouches.toAddress, address), eq(vouches.fromAddress, address)))
     .orderBy(desc(vouches.createdAt));
 
+  const scoreInput = buildScoreInput({
+    address,
+    evaluatedAt: new Date(),
+    firstTxAt: stats.firstTxAt,
+    txCount: stats.txCount,
+    volumeWei:
+      metrics.totalSentWei === null || metrics.totalReceivedWei === null
+        ? null
+        : metrics.totalSentWei + metrics.totalReceivedWei,
+    graph,
+    proofs,
+    vouches: vouchRows.map((row) => ({
+      from: row.fromAddress as Address,
+      to: row.toAddress as Address,
+      stakeAmount: BigInt(row.stakeAmount),
+      status: row.status,
+      createdAt: row.createdAt,
+    })),
+    risk: {
+      evaluable: risk.states.some((state) => state.status !== "not_evaluable"),
+      detected: risk.signals.map((signal) => ({
+        id: signal.type,
+        severity: signal.severity,
+        evidenceReference: signal.evidence_reference,
+      })),
+    },
+  });
+  const reputation = computeScore(
+    scoreInput,
+    new ScoreStrategyV1(),
+    tierStrategyV1,
+  );
+  await writeScoreSnapshot(reputation, "onchain_refresh");
+
   return {
     address,
     alias: wallet?.alias ?? null,
@@ -365,13 +405,13 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
       : null,
     metrics,
     proofs,
-    // Profile tetap evidence-first: Reputation Score (Spec 03) sengaja ditunda
-    // sampai input scoring konkret — belum ada kalkulasi skor di sini.
+    // Evidence remains primary; score is a provisional compression layer.
     dimensions: getDimensions(proofs, riskEvaluable),
     riskSignals: risk.signals,
     riskStates: risk.states,
     trustGraph: graph,
     vouchIndex,
+    reputation,
     attestations: attestationRows.map((row) => ({
       id: row.id,
       attester: row.attester as Address,
