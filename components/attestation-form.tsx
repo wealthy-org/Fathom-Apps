@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSignMessage } from "wagmi";
 import { useSession } from "@/components/use-session";
+import { ConnectButton } from "@/components/connect-button";
 import { ATTESTATION_ROLES } from "@/lib/attestations/roles";
 import { buildAttestationMessage } from "@/lib/attestations/payload";
 import { THRESHOLDS } from "@/config/thresholds";
 
 // ponytail: form attestation muncul hanya saat sesi SIWE aktif dan bukan profil sendiri.
-// Server membangun ulang payload kanonik dari field + alamat sesi, jadi signature
-// di sini hanya valid untuk isi yang benar-benar dikirim.
+// Pengunjung signed-out melihat prompt connect (bukan form). Server membangun ulang
+// payload kanonik dari field + alamat sesi, jadi signature di sini hanya valid
+// untuk isi yang benar-benar dikirim.
 
 export function AttestationForm({ subject }: { subject: string }) {
-  const { session } = useSession();
+  const { session, isLoading } = useSession();
+  const router = useRouter();
   const { signMessageAsync, isPending } = useSignMessage();
   const [role, setRole] = useState<string>(ATTESTATION_ROLES[0]);
   const [relationship, setRelationship] = useState("");
@@ -21,7 +25,23 @@ export function AttestationForm({ subject }: { subject: string }) {
   const [done, setDone] = useState(false);
 
   const attester = session?.walletAddress ?? null;
-  if (!session?.authenticated || !attester || attester === subject) return null;
+  if (isLoading) return null;
+  if (!session?.authenticated || !attester) {
+    return (
+      <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-5">
+        <h3 className="font-display text-base">Attest to this wallet</h3>
+        <p className="mt-1 text-xs text-slate400">
+          Connect your wallet to attest to this profile. Attestations are
+          pseudonymous supporting evidence — they never replace on-chain
+          behavior, and they do not create reputation on their own.
+        </p>
+        <div className="mt-4">
+          <ConnectButton connectLabel="Connect wallet to attest" />
+        </div>
+      </div>
+    );
+  }
+  if (attester === subject) return null;
 
   async function submit() {
     if (!attester) return;
@@ -64,6 +84,8 @@ export function AttestationForm({ subject }: { subject: string }) {
       setDone(true);
       setRelationship("");
       setDuration("");
+      // Server component re-fetch: attestation baru langsung tampil di daftar.
+      router.refresh();
     } catch (e) {
       const msg = (e as Error)?.message ?? "";
       setError(
@@ -118,7 +140,7 @@ export function AttestationForm({ subject }: { subject: string }) {
       {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
       {done && (
         <p className="mt-3 text-xs text-accent-ink">
-          Attestation recorded. Refresh to see it in the list below.
+          Attestation recorded — it now appears in the list below.
         </p>
       )}
     </div>
