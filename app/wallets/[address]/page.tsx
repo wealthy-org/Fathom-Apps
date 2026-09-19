@@ -9,11 +9,13 @@ import { getWalletProfile, type WalletProfile } from "@/lib/wallet/profile";
 import type { Proof, ProofType } from "@/lib/score/proofs";
 import type { DimensionState } from "@/lib/score/dimensions";
 import type { RiskState, RiskSignal, RiskSignalType } from "@/lib/score/risk";
+import type { Address } from "@/lib/score/types";
 import { WalletShell } from "@/components/wallet-shell";
 import { CopyAddress } from "@/components/copy-address";
 import { AliasEditor } from "@/components/alias-editor";
 import { AttestationForm } from "@/components/attestation-form";
 import { DisputeForm } from "@/components/dispute-form";
+import { TrustGraphVisualization } from "@/components/trust-graph-visualization";
 
 export const dynamic = "force-dynamic";
 
@@ -691,18 +693,17 @@ function UnavailableSection({
 
 function TrustGraphSection({
   graph,
+  address,
 }: {
   graph: WalletProfile["trustGraph"];
+  address: Address;
 }) {
   const prefix = graph.complete ? "" : "At least ";
   return (
     <section className="mt-10">
       <h2 className="font-display text-lg">Trust Graph Summary</h2>
-      {graph.relationships.length === 0 ? (
-        <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-6 text-sm text-slate400">
-          No counterparty relationships indexed for this wallet yet.
-        </div>
-      ) : (
+      <TrustGraphVisualization graph={graph} address={address} />
+      {graph.relationships.length > 0 && (
         <>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <Field
@@ -942,7 +943,7 @@ export default async function WalletProfilePage({
           </ul>
         </section>
 
-        <TrustGraphSection graph={profile.trustGraph} />
+        <TrustGraphSection graph={profile.trustGraph} address={address} />
 
         <RiskSection
           states={profile.riskStates}
