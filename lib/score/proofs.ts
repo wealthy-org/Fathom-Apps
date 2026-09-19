@@ -2,6 +2,7 @@ import { THRESHOLDS } from "@/config/thresholds";
 import { explorerAddressUrl, explorerTransactionUrl } from "@/lib/chain/blockscout";
 import type { OnchainStats } from "@/lib/chain/onchain-stats";
 import type { TrustGraphSummary } from "@/lib/chain/trust-graph";
+import type { ProtocolIdentity } from "@/lib/chain/protocol-identity";
 import type { Address } from "@/lib/score/types";
 
 /**
@@ -21,6 +22,7 @@ export type ProofType =
   | "repeat_counterparty"
   | "economic_history"
   | "contract_history"
+  | "protocol_history"
   | "role_attestation";
 export type VerificationMethod = "indexed" | "derived";
 
@@ -72,6 +74,7 @@ export function generateProofs(
   graph: TrustGraphSummary | null,
   attestations: AttestationProofInput[],
   now: Date,
+  protocols: ProtocolIdentity[] = [],
 ): Proof[] {
   const proofs: Proof[] = [];
   const observedAt = now.toISOString();
@@ -219,6 +222,45 @@ export function generateProofs(
         ? { evidence_references: contractRefs.refs }
         : {}),
     });
+
+    // protocol_history sejati (Fase 2): satu proof per mapping verified.
+    // Tanpa mapping: proof tidak diterbitkan (not_evaluable) — contract
+    // tetap diwakili contract_history di atas, bukan protocol karangan.
+    // official = diambil apa adanya dari sumber otoritatif (indexed);
+    // curated/verified_external = interpretasi Fathom (derived).
+    for (const protocol of protocols) {
+      const protocolTxRefs = graph.relationships
+        .filter((r) => r.protocolId === protocol.protocolId)
+        .flatMap((r) => r.txHashes)
+        .slice(0, 5)
+        .map(explorerTransactionUrl);
+      proofs.push({
+        type: "protocol_history",
+        source: protocol.source,
+        subject: address,
+        value: {
+          protocolId: protocol.protocolId,
+          protocolName: protocol.protocolName,
+          contractAddress: protocol.contractAddress,
+          source: protocol.source,
+          verificationStatus: protocol.verificationStatus,
+        },
+        timestamp: observedAt,
+        confidence:
+          protocol.source === "official"
+            ? THRESHOLDS.proof.confidenceByMethod.indexed
+            : THRESHOLDS.proof.confidenceByMethod.derived,
+        verification_method:
+          protocol.source === "official" ? "indexed" : "derived",
+        evidence_reference:
+          protocolTxRefs[0] ??
+          protocol.sourceUrl ??
+          explorerAddressUrl(protocol.contractAddress),
+        ...(protocolTxRefs.length > 0
+          ? { evidence_references: protocolTxRefs }
+          : {}),
+      });
+    }
   }
 
   // Satu proof per attestation: tiap attestation berdiri sendiri dan punya

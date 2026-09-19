@@ -45,6 +45,8 @@ function rel(
   return {
     counterparty,
     isContract: false,
+    protocolId: null,
+    protocolName: null,
     interactionCount,
     valueSent: sent,
     valueReceived: received,

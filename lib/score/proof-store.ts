@@ -10,8 +10,8 @@ import type { Address } from "@/lib/score/types";
  *
  * Kontrak:
  * - Baris adalah snapshot hasil `generateProofs()` atas indexed state yang
- *   ditandai tiga watermark. Bukan derivasi kedua.
- * - Snapshot current hanya bila ketiga watermark sama dengan marker live
+ *   ditandai empat watermark. Bukan derivasi kedua.
+ * - Snapshot current hanya bila keempat watermark sama dengan marker live
  *   (equality, bukan recency).
  * - `timestamp` hasil baca = "observed at persist": untuk proof on-chain itu
  *   `updated_at` baris; untuk `role_attestation` itu `createdAt` attestation
@@ -22,6 +22,7 @@ export interface ProofMarkers {
   statsFetchedAt: Date | null;
   graphFetchedAt: Date | null;
   attestationsStamp: Date | null;
+  protocolsStamp: Date | null;
 }
 
 function sameInstant(a: Date | null, b: Date | null): boolean {
@@ -41,6 +42,7 @@ interface ProofRow {
   statsFetchedAt: Date | null;
   graphFetchedAt: Date | null;
   attestationsStamp: Date | null;
+  protocolsStamp: Date | null;
   updatedAt: Date;
   attestationCreatedAt: Date | null;
 }
@@ -86,6 +88,7 @@ export async function readProofs(
       statsFetchedAt: proofs.statsFetchedAt,
       graphFetchedAt: proofs.graphFetchedAt,
       attestationsStamp: proofs.attestationsStamp,
+      protocolsStamp: proofs.protocolsStamp,
       updatedAt: proofs.updatedAt,
       attestationCreatedAt: attestations.createdAt,
     })
@@ -100,6 +103,7 @@ export async function readProofs(
   if (!sameInstant(head.attestationsStamp, markers.attestationsStamp)) {
     return null;
   }
+  if (!sameInstant(head.protocolsStamp, markers.protocolsStamp)) return null;
   return rows.map((row) => ({ ...toProof(row), subject: address }));
 }
 
@@ -135,6 +139,7 @@ export async function writeProofs(
       statsFetchedAt: markers.statsFetchedAt,
       graphFetchedAt: markers.graphFetchedAt,
       attestationsStamp: markers.attestationsStamp,
+      protocolsStamp: markers.protocolsStamp,
     })),
   );
 }

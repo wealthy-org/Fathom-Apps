@@ -4,6 +4,11 @@ import { attestations, disputes, profileClaims, wallets } from "@/lib/db/schema"
 import { onchainStats } from "@/lib/chain/onchain-stats";
 import { trustGraph, type TrustGraphSummary } from "@/lib/chain/trust-graph";
 import {
+  protocolsStamp,
+  resolveProtocols,
+} from "@/lib/chain/protocol-identity";
+import { ROBINHOOD_TESTNET_CHAIN_ID } from "@/lib/wallet/chains";
+import {
   walletMetricsProvider,
   type ComputedWalletMetrics,
 } from "@/lib/chain/wallet-metrics";
@@ -118,8 +123,17 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     createdAt: row.createdAt,
   }));
 
-  // Watermark snapshot Proof: ketiga marker harus sama dengan indexed state
+  // Watermark snapshot Proof: keempat marker harus sama dengan indexed state
   // live agar baris persisted dianggap current (PRD §26, equality-based).
+  // Identitas protocol di-resolve ulang untuk proof (graph hanya membawa
+  // id+nama untuk display); prefilter memakai hasil resolusi graph supaya
+  // query kedua hanya jalan bila ada protocol teridentifikasi.
+  const protocolIdentities = await resolveProtocols(
+    ROBINHOOD_TESTNET_CHAIN_ID,
+    graph.relationships
+      .filter((r) => r.protocolId !== null)
+      .map((r) => r.counterparty),
+  );
   const markers: ProofMarkers = {
     statsFetchedAt: stats.fetchedAt,
     graphFetchedAt: graph.fetchedAt,
@@ -129,11 +143,19 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
         : new Date(
             Math.max(...attestationRows.map((r) => r.createdAt.getTime())),
           ),
+    protocolsStamp: await protocolsStamp(),
   };
 
   let proofs = await readProofs(address, markers);
   if (!proofs) {
-    proofs = generateProofs(address, stats, graph, attestationInputs, new Date());
+    proofs = generateProofs(
+      address,
+      stats,
+      graph,
+      attestationInputs,
+      new Date(),
+      [...protocolIdentities.values()],
+    );
     // role_attestation ↔ baris attestation dicocokkan via constraint unik
     // (attester, subject, role) — tidak pernah digabung.
     await writeProofs(address, proofs, markers, (proof) => {

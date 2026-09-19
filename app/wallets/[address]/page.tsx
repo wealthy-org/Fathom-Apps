@@ -30,6 +30,7 @@ const PROOF_LABELS: Record<ProofType, string> = {
   repeat_counterparty: "Repeat counterparties",
   economic_history: "Economic history",
   contract_history: "Contract history",
+  protocol_history: "Protocol history",
   role_attestation: "Role attestation",
 };
 
@@ -105,6 +106,13 @@ function formatProofValue(proof: Proof): string {
       };
       return `${contractCounterparties} contract counterparties`;
     }
+    case "protocol_history": {
+      const { protocolName, source } = proof.value as {
+        protocolName: string;
+        source: string;
+      };
+      return `${protocolName} · verified via ${source}`;
+    }
     case "role_attestation": {
       const { role, relationship, durationMonths, attester } = proof.value as {
         role: string;
@@ -133,6 +141,8 @@ const PROOF_CLAIM: Record<ProofType, string> = {
     "Fathom claims these native sent/received totals, summed across direct transfers.",
   contract_history:
     "Fathom claims this many contract counterparties — contract identity only, never named protocols.",
+  protocol_history:
+    "Fathom claims this wallet interacted with this named protocol, per a verified Fathom protocol mapping.",
   role_attestation:
     "Fathom claims another wallet signed this structured attestation about the subject.",
 };
@@ -151,6 +161,8 @@ const PROOF_DERIVATION: Record<ProofType, string> = {
     "Summed per-counterparty sent/received across direct native transfers. Contract creations and self-transfers are excluded by derivation; internal and token transfers are out of scope.",
   contract_history:
     "Counterparties flagged as contracts by the indexed source. This is contract identity, not protocol identity — do not read these as named protocols.",
+  protocol_history:
+    "One proof per verified protocol mapping covering an interacted contract. Emitted only when the walk is complete and a verified mapping exists — without one, no protocol_history proof is emitted and the contract stays under contract_history.",
   role_attestation:
     "Recorded from a stored signed attestation. The message and signature are inspectable and re-verifiable in the Attestations section below.",
 };
@@ -699,13 +711,18 @@ function TrustGraphSection({
   address: Address;
 }) {
   const prefix = graph.complete ? "" : "At least ";
+  const identifiedProtocols = new Set(
+    graph.relationships
+      .map((r) => r.protocolId)
+      .filter((id): id is string => id !== null),
+  ).size;
   return (
     <section className="mt-10">
       <h2 className="font-display text-lg">Trust Graph Summary</h2>
       <TrustGraphVisualization graph={graph} address={address} />
       {graph.relationships.length > 0 && (
         <>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field
               label="Unique counterparties"
               value={`${prefix}${graph.uniqueCounterparties}`}
@@ -714,6 +731,15 @@ function TrustGraphSection({
               label="Repeat counterparties"
               value={`${prefix}${graph.repeatCounterparties}`}
               note="Repeat = 2 or more direct interactions."
+            />
+            <Field
+              label="Identified protocols"
+              value={
+                identifiedProtocols === 0
+                  ? "None verified"
+                  : `${prefix}${identifiedProtocols}`
+              }
+              note="Contracts with a verified Fathom protocol mapping."
             />
             <Field
               label="Longest relationship"

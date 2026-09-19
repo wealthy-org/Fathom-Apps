@@ -174,6 +174,45 @@ export const trustGraphState = pgTable("trust_graph_state", {
 });
 
 /**
+ * Identitas protocol terverifikasi (Fase 2, PRD §15): pemetaan
+ * `chainId + contractAddress → protocol` milik Fathom, bisa diaudit.
+ *
+ * Sengaja TANPA FK ke `counterparties`: mapping ada independen dari apakah
+ * kontraknya pernah teramati berinteraksi. Satu kontrak bisa punya beberapa
+ * evidence record (beda `source`); klaim final hanya yang `verified`.
+ * Jangan menyimpulkan protocol dari nama kontrak/label explorer/TVL.
+ */
+export const protocols = pgTable(
+  "protocols",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    chainId: integer("chain_id").notNull(),
+    contractAddress: char("contract_address", { length: 42 }).notNull(),
+    protocolId: varchar("protocol_id", { length: 64 }).notNull(),
+    protocolName: varchar("protocol_name", { length: 128 }).notNull(),
+    // "official" | "curated" | "verified_external" — lihat protocol-identity.ts.
+    source: varchar("source", { length: 32 }).notNull(),
+    sourceUrl: text("source_url"),
+    // "unverified" | "verified". Hanya "verified" yang boleh dipakai
+    // proof/graph — sisanya jejak audit, bukan otoritas.
+    verificationStatus: varchar("verification_status", { length: 16 })
+      .notNull()
+      .default("unverified"),
+    verifiedAt: timestamptz("verified_at"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("protocols_chain_contract_source").on(
+      t.chainId,
+      t.contractAddress,
+      t.source,
+    ),
+    index("idx_protocols_chain_contract").on(t.chainId, t.contractAddress),
+  ],
+);
+
+/**
  * Aktivitas transaksi langsung per subject (Spec 00 `wallet_activity`).
  * Menyimpan hash transaksi yang relevan supaya evidence_reference proof bisa
  * menunjuk ke halaman tx (bukan hanya halaman address). Hash unik per subject —
@@ -360,11 +399,12 @@ export const attestations = pgTable(
 /**
  * Persisted Proof snapshot (PRD §26 Proof Storage). Bukan derivasi kedua:
  * baris ditulis hanya oleh `lib/score/proof-store.ts` dari hasil
- * `generateProofs()` atas indexed state saat itu. Tiga kolom watermark
- * (`stats_fetched_at`, `graph_fetched_at`, `attestations_stamp`) menandai
- * indexed state yang dipakai — snapshot current hanya bila ketiganya sama
- * dengan marker live. `attestation_id` memberi identitas pada tiap
- * `role_attestation` (satu baris per attestation, tidak digabung).
+ * `generateProofs()` atas indexed state saat itu. Empat kolom watermark
+ * (`stats_fetched_at`, `graph_fetched_at`, `attestations_stamp`,
+ * `protocols_stamp`) menandai indexed state yang dipakai — snapshot current
+ * hanya bila keempatnya sama dengan marker live. `attestation_id` memberi
+ * identitas pada tiap `role_attestation` (satu baris per attestation, tidak
+ * digabung).
  */
 export const proofs = pgTable(
   "proofs",
@@ -388,6 +428,7 @@ export const proofs = pgTable(
     statsFetchedAt: timestamptz("stats_fetched_at"),
     graphFetchedAt: timestamptz("graph_fetched_at"),
     attestationsStamp: timestamptz("attestations_stamp"),
+    protocolsStamp: timestamptz("protocols_stamp"),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
     updatedAt: timestamptz("updated_at").notNull().defaultNow(),
   },

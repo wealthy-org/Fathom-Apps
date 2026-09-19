@@ -8,6 +8,8 @@ import {
 } from "@/lib/db/schema";
 import { normalizeAddress } from "@/lib/chain/address";
 import { fetchAddressTransactions } from "@/lib/chain/blockscout";
+import { resolveProtocols } from "@/lib/chain/protocol-identity";
+import { ROBINHOOD_TESTNET_CHAIN_ID } from "@/lib/wallet/chains";
 import { THRESHOLDS } from "@/config/thresholds";
 import type { Address } from "@/lib/score/types";
 
@@ -22,6 +24,12 @@ const MAX_TX_HASHES = 5;
 export interface RelationshipSummary {
   counterparty: Address;
   isContract: boolean;
+  /**
+   * Identitas protocol terverifikasi (Fase 2). null = kontrak tanpa mapping
+   * verified — node tetap Contract, bukan Protocol karangan.
+   */
+  protocolId: string | null;
+  protocolName: string | null;
   interactionCount: number;
   // Lower bound saat complete=false.
   valueSent: bigint;
@@ -159,6 +167,8 @@ function toSummary(
     ([counterparty, agg]) => ({
       counterparty,
       isContract: agg.isContract,
+      protocolId: null,
+      protocolName: null,
       interactionCount: agg.count,
       valueSent: agg.sent,
       valueReceived: agg.received,
@@ -195,6 +205,32 @@ function longestDuration(relationships: RelationshipSummary[]): number | null {
     if (longest === null || rel.durationDays > longest) longest = rel.durationDays;
   }
   return longest;
+}
+
+/**
+ * Pengayaan node Contract → Protocol (Fase 2): resolve batch mapping
+ * verified untuk counterparty kontrak. Tanpa mapping (atau lookup gagal):
+ * field tetap null — node tetap Contract. Enrichment, bukan core graph,
+ * jadi kegagalan tidak menggagalkan fetch.
+ */
+async function attachProtocols(
+  relationships: RelationshipSummary[],
+): Promise<void> {
+  const contracts = relationships
+    .filter((r) => r.isContract)
+    .map((r) => r.counterparty);
+  if (contracts.length === 0) return;
+  const identities = await resolveProtocols(
+    ROBINHOOD_TESTNET_CHAIN_ID,
+    contracts,
+  );
+  for (const rel of relationships) {
+    const identity = identities.get(rel.counterparty.toLowerCase());
+    if (identity) {
+      rel.protocolId = identity.protocolId;
+      rel.protocolName = identity.protocolName;
+    }
+  }
 }
 
 async function readCached(address: Address): Promise<TrustGraphSummary | null> {
@@ -247,6 +283,8 @@ async function readCached(address: Address): Promise<TrustGraphSummary | null> {
   const relationships: RelationshipSummary[] = rows.map((row) => ({
     counterparty: row.counterparty as Address,
     isContract: row.isContract,
+    protocolId: null,
+    protocolName: null,
     interactionCount: row.interactionCount,
     valueSent: row.valueSent,
     valueReceived: row.valueReceived,
@@ -255,6 +293,8 @@ async function readCached(address: Address): Promise<TrustGraphSummary | null> {
     durationDays: durationDays(row.firstInteractionAt, row.lastInteractionAt),
     txHashes: hashByCounterparty.get(row.counterparty) ?? [],
   }));
+
+  await attachProtocols(relationships);
 
   const pairs = new Map<Address, Aggregate>();
   for (const rel of relationships) {
@@ -316,6 +356,7 @@ class ExplorerTrustGraphProvider implements TrustGraphProvider {
     // fetchedAt ditulis ke trustGraphState di bawah — marker memakai momen yang sama.
     const fetchedAt = new Date();
     const summary = toSummary(pairs, fetched.complete, fetchedAt);
+    await attachProtocols(summary.relationships);
 
     // counterparties.subjectAddress FK + wallet_relationships FK → subject harus ada.
     await db

@@ -110,26 +110,28 @@ export function TrustGraphVisualization({
         {nodes.map(({ rel, x, y }) => (
           <g key={rel.counterparty}>
             <title>
-              {rel.counterparty}
-              {rel.isContract ? " (contract)" : ""}
+              {rel.protocolId !== null
+                ? `${rel.protocolName ?? rel.protocolId} (${rel.counterparty}) — verified protocol`
+                : rel.counterparty}
+              {rel.protocolId === null && rel.isContract ? " (contract)" : ""}
             </title>
             <circle
               cx={x}
               cy={y}
               r={10}
               fill={rel.isContract ? "#9945FF" : "#0B0F17"}
-              stroke={rel.isContract ? "#9945FF" : "#14F195"}
-              strokeWidth={1.5}
+              stroke={rel.protocolId !== null ? "#14F195" : rel.isContract ? "#9945FF" : "#14F195"}
+              strokeWidth={rel.protocolId !== null ? 2.5 : 1.5}
             />
             <text
               x={x}
               y={y + 24}
               textAnchor="middle"
               fontSize={10}
-              fill="#94A3B8"
+              fill={rel.protocolId !== null ? "#14F195" : "#94A3B8"}
               fontFamily="monospace"
             >
-              {shortAddress(rel.counterparty)}
+              {rel.protocolName ?? shortAddress(rel.counterparty)}
             </text>
           </g>
         ))}

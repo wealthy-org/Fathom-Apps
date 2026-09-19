@@ -7,6 +7,7 @@ import type {
   indexerState,
   profileClaims,
   proofs,
+  protocols,
   reviews,
   roleBadges,
   scoreSnapshots,
@@ -32,6 +33,7 @@ export type RoleBadge = typeof roleBadges.$inferSelect;
 export type BadgeAttestation = typeof badgeAttestations.$inferSelect;
 export type Attestation = typeof attestations.$inferSelect;
 export type ProofRow = typeof proofs.$inferSelect;
+export type Protocol = typeof protocols.$inferSelect;
 export type ScoreSnapshot = typeof scoreSnapshots.$inferSelect;
 export type IndexerState = typeof indexerState.$inferSelect;
 export type ProfileClaim = typeof profileClaims.$inferSelect;
