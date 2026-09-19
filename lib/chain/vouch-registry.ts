@@ -5,6 +5,7 @@ import {
   isAddress,
   parseAbiItem,
   type Log,
+  type Abi,
 } from "viem";
 import { and, eq } from "drizzle-orm";
 import { indexerState, vouches, wallets } from "@/lib/db/schema";
@@ -389,4 +390,63 @@ export async function readVouchIndexState(
   store: VouchEventStore = drizzleVouchEventStore,
 ): Promise<VouchIndexState | null> {
   return store.readState();
+}
+
+/**
+ * ABI fungsi tulis registry — dipakai klien (wagmi useWriteContract).
+ * Hanya jalur yang ada di kontrak: vouch (native), vouchERC20 (token),
+ * withdraw (tarik setelah cooldown). Tidak ada revoke().
+ */
+export const VOUCH_REGISTRY_WRITE_ABI = [
+  parseAbiItem("function vouch(address to) payable"),
+  parseAbiItem("function vouchERC20(address to, uint256 amount)"),
+  parseAbiItem("function withdraw(address to, uint256 amount)"),
+  parseAbiItem("function minStake() view returns (uint256)"),
+  parseAbiItem("function cooldownDays() view returns (uint256)"),
+] as const;
+
+/** ABI minimal ERC20 untuk alur approve → vouchERC20. */
+export const ERC20_ABI = [
+  parseAbiItem("function approve(address spender, uint256 amount) returns (bool)"),
+  parseAbiItem("function allowance(address owner, address spender) view returns (uint256)"),
+] as const;
+
+export interface VouchWriteArgs {
+  target: Address;
+  stakeAmount: bigint;
+  isNative: boolean;
+}
+
+/**
+ * Baca parameter kontrak untuk validasi (minStake + cooldown). Null = registry
+ * tidak terkonfigurasi atau baca gagal — pemanggil wajib menampilkan state
+ * "unavailable", bukan angka palsu.
+ */
+export async function readVouchParams(): Promise<{
+  minStake: bigint;
+  cooldownDays: number;
+} | null> {
+  const registry = getRegistryAddress();
+  if (!registry) return null;
+  const client = createPublicClient({
+    chain: robinhoodTestnet,
+    transport: http(),
+  });
+  try {
+    const [minStake, cooldownDays] = await Promise.all([
+      client.readContract({
+        address: registry,
+        abi: VOUCH_REGISTRY_WRITE_ABI,
+        functionName: "minStake",
+      }),
+      client.readContract({
+        address: registry,
+        abi: VOUCH_REGISTRY_WRITE_ABI,
+        functionName: "cooldownDays",
+      }),
+    ]);
+    return { minStake: minStake as bigint, cooldownDays: Number(cooldownDays) };
+  } catch {
+    return null;
+  }
 }

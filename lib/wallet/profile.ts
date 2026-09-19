@@ -1,6 +1,6 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, or } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { attestations, disputes, profileClaims, wallets, walletTransactions } from "@/lib/db/schema";
+import { attestations, disputes, profileClaims, vouches, wallets, walletTransactions } from "@/lib/db/schema";
 import { onchainStats } from "@/lib/chain/onchain-stats";
 import { trustGraph, type TrustGraphSummary } from "@/lib/chain/trust-graph";
 import {
@@ -81,6 +81,26 @@ export interface DisputeView {
   openedAt: string;
 }
 
+/** Vouch publik (Spec 08) — dari tabel `vouches` indexed registry on-chain. */
+export interface VouchView {
+  id: number;
+  voucher: Address;
+  subject: Address;
+  stakeAmount: bigint;
+  status: string;
+  /**
+   * Identitas on-chain dari FathomVouchRegistry. Kontrak vouch tidak punya
+   * registryId — identitas event adalah (chainId, txHash, logIndex).
+   */
+  onchainIdentity: {
+    chainId: number;
+    txHash: string;
+    blockNumber: number | null;
+    logIndex: number | null;
+  } | null;
+  createdAt: string;
+}
+
 export interface WalletProfile {
   address: Address;
   alias: string | null;
@@ -101,6 +121,7 @@ export interface WalletProfile {
   trustGraph: TrustGraphSummary;
   attestations: AttestationView[];
   disputes: DisputeView[];
+  vouches: VouchView[];
   /**
    * State index registry vouch (Fase 5). Null = indexer belum pernah jalan
    * (no-index) — bedakan dari confirmed-zero (sudah jalan, tabel vouches
@@ -307,6 +328,26 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
   const risk = assessRisk(address, stats, graph, new Date(), riskInputs);
   const riskEvaluable = risk.states.some((state) => state.status !== "not_evaluable");
 
+  // Vouch edges (Spec 08): received (subject) + given (voucher). Tabel `vouches`
+  // membawa evidence on-chain (chainId/txHash/logIndex) yang tidak ada di
+  // VouchSummary — query langsung di sini, bukan path persisten kedua.
+  const vouchRows = await db
+    .select({
+      id: vouches.id,
+      fromAddress: vouches.fromAddress,
+      toAddress: vouches.toAddress,
+      stakeAmount: vouches.stakeAmount,
+      status: vouches.status,
+      chainId: vouches.chainId,
+      txHash: vouches.txHash,
+      blockNumber: vouches.blockNumber,
+      logIndex: vouches.logIndex,
+      createdAt: vouches.createdAt,
+    })
+    .from(vouches)
+    .where(or(eq(vouches.toAddress, address), eq(vouches.fromAddress, address)))
+    .orderBy(desc(vouches.createdAt));
+
   return {
     address,
     alias: wallet?.alias ?? null,
@@ -374,6 +415,30 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
             }
           : null,
       openedAt: row.openedAt.toISOString(),
+    })),
+    vouches: vouchRows.map((row) => ({
+      id: row.id,
+      voucher: row.fromAddress as Address,
+      subject: row.toAddress as Address,
+      // numeric tanpa mode bigint → string; parse aman gagal → 0.
+      stakeAmount: (() => {
+        try {
+          return BigInt(row.stakeAmount);
+        } catch {
+          return BigInt(0);
+        }
+      })(),
+      status: row.status,
+      onchainIdentity:
+        row.chainId !== null && row.txHash !== null
+          ? {
+              chainId: row.chainId,
+              txHash: row.txHash,
+              blockNumber: row.blockNumber,
+              logIndex: row.logIndex,
+            }
+          : null,
+      createdAt: row.createdAt.toISOString(),
     })),
   };
 }

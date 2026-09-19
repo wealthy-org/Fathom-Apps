@@ -16,6 +16,8 @@ import { ConnectButton } from "@/components/connect-button";
 import { AliasEditor } from "@/components/alias-editor";
 import { AttestationForm } from "@/components/attestation-form";
 import { DisputeForm } from "@/components/dispute-form";
+import { VouchForm } from "@/components/vouch-form";
+import { VouchWithdrawButton } from "@/components/vouch-withdraw-button";
 import { TrustGraphVisualization } from "@/components/trust-graph-visualization";
 
 export const dynamic = "force-dynamic";
@@ -741,11 +743,11 @@ function VouchesSection({
   vouchIndex,
 }: {
   address: string;
-  vouches: WalletProfile["trustGraph"]["vouches"];
+  vouches: WalletProfile["vouches"];
   vouchIndex: WalletProfile["vouchIndex"];
 }) {
   return (
-    <section className="mt-10">
+    <section id="vouches" className="mt-10">
       <h2 className="font-display text-lg">Vouches</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         On-chain vouch edges indexed from the Fathom registry (Spec 08). A
@@ -771,12 +773,12 @@ function VouchesSection({
             </div>
           ) : (
             <ul className="mt-5 space-y-3">
-              {vouches.map((vouch, i) => {
-                const received = vouch.to === address;
-                const other = received ? vouch.from : vouch.to;
+              {vouches.map((vouch) => {
+                const received = vouch.subject === address;
+                const other = received ? vouch.voucher : vouch.subject;
                 return (
                   <li
-                    key={`${vouch.from}-${vouch.to}-${i}`}
+                    key={vouch.id}
                     className="shine-border rounded-2xl border border-ink/10 bg-ink/[0.03] p-5"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -797,8 +799,30 @@ function VouchesSection({
                           {shortAddress(other)}
                         </Link>
                       </span>
-                      <span>stake: {vouch.stakeAmount.toString()} wei</span>
+                      <span>stake: {formatNative(vouch.stakeAmount.toString())}</span>
+                      <span>at: {formatDate(vouch.createdAt)}</span>
+                      {vouch.onchainIdentity && (
+                        <span>
+                          <a
+                            href={explorerTransactionUrl(
+                              vouch.onchainIdentity.txHash,
+                            )}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-accent-ink hover:underline"
+                          >
+                            {shortAddress(vouch.onchainIdentity.txHash)}
+                          </a>
+                        </span>
+                      )}
                     </div>
+                    {!received && vouch.status === "active" && (
+                      <VouchWithdrawButton
+                        voucher={vouch.voucher}
+                        target={vouch.subject}
+                        stakeAmount={vouch.stakeAmount.toString()}
+                      />
+                    )}
                   </li>
                 );
               })}
@@ -806,6 +830,8 @@ function VouchesSection({
           )}
         </>
       )}
+
+      <VouchForm target={address} />
     </section>
   );
 }
@@ -1122,7 +1148,7 @@ export default async function WalletProfilePage({
 
         <VouchesSection
           address={address}
-          vouches={profile.trustGraph.vouches}
+          vouches={profile.vouches}
           vouchIndex={profile.vouchIndex}
         />
 
