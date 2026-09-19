@@ -1,6 +1,4 @@
 export const THRESHOLDS = {
-  formulaVersion: "1.0.0-provisional",
-
   chain: {
     // Confirmation depth indexer — jangan proses blok paling ujung untuk menghindari reorg
     confirmations: 3,
@@ -167,6 +165,17 @@ export const THRESHOLDS = {
       { minScore: 250, id: "emerging", label: "Emerging" },
       { minScore: 0, id: "new", label: "New" },
     ],
+    eligibility: {
+      // PROVISIONAL — sumber yang wajib usable sebelum tier boleh diturunkan.
+      // Sumber di luar daftar ini (contract/attestation/vouch) tidak diminta
+      // hanya karena tabelnya ada; sumber yang belum di-index tetap partial.
+      requiredSources: [
+        "onchain",
+        "economicHistory",
+        "counterpartyHistory",
+        "riskSignals",
+      ],
+    },
   },
 
   baseline: {

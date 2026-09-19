@@ -1040,7 +1040,7 @@ function ScoreSection({ reputation }: { reputation: WalletProfile["reputation"] 
         </div>
         <div className="text-right">
           <div className="font-display text-3xl text-accent-ink">{reputation.totalScore}</div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">{reputation.tier.label} · {reputation.formulaVersion}</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">{reputation.tier ? reputation.tier.label : "No tier — partial"} · {reputation.formulaVersion}</div>
         </div>
       </div>
       <ul className="mt-5 space-y-3">
@@ -1051,9 +1051,9 @@ function ScoreSection({ reputation }: { reputation: WalletProfile["reputation"] 
               <span className="font-mono text-sm text-ink">{dimension.available ? `${dimension.contribution >= 0 ? "+" : ""}${dimension.contribution}` : "Unavailable"}</span>
             </div>
             <p className="mt-2 text-sm text-slate400">{dimension.explanation}</p>
-            {dimension.proofReferences.length > 0 && (
+            {dimension.evidenceReferences.proofs.length + dimension.evidenceReferences.direct.length > 0 && (
               <Link href="#why-evidence" className="mt-2 inline-block font-mono text-[11px] text-accent-ink hover:underline">
-                Why → evidence ({dimension.proofReferences.length})
+                Why → evidence ({dimension.evidenceReferences.proofs.length + dimension.evidenceReferences.direct.length})
               </Link>
             )}
           </li>

@@ -3,6 +3,7 @@ import { db } from "@/lib/db/client";
 import { attestations, disputes, profileClaims, vouches, wallets, walletTransactions } from "@/lib/db/schema";
 import { onchainStats } from "@/lib/chain/onchain-stats";
 import { trustGraph, type TrustGraphSummary } from "@/lib/chain/trust-graph";
+import { explorerTransactionUrl } from "@/lib/chain/blockscout";
 import {
   protocolsStamp,
   resolveProtocols,
@@ -11,6 +12,8 @@ import {
   readVouchIndexState,
   type VouchIndexState,
 } from "@/lib/chain/vouch-registry";
+import { readAttestationIndexState } from "@/lib/chain/attestation-registry";
+import { readDisputeIndexState } from "@/lib/chain/dispute-registry";
 import { ROBINHOOD_TESTNET_CHAIN_ID } from "@/lib/wallet/chains";
 import {
   walletMetricsProvider,
@@ -27,11 +30,11 @@ import { flaggedAddressProvider, type FlaggedAddress } from "@/lib/score/flagged
 import { maliciousContractProvider, type MaliciousContract } from "@/lib/score/malicious-contract-provider";
 import type { AbnormalTxPoint } from "@/lib/score/risk-abnormal";
 import { getDimensions, type DimensionState } from "@/lib/score/dimensions";
-import { buildScoreInput, computeScore } from "@/lib/score/score-engine";
+import { computeScore } from "@/lib/score/score-engine";
+import { buildScoreInput } from "@/lib/score/score-domain";
 import { ScoreStrategyV1 } from "@/lib/score/score-strategy";
 import { tierStrategyV1 } from "@/lib/score/tier-strategy";
-import { writeScoreSnapshot } from "@/lib/score/score-snapshot";
-import type { Address, ScoreResult } from "@/lib/score/types";
+import type { Address, ScoreInput, ScoreResult } from "@/lib/score/types";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -354,9 +357,46 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     .where(or(eq(vouches.toAddress, address), eq(vouches.fromAddress, address)))
     .orderBy(desc(vouches.createdAt));
 
+  // Availability (Spec 10): status eksplisit per sumber — sumber yang belum
+  // di-index tidak pernah dianggap "0". Dipakai untuk display + gating tier;
+  // TIDAK menulis snapshot di sini (batas persistensi = score-refresh.ts).
+  const contractProofCount = proofs.filter((item) => item.type === "contract_history").length;
+  const attestationIndexState = await readAttestationIndexState().catch(() => null);
+  const availability: ScoreInput["availability"] = {
+    onchain: { state: stats.fetchedAt ? "available" : "not_indexed" },
+    economicHistory: {
+      state: metrics.computedAt && stats.fetchedAt ? "available" : "not_indexed",
+    },
+    counterpartyHistory: { state: graph.complete ? "available" : "incomplete" },
+    contractHistory: {
+      state: graph.complete
+        ? contractProofCount > 0
+          ? "available"
+          : "empty"
+        : "incomplete",
+    },
+    attestations: {
+      state:
+        attestationIndexState === null
+          ? "not_indexed"
+          : attestationRows.length > 0
+            ? "available"
+            : "empty",
+    },
+    vouches: {
+      state:
+        vouchIndex === null
+          ? "not_indexed"
+          : vouchRows.length > 0
+            ? "available"
+            : "empty",
+    },
+    riskSignals: { state: riskEvaluable ? "available" : "not_indexed" },
+  };
   const scoreInput = buildScoreInput({
     address,
     evaluatedAt: new Date(),
+    availability,
     firstTxAt: stats.firstTxAt,
     txCount: stats.txCount,
     volumeWei:
@@ -371,9 +411,9 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
       stakeAmount: BigInt(row.stakeAmount),
       status: row.status,
       createdAt: row.createdAt,
+      evidenceReference: `${row.chainId}:${row.txHash}:${row.logIndex}`,
     })),
     risk: {
-      evaluable: risk.states.some((state) => state.status !== "not_evaluable"),
       detected: risk.signals.map((signal) => ({
         id: signal.type,
         severity: signal.severity,
@@ -386,7 +426,6 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     new ScoreStrategyV1(),
     tierStrategyV1,
   );
-  await writeScoreSnapshot(reputation, "onchain_refresh");
 
   return {
     address,

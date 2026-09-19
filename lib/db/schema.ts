@@ -18,7 +18,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import type { ScoreBreakdown } from "@/lib/score/types";
+import type { ScoreSnapshotBreakdown } from "@/lib/score/types";
 
 /**
  * Representasi kode dari SQL di Spec 00 §2.
@@ -479,14 +479,15 @@ export const scoreSnapshots = pgTable(
       .notNull()
       .references(() => wallets.address),
     formulaVersion: varchar("formula_version", { length: 32 }).notNull(),
+    fingerprint: char("fingerprint", { length: 64 }).notNull(),
     totalScore: integer("total_score").notNull(),
-    breakdown: jsonb("breakdown").$type<ScoreBreakdown>().notNull(),
+    breakdown: jsonb("breakdown").$type<ScoreSnapshotBreakdown>().notNull(),
     triggerEvent: varchar("trigger_event", { length: 32 }).notNull(),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
   (t) => [
     index("idx_snapshots_address_time").on(t.address, t.createdAt),
-    index("idx_snapshots_dedupe").on(t.address, t.formulaVersion, t.totalScore, t.triggerEvent),
+    unique("score_snapshots_fingerprint").on(t.address, t.fingerprint),
   ],
 );
 

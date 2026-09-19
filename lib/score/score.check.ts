@@ -1,27 +1,104 @@
 import assert from "node:assert/strict";
+import { computeScore } from "./score-engine";
 import { ScoreStrategyV1 } from "./score-strategy";
-import type { ScoreInput } from "./types";
+import { TierStrategyV1 } from "./tier-strategy";
+import type { ScoreAvailability, ScoreInput } from "./types";
 
-const address = "0x0000000000000000000000000000000000000001" as const;
+const A = "0x0000000000000000000000000000000000000001" as const;
+const source = (state: ScoreAvailability[keyof ScoreAvailability]["state"]) => ({ state });
+const availability: ScoreAvailability = {
+  onchain: source("available"),
+  economicHistory: source("available"),
+  counterpartyHistory: source("available"),
+  contractHistory: source("available"),
+  attestations: source("available"),
+  vouches: source("available"),
+  riskSignals: source("available"),
+};
+
 const input: ScoreInput = {
-  address, evaluatedAt: "2026-09-19T00:00:00.000Z",
-  onchain: { firstTxAt: "2025-09-19T00:00:00.000Z", txCount: 100, volumeWei: "1000000000000000000" },
-  counterparty: { available: true, uniqueCount: 10, repeatCount: 5, longestRelationshipDays: 365 },
-  verifiedProtocolProofs: ["protocol-proof"],
+  address: A,
+  evaluatedAt: "2026-09-19T00:00:00.000Z",
+  availability,
+  onchain: {
+    firstTxAt: "2025-09-19T00:00:00.000Z",
+    txCount: 100,
+    volumeWei: "1000000000000000000",
+    proofs: [{ type: "wallet_age", evidenceReference: "ev-wallet-age" }],
+  },
+  counterparty: {
+    uniqueCount: 10,
+    repeatCount: 5,
+    longestRelationshipDays: 365,
+    proofs: [{ type: "unique_counterparty", evidenceReference: "ev-counterparty" }],
+  },
+  contracts: [{ type: "contract_history", evidenceReference: "ev-contract" }],
   community: { vouches: [], attestations: [] },
-  risk: { evaluable: true, detected: [] },
-  proofReferences: { economic_history: ["economic-proof"], counterparty_history: ["counterparty-proof"] },
+  risk: { detected: [] },
 };
 
 const strategy = new ScoreStrategyV1();
 const first = strategy.compute(input);
 assert.deepEqual(strategy.compute(input), first, "same JSON input is deterministic");
-assert.equal(first.breakdown.dimensions.find((item) => item.id === "economic_history")?.contribution, 250);
-assert.equal(first.breakdown.dimensions.find((item) => item.id === "counterparty_history")?.contribution, 200);
+
+const dimension = (id: string) => first.breakdown.dimensions.find((item) => item.id === id);
+assert.equal(dimension("economic_history")?.contribution, 250, "economic max at full age/txCount/volume");
+assert.equal(dimension("counterparty_history")?.contribution, 200, "counterparty max at full inputs");
+assert.equal(dimension("contract_history")?.contribution, 50, "one verified contract proof");
 assert.equal(first.breakdown.riskAdjustment.contribution, 0, "clear risk gives no bonus");
-const unavailable = strategy.compute({ ...input, onchain: { firstTxAt: null, txCount: null, volumeWei: null } });
-assert.equal(unavailable.breakdown.dimensions[0].available, false);
-assert.equal(unavailable.breakdown.dimensions[0].contribution, 0);
-const risk = strategy.compute({ ...input, risk: { evaluable: true, detected: [{ id: "test", severity: "high", evidenceReference: "risk-proof" }] } });
-assert.equal(risk.breakdown.riskAdjustment.contribution, -100);
+assert.ok(!Object.is(first.breakdown.riskAdjustment.contribution, -0), "no negative zero penalty");
+
+assert.deepEqual(
+  dimension("economic_history")?.evidenceReferences.proofs.map((p) => p.evidenceReference),
+  ["ev-wallet-age"],
+  "economic dimension carries proof references",
+);
+assert.deepEqual(
+  dimension("counterparty_history")?.evidenceReferences.proofs.map((p) => p.evidenceReference),
+  ["ev-counterparty"],
+  "counterparty dimension carries proof references",
+);
+
+const noEconomic = strategy.compute({
+  ...input,
+  availability: { ...availability, economicHistory: source("unavailable") },
+});
+assert.equal(noEconomic.breakdown.dimensions[0].available, false);
+assert.equal(noEconomic.breakdown.dimensions[0].contribution, 0);
+
+const highRisk = strategy.compute({
+  ...input,
+  risk: { detected: [{ id: "test_signal", severity: "high", evidenceReference: "ev-risk" }] },
+});
+assert.equal(highRisk.breakdown.riskAdjustment.contribution, -100, "one high risk signal deducts 100");
+assert.equal(highRisk.breakdown.riskAdjustment.evidenceReferences.direct[0]?.reference, "ev-risk");
+
+const engine = (candidate: ScoreInput) => computeScore(candidate, new ScoreStrategyV1(), new TierStrategyV1());
+const complete = engine(input);
+assert.equal(complete.completeness, "complete");
+assert.equal(complete.tier?.id, "established", "complete score receives a provisional tier");
+
+const partial = engine({ ...input, availability: { ...availability, riskSignals: source("not_indexed") } });
+assert.equal(partial.completeness, "partial");
+assert.equal(partial.tier, null, "incomplete score never receives a tier");
+
+const unavailable = engine({
+  ...input,
+  availability: {
+    onchain: source("not_indexed"),
+    economicHistory: source("not_indexed"),
+    counterpartyHistory: source("not_indexed"),
+    contractHistory: source("not_indexed"),
+    attestations: source("not_indexed"),
+    vouches: source("not_indexed"),
+    riskSignals: source("not_indexed"),
+  },
+});
+assert.equal(unavailable.completeness, "unavailable");
+assert.equal(unavailable.tier, null);
+
+const optionalMissing = engine({ ...input, availability: { ...availability, vouches: source("not_indexed"), attestations: source("not_indexed"), contractHistory: source("not_indexed") } });
+assert.equal(optionalMissing.completeness, "complete", "optional unindexed sources do not block tier eligibility");
+assert.notEqual(optionalMissing.tier, null);
+
 console.log("score.check: ok");
