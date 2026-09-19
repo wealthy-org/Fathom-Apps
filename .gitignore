@@ -40,6 +40,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# foundry (contracts/): artefak build & dependensi — install via
+# `forge install OpenZeppelin/openzeppelin-contracts forge-std` dari contracts/
+contracts/out/
+contracts/cache/
+contracts/lib/
+contracts/broadcast/
+
 docs
 graphify-out
 AGENTS.md
