@@ -170,4 +170,29 @@ const days = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
   );
 }
 
+// 7. Vouch edges terindeks tapi tanpa clustering rule → tetap not_evaluable,
+//    bukan clear palsu dan bukan detected.
+{
+  const r = assessRisk(
+    SUBJECT,
+    stats({ firstTxAt: days(400), txCount: 900 }),
+    graph({
+      vouches: [
+        { from: OTHER, to: SUBJECT, stakeAmount: BigInt(100), status: "active" },
+        {
+          from: "0x0000000000000000000000000000000000000003",
+          to: SUBJECT,
+          stakeAmount: BigInt(50),
+          status: "active",
+        },
+      ],
+    }),
+    NOW,
+  );
+  assert.equal(
+    r.states.find((s) => s.id === "suspicious_vouch_clustering")?.status,
+    "not_evaluable",
+  );
+}
+
 console.log("risk.check: ok");

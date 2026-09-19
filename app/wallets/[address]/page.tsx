@@ -686,19 +686,77 @@ function DisputesSection({
   );
 }
 
-function UnavailableSection({
-  title,
-  note,
+function VouchesSection({
+  address,
+  vouches,
+  vouchIndex,
 }: {
-  title: string;
-  note: string;
+  address: string;
+  vouches: WalletProfile["trustGraph"]["vouches"];
+  vouchIndex: WalletProfile["vouchIndex"];
 }) {
   return (
     <section className="mt-10">
-      <h2 className="font-display text-lg">{title}</h2>
-      <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-6 text-sm text-slate400">
-        {note}
-      </div>
+      <h2 className="font-display text-lg">Vouches</h2>
+      <p className="mt-2 max-w-2xl text-sm text-slate400">
+        On-chain vouch edges indexed from the Fathom registry (Spec 08). A
+        vouch is economic-backing evidence — it never creates reputation score
+        on its own, and reciprocal vouches are recorded, not hidden.
+      </p>
+
+      {vouchIndex === null ? (
+        <div className="shine-border mt-5 rounded-2xl border border-ink/10 bg-ink/[0.03] p-6 text-sm text-slate400">
+          Vouch index has not run yet — absence of vouches below means not
+          indexed, not zero.
+        </div>
+      ) : (
+        <>
+          <p className="mt-3 font-mono text-[11px] text-slate400">
+            Registry indexed through block {vouchIndex.lastBlock}
+            {vouchIndex.status !== null && ` · status: ${vouchIndex.status}`}
+          </p>
+          {vouches.length === 0 ? (
+            <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-6 text-sm text-slate400">
+              No vouch edges involving this wallet — confirmed by the index,
+              not missing data.
+            </div>
+          ) : (
+            <ul className="mt-5 space-y-3">
+              {vouches.map((vouch, i) => {
+                const received = vouch.to === address;
+                const other = received ? vouch.from : vouch.to;
+                return (
+                  <li
+                    key={`${vouch.from}-${vouch.to}-${i}`}
+                    className="shine-border rounded-2xl border border-ink/10 bg-ink/[0.03] p-5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-display text-base">
+                        {received ? "Vouch received" : "Vouch given"}
+                      </span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                        {vouch.status}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[11px] text-slate400">
+                      <span>
+                        {received ? "from" : "to"}:{" "}
+                        <Link
+                          href={`/wallets/${other}`}
+                          className="text-accent-ink hover:underline"
+                        >
+                          {shortAddress(other)}
+                        </Link>
+                      </span>
+                      <span>stake: {vouch.stakeAmount.toString()} wei</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
+      )}
     </section>
   );
 }
@@ -1008,9 +1066,10 @@ export default async function WalletProfilePage({
           signals={profile.riskSignals}
         />
 
-        <UnavailableSection
-          title="Vouches"
-          note="Economic backing (stake) is not implemented yet. It requires anti-farming rules that the spec has not defined (Spec 08)."
+        <VouchesSection
+          address={address}
+          vouches={profile.trustGraph.vouches}
+          vouchIndex={profile.vouchIndex}
         />
 
         <AttestationsSection

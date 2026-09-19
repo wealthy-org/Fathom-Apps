@@ -456,6 +456,12 @@ export const indexerState = pgTable(
     contractName: varchar("contract_name", { length: 64 }).notNull(),
     chainId: integer("chain_id").notNull(),
     lastBlock: bigint("last_block", { mode: "number" }).notNull().default(0),
+    // Status run terakhir indexer ("ok" | "error" | "unconfigured").
+    // null = indexer belum pernah jalan (no-index) — bedakan dari
+    // confirmed-zero (sudah jalan, tidak ada event).
+    status: varchar("status", { length: 16 }),
+    error: text("error"),
+    lastIndexedAt: timestamptz("last_indexed_at"),
     updatedAt: timestamptz("updated_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.contractName, t.chainId] })],

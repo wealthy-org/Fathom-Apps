@@ -93,8 +93,9 @@ const NOT_EVALUABLE: Partial<Record<RiskSignalType, { reason: string; suppliedBy
     suppliedBy: "a Spec 05 detection rule (definition of abnormal + thresholds)",
   },
   suspicious_vouch_clustering: {
-    reason: "Vouches are not implemented yet.",
-    suppliedBy: "Spec 08",
+    reason:
+      "Vouch edges are indexed (vouches table, Spec 08), but no rule defines what counts as a suspicious cluster.",
+    suppliedBy: "a Spec 08 clustering rule (definition of suspicious cluster + thresholds)",
   },
   flagged_counterparty_exposure: {
     reason: "No flagged-address source exists yet.",

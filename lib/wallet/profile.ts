@@ -7,6 +7,10 @@ import {
   protocolsStamp,
   resolveProtocols,
 } from "@/lib/chain/protocol-identity";
+import {
+  readVouchIndexState,
+  type VouchIndexState,
+} from "@/lib/chain/vouch-registry";
 import { ROBINHOOD_TESTNET_CHAIN_ID } from "@/lib/wallet/chains";
 import {
   walletMetricsProvider,
@@ -68,6 +72,16 @@ export interface WalletProfile {
   trustGraph: TrustGraphSummary;
   attestations: AttestationView[];
   disputes: DisputeView[];
+  /**
+   * State index registry vouch (Fase 5). Null = indexer belum pernah jalan
+   * (no-index) — bedakan dari confirmed-zero (sudah jalan, tabel vouches
+   * kosong untuk wallet ini). UI tidak boleh menampilkan nol palsu.
+   */
+  vouchIndex: {
+    lastBlock: number;
+    status: string | null;
+    lastIndexedAt: string | null;
+  } | null;
 }
 
 /** Basic profile (Spec 01) + proof (Spec 02) + dimensions (Spec 03) + trust graph (Spec 04) + claim (Spec 06) + attestations (Spec 07) + disputes (Spec 09) + risk (Spec 05). Data yang tidak tersedia tetap null — jangan dikarang. */
@@ -84,6 +98,22 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
 
   const stats = await onchainStats.fetch(address);
   const graph = await trustGraph.fetch(address);
+  // State index registry dibaca terpisah dari graph transaksi — indexer vouch
+  // punya lifecycle sendiri (Fase 5). Gagal baca = null (no-index), bukan
+  // gagal profile: enrichment, bukan core.
+  let vouchIndex: WalletProfile["vouchIndex"] = null;
+  try {
+    const state: VouchIndexState | null = await readVouchIndexState();
+    vouchIndex = state
+      ? {
+          lastBlock: state.lastBlock,
+          status: state.status,
+          lastIndexedAt: state.lastIndexedAt?.toISOString() ?? null,
+        }
+      : null;
+  } catch {
+    vouchIndex = null;
+  }
   // Metrik turunan dibaca setelah graph — agregat memakai wallet_transactions
   // yang baru ditulis fetch di atas (graphFetchedAt = staleness bound).
   const metrics = await walletMetricsProvider.refresh(address, graph.fetchedAt);
@@ -212,6 +242,7 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     riskSignals: risk.signals,
     riskStates: risk.states,
     trustGraph: graph,
+    vouchIndex,
     attestations: attestationRows.map((row) => ({
       id: row.id,
       attester: row.attester as Address,
