@@ -252,7 +252,8 @@ function ProofSupporting({
           <p>
             {total} distinct counterparties from a complete walk. Showing{" "}
             {rows.length} of {total} — each link opens that
-            counterparty&apos;s Fathom profile.
+            counterparty&apos;s Fathom profile. Displayed rows are a viewing
+            subset for inspection, not a separate count.
           </p>
           <ul className="space-y-1 font-mono text-[11px]">
             {rows.map((rel) => (
@@ -297,7 +298,20 @@ function ProofSupporting({
                     {shortAddress(rel.counterparty)}
                   </Link>
                   <span className="text-slate400">
-                    {rel.interactionCount} interactions
+                    {rel.interactionCount} interactions · first{" "}
+                    {formatDate(
+                      rel.firstInteractionAt
+                        ? rel.firstInteractionAt.toISOString()
+                        : null,
+                    )}{" "}
+                    · last{" "}
+                    {formatDate(
+                      rel.lastInteractionAt
+                        ? rel.lastInteractionAt.toISOString()
+                        : null,
+                    )}
+                    {rel.durationDays !== null &&
+                      ` · ${rel.durationDays} days`}
                   </span>
                 </span>
                 {rel.txHashes.length > 0 && (
@@ -330,19 +344,28 @@ function ProofSupporting({
             Totals are summed across all direct relationships. Largest{" "}
             {ranked.length} counterparties by volume:
           </p>
-          <ul className="space-y-1 font-mono text-[11px]">
+          <ul className="space-y-2 font-mono text-[11px]">
             {ranked.map((rel) => (
-              <li key={rel.counterparty} className="flex flex-wrap gap-x-3">
-                <Link
-                  href={`/wallets/${rel.counterparty}`}
-                  className="text-accent-ink hover:underline"
-                >
-                  {shortAddress(rel.counterparty)}
-                </Link>
-                <span className="text-slate400">
-                  sent {formatNative(rel.valueSent.toString())} · received{" "}
-                  {formatNative(rel.valueReceived.toString())}
+              <li key={rel.counterparty} className="space-y-1">
+                <span className="flex flex-wrap gap-x-3">
+                  <Link
+                    href={`/wallets/${rel.counterparty}`}
+                    className="text-accent-ink hover:underline"
+                  >
+                    {shortAddress(rel.counterparty)}
+                  </Link>
+                  <span className="text-slate400">
+                    sent {formatNative(rel.valueSent.toString())} · received{" "}
+                    {formatNative(rel.valueReceived.toString())}
+                  </span>
                 </span>
+                {rel.txHashes.length > 0 && (
+                  <span className="flex flex-wrap gap-2">
+                    {rel.txHashes.slice(0, 5).map((hash, i) => (
+                      <TxLink key={hash} hash={hash} label={`tx ${i + 1}`} />
+                    ))}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
