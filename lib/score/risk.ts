@@ -11,8 +11,9 @@ import type { Address } from "@/lib/score/types";
  * bukan tabel baru. Risiko BUKAN bukti wrongdoing: setiap signal menyertakan
  * evidence-nya sendiri dan tidak pernah melabeli wallet "malicious".
  *
- * Tiga signal sengaja TIDAK dievaluasi karena sumbernya belum ada / tidak
- * reproducible. Itu dinyatakan sebagai `not_evaluable`, bukan ditebak atau
+ * Dua signal sengaja TIDAK dievaluasi karena sumbernya belum ada; satu
+ * (abnormal_transaction_pattern) karena Spec 05 belum mendefinisikan aturan
+ * deteksinya. Itu dinyatakan sebagai `not_evaluable`, bukan ditebak atau
  * ditampilkan sebagai "clear".
  */
 
@@ -88,8 +89,8 @@ const DEFINITIONS: SignalDefinition[] = [
 const NOT_EVALUABLE: Partial<Record<RiskSignalType, { reason: string; suppliedBy: string }>> = {
   abnormal_transaction_pattern: {
     reason:
-      "Only first/last interaction per counterparty is stored, so per-transaction timing cannot be reproduced.",
-    suppliedBy: "a per-transaction indexer",
+      "Per-transaction timing is stored (wallet_transactions), but Spec 05 defines no rule for what counts as abnormal.",
+    suppliedBy: "a Spec 05 detection rule (definition of abnormal + thresholds)",
   },
   suspicious_vouch_clustering: {
     reason: "Vouches are not implemented yet.",
