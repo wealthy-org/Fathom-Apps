@@ -6,6 +6,7 @@ import type { Address } from "@/lib/score/types";
 // ponytail: static radial SVG layout, no graph lib. Node cap keeps large
 // graphs readable; full data stays in the stats grid below.
 const MAX_NODES = 12;
+const MAX_SOCIAL_NODES = 6;
 const W = 600;
 const H = 360;
 const CX = W / 2;
@@ -26,6 +27,23 @@ function directionLabel(valueSent: bigint, valueReceived: bigint): string {
   return "received";
 }
 
+type SocialKind = "attester" | "reporter" | "voucher" | "inviter";
+
+interface SocialNode {
+  key: string;
+  addr: Address;
+  kind: SocialKind;
+  edgeLabel: string;
+  title: string;
+}
+
+const SOCIAL_STYLE: Record<SocialKind, { fill: string; stroke: string; dash?: string }> = {
+  attester: { fill: "#0B0F17", stroke: "#14F195" },
+  reporter: { fill: "#0B0F17", stroke: "#94A3B8", dash: "4 3" },
+  voucher: { fill: "#9945FF", stroke: "#14F195" },
+  inviter: { fill: "#0B0F17", stroke: "#14F195", dash: "4 3" },
+};
+
 export function TrustGraphVisualization({
   graph,
   address,
@@ -33,7 +51,53 @@ export function TrustGraphVisualization({
   graph: TrustGraphSummary;
   address: Address;
 }) {
-  if (graph.relationships.length === 0) {
+  // Edge sosial (Fase 3): attester/dispute/vouch/invitation dari tabel Fathom.
+  // Vouch dua arah — node adalah sisi lainnya dari subject.
+  const social: SocialNode[] = [
+    ...graph.attesters.map((a) => ({
+      key: `attester:${a.attester}`,
+      addr: a.attester,
+      kind: "attester" as SocialKind,
+      edgeLabel: `attested ${a.role}`,
+      title: `${a.attester} attested ${a.role} (${a.relationship})`,
+    })),
+    ...graph.disputes.map((d) => ({
+      key: `reporter:${d.reporter}`,
+      addr: d.reporter,
+      kind: "reporter" as SocialKind,
+      edgeLabel: `disputed (${d.status})`,
+      title: `${d.reporter} filed a dispute (${d.status}) — report, not verdict`,
+    })),
+    ...graph.vouches.map((v) => {
+      const other = v.from === address ? v.to : v.from;
+      return {
+        key: `vouch:${v.from}:${v.to}`,
+        addr: other,
+        kind: "voucher" as SocialKind,
+        edgeLabel: `vouched (${v.status})`,
+        title: `Vouch ${v.from} → ${v.to} (${v.status})`,
+      };
+    }),
+    ...(graph.invitedBy !== null
+      ? [
+          {
+            key: `inviter:${graph.invitedBy}`,
+            addr: graph.invitedBy,
+            kind: "inviter" as SocialKind,
+            edgeLabel: "invited by",
+            title: `${graph.invitedBy} invited this wallet`,
+          },
+        ]
+      : []),
+  ].slice(0, MAX_SOCIAL_NODES);
+  const hiddenSocial =
+    graph.attesters.length +
+    graph.disputes.length +
+    graph.vouches.length +
+    (graph.invitedBy !== null ? 1 : 0) -
+    social.length;
+
+  if (graph.relationships.length === 0 && social.length === 0) {
     return (
       <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-6 text-center text-sm text-slate400">
         <svg
@@ -62,10 +126,20 @@ export function TrustGraphVisualization({
 
   const shown = graph.relationships.slice(0, MAX_NODES);
   const hidden = graph.relationships.length - shown.length;
+  // Node sosial berbagi ring — sudut disebar di atas total node terlihat.
+  const total = shown.length + social.length;
   const nodes = shown.map((rel, i) => {
-    const angle = (2 * Math.PI * i) / shown.length - Math.PI / 2;
+    const angle = (2 * Math.PI * i) / total - Math.PI / 2;
     return {
       rel,
+      x: CX + R * Math.cos(angle),
+      y: CY + R * Math.sin(angle),
+    };
+  });
+  const socialPlaced = social.map((s, i) => {
+    const angle = (2 * Math.PI * (shown.length + i)) / total - Math.PI / 2;
+    return {
+      ...s,
       x: CX + R * Math.cos(angle),
       y: CY + R * Math.sin(angle),
     };
@@ -76,7 +150,7 @@ export function TrustGraphVisualization({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label={`Trust graph for ${address}: ${graph.relationships.length} counterparties`}
+        aria-label={`Trust graph for ${address}: ${graph.relationships.length} counterparties, ${social.length} social edges`}
         className="h-auto w-full"
       >
         {nodes.map(({ rel, x, y }) => {
@@ -135,6 +209,65 @@ export function TrustGraphVisualization({
             </text>
           </g>
         ))}
+        {socialPlaced.map(({ key, addr, kind, edgeLabel, title, x, y }) => {
+          const mx = (CX + x) / 2;
+          const my = (CY + y) / 2;
+          const style = SOCIAL_STYLE[kind];
+          return (
+            <g key={key}>
+              <title>{title}</title>
+              <line
+                x1={CX}
+                y1={CY}
+                x2={x}
+                y2={y}
+                stroke={style.stroke}
+                strokeWidth={1}
+                strokeDasharray={style.dash}
+                opacity={0.55}
+              />
+              <text
+                x={mx}
+                y={my}
+                textAnchor="middle"
+                fontSize={10}
+                fill="#94A3B8"
+                fontFamily="monospace"
+              >
+                {edgeLabel}
+              </text>
+              <circle
+                cx={x}
+                cy={y}
+                r={10}
+                fill={style.fill}
+                stroke={style.stroke}
+                strokeWidth={1.5}
+                strokeDasharray={style.dash}
+              />
+              <text
+                x={x}
+                y={y + 24}
+                textAnchor="middle"
+                fontSize={10}
+                fill={style.stroke}
+                fontFamily="monospace"
+              >
+                {shortAddress(addr)}
+              </text>
+              <text
+                x={x}
+                y={y + 36}
+                textAnchor="middle"
+                fontSize={9}
+                fill="#94A3B8"
+                fontFamily="monospace"
+              >
+                {kind}
+              </text>
+            </g>
+          );
+        })}
         <title>{address}</title>
         <circle cx={CX} cy={CY} r={14} fill="#14F195" />
         <text
@@ -151,6 +284,11 @@ export function TrustGraphVisualization({
       {hidden > 0 && (
         <p className="mt-1 text-center text-xs text-slate400">
           +{hidden} more counterparties not shown — see stats below.
+        </p>
+      )}
+      {hiddenSocial > 0 && (
+        <p className="mt-1 text-center text-xs text-slate400">
+          +{hiddenSocial} more social edges not shown.
         </p>
       )}
       {!graph.complete && (

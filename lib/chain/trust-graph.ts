@@ -1,10 +1,14 @@
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
+  attestations,
   counterparties,
+  disputes,
   trustGraphState,
+  vouches,
   walletRelationships,
   walletTransactions,
+  wallets,
 } from "@/lib/db/schema";
 import { normalizeAddress } from "@/lib/chain/address";
 import { fetchAddressTransactions } from "@/lib/chain/blockscout";
@@ -42,12 +46,46 @@ export interface RelationshipSummary {
   txHashes: string[];
 }
 
+/** Attester → subject dari tabel `attestations` (Spec 07). */
+export interface AttesterSummary {
+  attester: Address;
+  role: string;
+  relationship: string;
+  createdAt: Date | null;
+}
+
+/** Reporter → subject dari tabel `disputes` (Spec 09). Report != vonis. */
+export interface DisputeSummary {
+  reporter: Address;
+  status: string;
+  openedAt: Date | null;
+}
+
+/** Edge vouch on-chain yang sudah diindeks (tabel `vouches`, Spec 08). */
+export interface VouchSummary {
+  from: Address;
+  to: Address;
+  stakeAmount: bigint;
+  status: string;
+}
+
 export interface TrustGraphSummary {
   uniqueCounterparties: number;
   repeatCounterparties: number;
   /** Relasi terlama (hari) di antara counterparty; null kalau tidak ada. */
   longestRelationshipDays: number | null;
   relationships: RelationshipSummary[];
+  /**
+   * Edge sosial dari tabel Fathom (Fase 3, PRD §6): attester/dispute/vouch/
+   * invitation. Selalu live-read dari DB — bukan cache TTL — karena barisnya
+   * kecil dan terindeks. Kosong = belum ada baris, bukan tidak dievaluasi.
+   * `relationships` tetap khusus transaksi; risk engine tidak tersentuh.
+   */
+  attesters: AttesterSummary[];
+  disputes: DisputeSummary[];
+  vouches: VouchSummary[];
+  /** Pengundang via wallets.invited_by; null = tidak ada / belum dicari. */
+  invitedBy: Address | null;
   /** Hash transaksi pertama yang menyentuh subject — untuk proof wallet_age. */
   firstTxHash: string | null;
   // Kapan state cache ini ditulis — watermark untuk snapshot Proof.
@@ -186,6 +224,10 @@ function toSummary(
     ).length,
     longestRelationshipDays: longestDuration(relationships),
     relationships,
+    attesters: [],
+    disputes: [],
+    vouches: [],
+    invitedBy: null,
     firstTxHash: firstTxHash(pairs),
     complete,
     fetchedAt,
@@ -205,6 +247,95 @@ function longestDuration(relationships: RelationshipSummary[]): number | null {
     if (longest === null || rel.durationDays > longest) longest = rel.durationDays;
   }
   return longest;
+}
+
+/**
+ * Edge sosial dari tabel Fathom (Fase 3). Live-read kecil terindeks di kedua
+ * path (fresh & cache) — bukan bagian cache TTL transaksi. Gagal DB =
+ * kosong, bukan gagal fetch: enrichment, bukan core graph.
+ */
+async function fetchSocialEdges(address: Address): Promise<{
+  attesters: AttesterSummary[];
+  disputes: DisputeSummary[];
+  vouches: VouchSummary[];
+  invitedBy: Address | null;
+}> {
+  const empty = {
+    attesters: [],
+    disputes: [],
+    vouches: [],
+    invitedBy: null,
+  };
+  try {
+    const [attesterRows, disputeRows, vouchRows, walletRow] = await Promise.all([
+      db
+        .select({
+          attester: attestations.attesterAddress,
+          role: attestations.role,
+          relationship: attestations.relationship,
+          createdAt: attestations.createdAt,
+        })
+        .from(attestations)
+        .where(eq(attestations.subjectAddress, address)),
+      db
+        .select({
+          reporter: disputes.reporterAddress,
+          status: disputes.status,
+          openedAt: disputes.openedAt,
+        })
+        .from(disputes)
+        .where(eq(disputes.targetAddress, address)),
+      db
+        .select({
+          from: vouches.fromAddress,
+          to: vouches.toAddress,
+          stakeAmount: vouches.stakeAmount,
+          status: vouches.status,
+        })
+        .from(vouches)
+        .where(or(eq(vouches.toAddress, address), eq(vouches.fromAddress, address))),
+      db
+        .select({ invitedBy: wallets.invitedBy })
+        .from(wallets)
+        .where(eq(wallets.address, address))
+        .limit(1),
+    ]);
+    return {
+      attesters: attesterRows.map((r) => ({
+        attester: r.attester as Address,
+        role: r.role,
+        relationship: r.relationship,
+        createdAt: r.createdAt,
+      })),
+      disputes: disputeRows.map((r) => ({
+        reporter: r.reporter as Address,
+        status: r.status,
+        openedAt: r.openedAt,
+      })),
+      vouches: vouchRows.map((r) => ({
+        from: r.from as Address,
+        to: r.to as Address,
+        // numeric tanpa mode bigint → string; parseWei aman gagal → ZERO.
+        stakeAmount: typeof r.stakeAmount === "string" ? parseWei(r.stakeAmount) : ZERO,
+        status: r.status,
+      })),
+      invitedBy: (walletRow[0]?.invitedBy as Address | null) ?? null,
+    };
+  } catch {
+    return empty;
+  }
+}
+
+/** Tempel edge sosial ke summary — dipakai path fresh maupun cache. */
+async function attachSocialEdges(
+  summary: TrustGraphSummary,
+  address: Address,
+): Promise<void> {
+  const social = await fetchSocialEdges(address);
+  summary.attesters = social.attesters;
+  summary.disputes = social.disputes;
+  summary.vouches = social.vouches;
+  summary.invitedBy = social.invitedBy;
 }
 
 /**
@@ -309,17 +440,23 @@ async function readCached(address: Address): Promise<TrustGraphSummary | null> {
     });
   }
 
-  return {
+  const cached: TrustGraphSummary = {
     uniqueCounterparties: relationships.length,
     repeatCounterparties: relationships.filter(
       (r) => r.interactionCount >= THRESHOLDS.trustGraph.repeatInteractionMin,
     ).length,
     longestRelationshipDays: longestDuration(relationships),
     relationships,
+    attesters: [],
+    disputes: [],
+    vouches: [],
+    invitedBy: null,
     firstTxHash: firstTxHash(pairs),
     complete: state.complete,
     fetchedAt: state.fetchedAt,
   };
+  await attachSocialEdges(cached, address);
+  return cached;
 }
 
 /**
@@ -357,6 +494,7 @@ class ExplorerTrustGraphProvider implements TrustGraphProvider {
     const fetchedAt = new Date();
     const summary = toSummary(pairs, fetched.complete, fetchedAt);
     await attachProtocols(summary.relationships);
+    await attachSocialEdges(summary, normalized);
 
     // counterparties.subjectAddress FK + wallet_relationships FK → subject harus ada.
     await db

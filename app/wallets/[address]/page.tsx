@@ -716,6 +716,14 @@ function TrustGraphSection({
       .map((r) => r.protocolId)
       .filter((id): id is string => id !== null),
   ).size;
+  // Edge sosial Fase 3 — count langsung dari baris tabel, bukan estimasi.
+  const openDisputes = graph.disputes.filter((d) => d.status === "open").length;
+  const activeVouches = graph.vouches.filter((v) => v.status === "active").length;
+  const hasSocial =
+    graph.attesters.length > 0 ||
+    graph.disputes.length > 0 ||
+    graph.vouches.length > 0 ||
+    graph.invitedBy !== null;
   return (
     <section className="mt-10">
       <h2 className="font-display text-lg">Trust Graph Summary</h2>
@@ -757,6 +765,30 @@ function TrustGraphSection({
             </p>
           )}
         </>
+      )}
+      {hasSocial && (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Field
+            label="Attesters"
+            value={`${graph.attesters.length}`}
+            note="Wallets that attested a role for this profile."
+          />
+          <Field
+            label="Active vouches"
+            value={`${activeVouches}`}
+            note="On-chain vouch edges involving this wallet."
+          />
+          <Field
+            label="Open disputes"
+            value={`${openDisputes}`}
+            note="Reports filed against this wallet — not verdicts."
+          />
+          <Field
+            label="Invited by"
+            value={graph.invitedBy === null ? "Not recorded" : "Recorded"}
+            note="Invitation lineage from on-chain registration."
+          />
+        </div>
       )}
     </section>
   );
