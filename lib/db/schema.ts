@@ -466,3 +466,46 @@ export const indexerState = pgTable(
   },
   (t) => [primaryKey({ columns: [t.contractName, t.chainId] })],
 );
+
+/**
+ * Daftar address flagged eksternal (Spec 05, flagged_counterparty_exposure).
+ * Registry kosong = sinyal not_evaluable, bukan clear. Baris ditulis dari
+ * sumber kurasi — tidak pernah hardcode di kode.
+ */
+export const flaggedAddresses = pgTable(
+  "flagged_addresses",
+  {
+    chainId: integer("chain_id").notNull(),
+    address: char("address", { length: 42 }).notNull(),
+    source: varchar("source", { length: 64 }).notNull(),
+    reason: text("reason").notNull(),
+    evidenceReference: text("evidence_reference"),
+    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.chainId, t.address] }),
+    index("idx_flagged_source").on(t.source),
+  ],
+);
+
+/**
+ * Daftar kontrak malicious terkonfirmasi (Spec 05,
+ * malicious_contract_interaction). Identitas kontrak (counterparties.isContract)
+ * terpisah dari klasifikasi malicious — tabel ini satu-satunya sumber
+ * klasifikasi. Registry kosong = not_evaluable, bukan clear.
+ */
+export const maliciousContracts = pgTable(
+  "malicious_contracts",
+  {
+    chainId: integer("chain_id").notNull(),
+    address: char("address", { length: 42 }).notNull(),
+    source: varchar("source", { length: 64 }).notNull(),
+    reason: text("reason").notNull(),
+    evidenceReference: text("evidence_reference"),
+    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.chainId, t.address] }),
+    index("idx_malicious_source").on(t.source),
+  ],
+);

@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { attestations, disputes, profileClaims, wallets } from "@/lib/db/schema";
+import { attestations, disputes, profileClaims, wallets, walletTransactions } from "@/lib/db/schema";
 import { onchainStats } from "@/lib/chain/onchain-stats";
 import { trustGraph, type TrustGraphSummary } from "@/lib/chain/trust-graph";
 import {
@@ -22,7 +22,10 @@ import {
   writeProofs,
   type ProofMarkers,
 } from "@/lib/score/proof-store";
-import { assessRisk, type RiskSignal, type RiskState } from "@/lib/score/risk";
+import { assessRisk, type RiskInputs, type RiskSignal, type RiskState } from "@/lib/score/risk";
+import { flaggedAddressProvider, type FlaggedAddress } from "@/lib/score/flagged-address-provider";
+import { maliciousContractProvider, type MaliciousContract } from "@/lib/score/malicious-contract-provider";
+import type { AbnormalTxPoint } from "@/lib/score/risk-abnormal";
 import { getDimensions, type DimensionState } from "@/lib/score/dimensions";
 import type { Address } from "@/lib/score/types";
 
@@ -200,8 +203,37 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
   }
 
   // Risk Engine (Spec 05) — dihitung on-the-fly dari data indexed yang sama,
-  // bukan kalkulasi kedua atas reputasi (Spec 11 §Boundary).
-  const risk = assessRisk(address, stats, graph, new Date());
+  // bukan kalkulasi kedua atas reputasi (Spec 11 §Boundary). Input detector
+  // baru dibaca di sini (satu-satunya I/O risk); tiap sumber gagal = undefined
+  // → detector mengembalikan not_evaluable, bukan clear.
+  const [txRows, flaggedAddresses, maliciousContracts] = await Promise.all([
+    db
+      .select({
+        timestamp: walletTransactions.timestamp,
+        valueWei: walletTransactions.valueWei,
+        toIsContract: walletTransactions.toIsContract,
+      })
+      .from(walletTransactions)
+      .where(eq(walletTransactions.subjectAddress, address))
+      .then(
+        (rows): AbnormalTxPoint[] => rows,
+        (): undefined => undefined,
+      ),
+    flaggedAddressProvider.list().then(
+      (rows): FlaggedAddress[] => rows,
+      (): undefined => undefined,
+    ),
+    maliciousContractProvider.list().then(
+      (rows): MaliciousContract[] => rows,
+      (): undefined => undefined,
+    ),
+  ]);
+  const riskInputs: RiskInputs = {
+    transactions: txRows,
+    flaggedAddresses,
+    maliciousContracts,
+  };
+  const risk = assessRisk(address, stats, graph, new Date(), riskInputs);
   const riskEvaluable = risk.states.some((state) => state.status !== "not_evaluable");
 
   const disputeRows = await db

@@ -41,6 +41,8 @@ const RISK_LABELS: Record<RiskSignalType, string> = {
   concentrated_counterparty_graph: "Concentrated counterparty graph",
   suspicious_vouch_clustering: "Suspicious vouch clustering",
   flagged_counterparty_exposure: "Flagged counterparty exposure",
+  malicious_contract_interaction: "Malicious contract interaction",
+  high_sybil_similarity: "High sybil similarity",
 };
 
 /** Ringkas evidence risk signal untuk tampilan — hanya field primitif. */

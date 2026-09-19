@@ -52,8 +52,9 @@ export const THRESHOLDS = {
   risk: {
     // Spec 05. Signal dievaluasi on-the-fly dari data yang sudah diindeks
     // (reproducible) — bukan tabel baru, bukan klasifikasi otomatis "malicious".
-    // Three signals are intentionally NOT evaluable: abnormal_transaction_pattern,
-    // flagged_counterparty_exposure, suspicious_vouch_clustering (lihat lib/score/risk.ts).
+    //
+    // Semua sub-bagian detector di bawah PROVISIONAL (Fase 13 tuning):
+    // ganti nilai di sini, bukan di modul detector. Modul hanya membaca.
     //
     // fresh_wallet: umur wallet (hari) di bawah ini dianggap baru.
     freshWalletMaxAgeDays: 30,
@@ -68,6 +69,39 @@ export const THRESHOLDS = {
     // concentrated_counterparty_graph: share interaksi counterparty teratas
     // (0.5 = 50%) untuk memicu sinyal.
     concentrationTopShare: 0.5,
+
+    // abnormal_transaction_pattern: jendela geser (ms) untuk burst.
+    abnormalWindowMs: 3_600_000,
+    // abnormal_transaction_pattern: minimal tx dalam satu jendela = burst.
+    abnormalMaxPerWindow: 10,
+    // abnormal_transaction_pattern: nilai menyimpang bila >= mean + N * stddev
+    // (dihitung atas tx bernilai > 0 dalam histori subject).
+    abnormalValueStdDevs: 3,
+    // abnormal_transaction_pattern: share tx ke kontrak di atas ini = temuan.
+    abnormalContractShare: 0.8,
+    // abnormal_transaction_pattern: minimal tx bertimestamp sebelum pola dinilai.
+    abnormalMinTx: 5,
+
+    // suspicious_vouch_clustering: minimal pasangan resiprokal (A↔B aktif)
+    // sebelum cluster dianggap muncul.
+    vouchMinReciprocalPairs: 2,
+    // suspicious_vouch_clustering: share vouch aktif dari voucher teratas.
+    vouchTopShare: 0.5,
+    // suspicious_vouch_clustering: minimal vouch aktif sebelum dinilai.
+    vouchMinActive: 3,
+
+    // flagged_counterparty_exposure: nilai dievaluasi apa adanya — daftar
+    // flagged tidak punya threshold hitung; satu match = detected.
+    // flagged_addresses kosong (belum ada sumber) = not_evaluable, bukan clear.
+
+    // malicious_contract_interaction: satu interaksi dengan kontrak terdaftar
+    // = detected. malicious_contracts kosong = not_evaluable, bukan clear.
+
+    // high_sybil_similarity: share counterparty yang juga dipakai wallet lain
+    // dalam kohort (>= ambang ini) = kemiripan tinggi.
+    sybilMinOverlapShare: 0.7,
+    // high_sybil_similarity: minimal counterparty bersama sebelum dinilai.
+    sybilMinSharedCounterparties: 3,
   },
 
   baseline: {

@@ -153,7 +153,7 @@ const days = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
     r.states.find((s) => s.id === "suspicious_vouch_clustering")?.status,
     "not_evaluable",
   );
-  assert.equal(r.states.length, 6, "keenam slot signal harus hadir");
+  assert.equal(r.states.length, 8, "kedelapan slot signal harus hadir");
 }
 
 // 6. Terlalu sedikit counterparty → concentration not_evaluable (bukan detected).
@@ -170,29 +170,142 @@ const days = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
   );
 }
 
-// 7. Vouch edges terindeks tapi tanpa clustering rule → tetap not_evaluable,
-//    bukan clear palsu dan bukan detected.
+// 7. Vouch resiprokal: 2 pasang A↔B aktif → clustering detected.
 {
+  const ADDR3 = "0x0000000000000000000000000000000000000003" as Address;
   const r = assessRisk(
     SUBJECT,
     stats({ firstTxAt: days(400), txCount: 900 }),
     graph({
       vouches: [
+        { from: SUBJECT, to: OTHER, stakeAmount: BigInt(100), status: "active" },
         { from: OTHER, to: SUBJECT, stakeAmount: BigInt(100), status: "active" },
-        {
-          from: "0x0000000000000000000000000000000000000003",
-          to: SUBJECT,
-          stakeAmount: BigInt(50),
-          status: "active",
-        },
+        { from: SUBJECT, to: ADDR3, stakeAmount: BigInt(50), status: "active" },
+        { from: ADDR3, to: SUBJECT, stakeAmount: BigInt(50), status: "active" },
       ],
     }),
     NOW,
   );
   assert.equal(
     r.states.find((s) => s.id === "suspicious_vouch_clustering")?.status,
+    "detected",
+  );
+}
+
+// 8. Abnormal: 10 tx dalam satu jam → burst detected.
+{
+  const burstTxs = Array.from({ length: 10 }, (_, i) => ({
+    timestamp: new Date(NOW.getTime() - i * 60_000),
+    valueWei: BigInt(100),
+    toIsContract: false,
+  }));
+  const r = assessRisk(
+    SUBJECT,
+    stats({ firstTxAt: days(400), txCount: 900 }),
+    graph({}),
+    NOW,
+    { transactions: burstTxs },
+  );
+  assert.equal(
+    r.states.find((s) => s.id === "abnormal_transaction_pattern")?.status,
+    "detected",
+  );
+}
+
+// 9. Flagged: registry kosong → not_evaluable; ada match → detected.
+{
+  const g = graph({ relationships: [rel(OTHER, 2, BigInt(1), BigInt(0))] });
+  const empty = assessRisk(
+    SUBJECT,
+    stats({ firstTxAt: days(400), txCount: 900 }),
+    g,
+    NOW,
+    { flaggedAddresses: [] },
+  );
+  assert.equal(
+    empty.states.find((s) => s.id === "flagged_counterparty_exposure")?.status,
     "not_evaluable",
   );
+  const hit = assessRisk(
+    SUBJECT,
+    stats({ firstTxAt: days(400), txCount: 900 }),
+    g,
+    NOW,
+    { flaggedAddresses: [{ address: OTHER, source: "test", reason: null }] },
+  );
+  assert.equal(
+    hit.states.find((s) => s.id === "flagged_counterparty_exposure")?.status,
+    "detected",
+  );
+}
+
+// 10. Malicious contract: registry kosong → not_evaluable; match → detected.
+{
+  const CONTRACT = "0x0000000000000000000000000000000000000007" as Address;
+  const g = graph({
+    relationships: [
+      { ...rel(CONTRACT, 2, BigInt(1), BigInt(0)), isContract: true },
+    ],
+  });
+  const empty = assessRisk(
+    SUBJECT,
+    stats({ firstTxAt: days(400), txCount: 900 }),
+    g,
+    NOW,
+    { maliciousContracts: [] },
+  );
+  assert.equal(
+    empty.states.find((s) => s.id === "malicious_contract_interaction")?.status,
+    "not_evaluable",
+  );
+  const hit = assessRisk(
+    SUBJECT,
+    stats({ firstTxAt: days(400), txCount: 900 }),
+    g,
+    NOW,
+    { maliciousContracts: [{ address: CONTRACT, source: "test", reason: "test" }] },
+  );
+  assert.equal(
+    hit.states.find((s) => s.id === "malicious_contract_interaction")?.status,
+    "detected",
+  );
+}
+
+// 11. Sybil: 5 counterparty dengan sidik seragam → detected.
+{
+  const addrs = ["0000000000000000000000000000000000000008", "0000000000000000000000000000000000000009", "0000000000000000000000000000000000000010", "0000000000000000000000000000000000000011", "0000000000000000000000000000000000000012"].map(
+    (h) => `0x${h}` as Address,
+  );
+  const r = assessRisk(
+    SUBJECT,
+    stats({ firstTxAt: days(400), txCount: 900 }),
+    graph({
+      relationships: addrs.map((a) => rel(a, 2, BigInt(5), BigInt(0))),
+    }),
+    NOW,
+  );
+  assert.equal(
+    r.states.find((s) => s.id === "high_sybil_similarity")?.status,
+    "detected",
+  );
+}
+
+// 12. Input tak tersedia (undefined) → detector baru not_evaluable, bukan clear.
+{
+  const r = assessRisk(
+    SUBJECT,
+    stats({ firstTxAt: days(400), txCount: 900 }),
+    graph({}),
+    NOW,
+  );
+  for (const id of [
+    "abnormal_transaction_pattern",
+    "flagged_counterparty_exposure",
+    "malicious_contract_interaction",
+    "high_sybil_similarity",
+  ] as const) {
+    assert.equal(r.states.find((s) => s.id === id)?.status, "not_evaluable");
+  }
 }
 
 console.log("risk.check: ok");

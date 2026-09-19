@@ -3,6 +3,16 @@ import { explorerAddressUrl } from "@/lib/chain/blockscout";
 import type { OnchainStats } from "@/lib/chain/onchain-stats";
 import type { TrustGraphSummary } from "@/lib/chain/trust-graph";
 import type { Address } from "@/lib/score/types";
+import {
+  evaluateAbnormalTransactionPattern,
+  type AbnormalTxPoint,
+} from "@/lib/score/risk-abnormal";
+import { evaluateSuspiciousVouchClustering } from "@/lib/score/risk-vouch";
+import type { FlaggedAddress } from "@/lib/score/flagged-address-provider";
+import { evaluateFlaggedCounterpartyExposure } from "@/lib/score/risk-flagged-exposure";
+import type { MaliciousContract } from "@/lib/score/malicious-contract-provider";
+import { evaluateMaliciousContractInteraction } from "@/lib/score/risk-malicious-contract";
+import { evaluateHighSybilSimilarity } from "@/lib/score/risk-sybil";
 
 /**
  * Risk Engine (Spec 05). Pure, tanpa I/O — sama seperti proofs.ts.
@@ -11,10 +21,9 @@ import type { Address } from "@/lib/score/types";
  * bukan tabel baru. Risiko BUKAN bukti wrongdoing: setiap signal menyertakan
  * evidence-nya sendiri dan tidak pernah melabeli wallet "malicious".
  *
- * Dua signal sengaja TIDAK dievaluasi karena sumbernya belum ada; satu
- * (abnormal_transaction_pattern) karena Spec 05 belum mendefinisikan aturan
- * deteksinya. Itu dinyatakan sebagai `not_evaluable`, bukan ditebak atau
- * ditampilkan sebagai "clear".
+ * Lima detector baru (abnormal, vouch, flagged, malicious-contract, sybil)
+ * adalah modul murni yang PROVISIONAL dan config-driven (thresholds.ts);
+ * input yang tidak tersedia menghasilkan `not_evaluable`, bukan "clear".
  */
 
 export type RiskSignalType =
@@ -23,7 +32,9 @@ export type RiskSignalType =
   | "circular_relationship_graph"
   | "concentrated_counterparty_graph"
   | "suspicious_vouch_clustering"
-  | "flagged_counterparty_exposure";
+  | "flagged_counterparty_exposure"
+  | "malicious_contract_interaction"
+  | "high_sybil_similarity";
 
 export type RiskSeverity = "low" | "medium" | "high";
 export type RiskStatus = "detected" | "clear" | "not_evaluable";
@@ -83,30 +94,29 @@ const DEFINITIONS: SignalDefinition[] = [
     label: "Flagged counterparty exposure",
     severity: "medium",
   },
+  {
+    id: "malicious_contract_interaction",
+    label: "Malicious contract interaction",
+    severity: "high",
+  },
+  {
+    id: "high_sybil_similarity",
+    label: "High sybil similarity",
+    severity: "medium",
+  },
 ];
 
 // Signal yang tidak punya sumber data sekarang. Alasan eksplisit, jangan diisi 0.
-const NOT_EVALUABLE: Partial<Record<RiskSignalType, { reason: string; suppliedBy: string }>> = {
-  abnormal_transaction_pattern: {
-    reason:
-      "Per-transaction timing is stored (wallet_transactions), but Spec 05 defines no rule for what counts as abnormal.",
-    suppliedBy: "a Spec 05 detection rule (definition of abnormal + thresholds)",
-  },
-  suspicious_vouch_clustering: {
-    reason:
-      "Vouch edges are indexed (vouches table, Spec 08), but no rule defines what counts as a suspicious cluster.",
-    suppliedBy: "a Spec 08 clustering rule (definition of suspicious cluster + thresholds)",
-  },
-  flagged_counterparty_exposure: {
-    reason: "No flagged-address source exists yet.",
-    suppliedBy: "external flagged-address registry",
-  },
-};
+// Lima detector baru (abnormal, vouch, flagged, malicious-contract, sybil)
+// mengevaluasi apa adanya; input yang tidak tersedia (undefined) tetap
+// not_evaluable per detector — bukan clear.
+const NOT_EVALUABLE: Partial<Record<RiskSignalType, { reason: string; suppliedBy: string }>> = {};
 
 const MS_PER_DAY = 86_400_000;
 const ZERO = BigInt(0);
 
-interface Evaluation {
+// Diekspor untuk detector murni (risk-abnormal dkk.) — type-only, tanpa siklus runtime.
+export interface Evaluation {
   status: RiskStatus;
   evidence: Record<string, unknown> | null;
   reason: string | null;
@@ -221,12 +231,23 @@ function evaluateConcentration(graph: TrustGraphSummary): Evaluation {
 export interface RiskAssessment {
   /** Hanya signal yang benar-benar terdeteksi. */
   signals: RiskSignal[];
-  /** Keenam slot, termasuk yang clear dan not_evaluable. */
+  /** Kedelapan slot, termasuk yang clear dan not_evaluable. */
   states: RiskState[];
 }
 
 /**
- * Nilai keenam risk signal dari data indexed (Spec 05). Setiap signal yang
+ * Input tambahan untuk lima detector baru. Setiap field opsional: undefined =
+ * sumber tidak tersedia → detector mengembalikan not_evaluable (bukan clear).
+ * assessRisk tetap pure & sinkron; I/O (DB/provider) milik pemanggil.
+ */
+export interface RiskInputs {
+  transactions?: AbnormalTxPoint[];
+  flaggedAddresses?: FlaggedAddress[];
+  maliciousContracts?: MaliciousContract[];
+}
+
+/**
+ * Nilai kedelapan risk signal dari data indexed (Spec 05). Setiap signal yang
  * terdeteksi wajib membawa evidence; yang tidak bisa dinilai menyatakan alasannya.
  */
 export function assessRisk(
@@ -234,14 +255,33 @@ export function assessRisk(
   stats: OnchainStats,
   graph: TrustGraphSummary,
   now: Date,
+  inputs: RiskInputs = {},
 ): RiskAssessment {
   const reference = explorerAddressUrl(address);
   const detectedAt = now.toISOString();
 
+  const counterparties = graph.relationships.map((rel) => rel.counterparty);
+  const contractCounterparties = graph.relationships
+    .filter((rel) => rel.isContract)
+    .map((rel) => rel.counterparty);
+
   const evaluated: Partial<Record<RiskSignalType, Evaluation>> = {
     fresh_wallet: evaluateFreshWallet(stats, now),
+    abnormal_transaction_pattern: evaluateAbnormalTransactionPattern(
+      inputs.transactions,
+    ),
     circular_relationship_graph: evaluateCircular(graph),
     concentrated_counterparty_graph: evaluateConcentration(graph),
+    suspicious_vouch_clustering: evaluateSuspiciousVouchClustering(graph.vouches),
+    flagged_counterparty_exposure: evaluateFlaggedCounterpartyExposure(
+      counterparties,
+      inputs.flaggedAddresses,
+    ),
+    malicious_contract_interaction: evaluateMaliciousContractInteraction(
+      contractCounterparties,
+      inputs.maliciousContracts,
+    ),
+    high_sybil_similarity: evaluateHighSybilSimilarity(graph),
   };
 
   const signals: RiskSignal[] = [];
