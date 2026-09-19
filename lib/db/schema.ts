@@ -48,6 +48,23 @@ export const wallets = pgTable(
   (t) => [index("idx_wallets_invited_by").on(t.invitedBy)],
 );
 
+/**
+ * Status klaim kepemilikan wallet (PRD §20, §25 `profile_claims`).
+ * Satu baris = pemilik pernah membuktikan kontrol via SIWE (Spec 06).
+ * message+signature disimpan supaya klaim bisa diverifikasi ulang —
+ * konvensi yang sama dengan `disputes` dan `attestations`.
+ * Claiming tidak menciptakan reputasi.
+ */
+export const profileClaims = pgTable("profile_claims", {
+  address: char("address", { length: 42 })
+    .primaryKey()
+    .references(() => wallets.address),
+  status: varchar("status", { length: 16 }).notNull().default("claimed"),
+  message: text("message").notNull(),
+  signature: char("signature", { length: 132 }).notNull(),
+  claimedAt: timestamptz("claimed_at").notNull().defaultNow(),
+});
+
 export const walletOnchainStats = pgTable("wallet_onchain_stats", {
   address: char("address", { length: 42 })
     .primaryKey()
@@ -57,9 +74,40 @@ export const walletOnchainStats = pgTable("wallet_onchain_stats", {
   firstTxAt: timestamptz("first_tx_at"),
   lastTxAt: timestamptz("last_tx_at"),
   txCount: integer("tx_count"),
-  // Sumber data indexed terakhir, mis. "blockscout". NULL = belum pernah di-fetch.
+    // Sumber data indexed terakhir, mis. "blockscout". NULL = belum pernah di-fetch.
+    source: varchar("source", { length: 32 }),
+    fetchedAt: timestamptz("fetched_at").notNull().defaultNow(),
+  },
+);
+
+/**
+ * Agregat metrik aktivitas per wallet (PRD §25 `wallet_metrics`).
+ * Diturunkan dari `wallet_transactions` yang sudah diindeks — bukan sumber
+ * baru, bukan derivasi kedua. NULL = belum dihitung, bukan 0.
+ * Ditulis hanya oleh `lib/chain/wallet-metrics.ts` dengan watermark
+ * `computed_at`; angka uang numeric(78,0) → bigint.
+ */
+export const walletMetrics = pgTable("wallet_metrics", {
+  address: char("address", { length: 42 })
+    .primaryKey()
+    .references(() => wallets.address),
+  activeDays: integer("active_days"),
+  activeMonths: integer("active_months"),
+  totalSentWei: numeric("total_sent_wei", { precision: 78, scale: 0, mode: "bigint" }),
+  totalReceivedWei: numeric("total_received_wei", {
+    precision: 78,
+    scale: 0,
+    mode: "bigint",
+  }),
+  avgValueWei: numeric("avg_value_wei", { precision: 78, scale: 0, mode: "bigint" }),
+  largestValueWei: numeric("largest_value_wei", {
+    precision: 78,
+    scale: 0,
+    mode: "bigint",
+  }),
+  // Sumber agregat, mis. "wallet_transactions". NULL = belum pernah dihitung.
   source: varchar("source", { length: 32 }),
-  fetchedAt: timestamptz("fetched_at").notNull().defaultNow(),
+  computedAt: timestamptz("computed_at").notNull().defaultNow(),
 });
 
 /**

@@ -5,12 +5,14 @@ import type {
   disputes,
   disputeReports,
   indexerState,
+  profileClaims,
   proofs,
   reviews,
   roleBadges,
   scoreSnapshots,
   trustGraphState,
   vouches,
+  walletMetrics,
   walletOnchainStats,
   walletRelationships,
   wallets,
@@ -22,6 +24,7 @@ export type Counterparty = typeof counterparties.$inferSelect;
 export type WalletRelationship = typeof walletRelationships.$inferSelect;
 export type TrustGraphState = typeof trustGraphState.$inferSelect;
 export type Vouch = typeof vouches.$inferSelect;
+export type WalletMetrics = typeof walletMetrics.$inferSelect;
 export type Review = typeof reviews.$inferSelect;
 export type Dispute = typeof disputes.$inferSelect;
 export type DisputeReport = typeof disputeReports.$inferSelect;
@@ -31,3 +34,4 @@ export type Attestation = typeof attestations.$inferSelect;
 export type ProofRow = typeof proofs.$inferSelect;
 export type ScoreSnapshot = typeof scoreSnapshots.$inferSelect;
 export type IndexerState = typeof indexerState.$inferSelect;
+export type ProfileClaim = typeof profileClaims.$inferSelect;

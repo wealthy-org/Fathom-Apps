@@ -1,8 +1,12 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { attestations, disputes, wallets } from "@/lib/db/schema";
+import { attestations, disputes, profileClaims, wallets } from "@/lib/db/schema";
 import { onchainStats } from "@/lib/chain/onchain-stats";
 import { trustGraph, type TrustGraphSummary } from "@/lib/chain/trust-graph";
+import {
+  walletMetricsProvider,
+  type ComputedWalletMetrics,
+} from "@/lib/chain/wallet-metrics";
 import { generateProofs, type Proof } from "@/lib/score/proofs";
 import {
   readProofs,
@@ -48,6 +52,10 @@ export interface WalletProfile {
   walletAgeDays: number | null;
   firstSeenAt: string | null;
   claimedAt: string | null;
+  /** Baris profile_claims (PRD §20) — null = belum pernah klaim. Write path di Spec 06. */
+  claim: { status: string; claimedAt: string } | null;
+  /** Agregat turunan wallet_metrics — semua null = belum dihitung. */
+  metrics: ComputedWalletMetrics;
   proofs: Proof[];
   dimensions: DimensionState[];
   riskSignals: RiskSignal[];
@@ -71,6 +79,18 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
 
   const stats = await onchainStats.fetch(address);
   const graph = await trustGraph.fetch(address);
+  // Metrik turunan dibaca setelah graph — agregat memakai wallet_transactions
+  // yang baru ditulis fetch di atas (graphFetchedAt = staleness bound).
+  const metrics = await walletMetricsProvider.refresh(address, graph.fetchedAt);
+
+  const [claimRow] = await db
+    .select({
+      status: profileClaims.status,
+      claimedAt: profileClaims.claimedAt,
+    })
+    .from(profileClaims)
+    .where(eq(profileClaims.address, address))
+    .limit(1);
 
   const attestationRows = await db
     .select({
@@ -159,6 +179,10 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
       : null,
     firstSeenAt: wallet?.firstSeenAt.toISOString() ?? null,
     claimedAt: wallet?.claimedAt?.toISOString() ?? null,
+    claim: claimRow
+      ? { status: claimRow.status, claimedAt: claimRow.claimedAt.toISOString() }
+      : null,
+    metrics,
     proofs,
     // Profile tetap evidence-first: Reputation Score (Spec 03) sengaja ditunda
     // sampai input scoring konkret — belum ada kalkulasi skor di sini.

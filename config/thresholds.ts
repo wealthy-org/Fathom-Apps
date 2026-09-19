@@ -26,6 +26,12 @@ export const THRESHOLDS = {
     cacheTtlHours: 24,
   },
 
+  metrics: {
+    // TTL cache read-through agregat turunan wallet_metrics — dihitung ulang
+    // bila lewat TTL atau bila trust graph punya data lebih baru.
+    cacheTtlHours: 24,
+  },
+
   attestation: {
     // Batas input attestation terstruktur (Spec 07). Bukan nilai scoring.
     maxRelationshipLength: 64,
