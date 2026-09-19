@@ -12,6 +12,7 @@ import type { RiskState, RiskSignal, RiskSignalType } from "@/lib/score/risk";
 import type { Address } from "@/lib/score/types";
 import { WalletShell } from "@/components/wallet-shell";
 import { CopyAddress } from "@/components/copy-address";
+import { ConnectButton } from "@/components/connect-button";
 import { AliasEditor } from "@/components/alias-editor";
 import { AttestationForm } from "@/components/attestation-form";
 import { DisputeForm } from "@/components/dispute-form";
@@ -1011,10 +1012,15 @@ export default async function WalletProfilePage({
         {address}
       </p>
       <p className="mt-3 text-xs text-slate400">
-        {profile.claimedAt
-          ? `Ownership proven · ${formatDate(profile.claimedAt)}`
+        {(profile.claim ?? profile.claimedAt)
+          ? `Ownership proven · ${formatDate(profile.claim?.claimedAt ?? profile.claimedAt)}`
           : "Unclaimed — owner has not signed in yet."}
       </p>
+      {!profile.claim && !profile.claimedAt && (
+        <div className="mt-3">
+          <ConnectButton connectLabel="Claim ownership" />
+        </div>
+      )}
       <AliasEditor address={address} initialAlias={profile.alias} />
 
       <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

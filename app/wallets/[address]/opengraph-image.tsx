@@ -157,8 +157,8 @@ export default async function Image({
           </div>
 
           <span style={{ fontSize: 20, color: SLATE }}>
-            {profile.claimedAt
-              ? `Ownership proven · ${formatDate(profile.claimedAt)}`
+            {(profile.claim?.claimedAt ?? profile.claimedAt)
+              ? `Ownership proven · ${formatDate(profile.claim?.claimedAt ?? profile.claimedAt)}`
               : "Unclaimed — owner has not signed in yet."}
           </span>
         </div>

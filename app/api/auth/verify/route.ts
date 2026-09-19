@@ -1,12 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { SiweMessage } from "siwe";
-import { sql } from "drizzle-orm";
-import { normalizeAddress } from "@/lib/chain/address";
-import { getSession } from "@/lib/auth/session";
 import { authError } from "@/lib/auth/http";
-import { db } from "@/lib/db/client";
-import { wallets } from "@/lib/db/schema";
+import { verifyAndClaim } from "@/lib/auth/claim";
 
 const bodySchema = z.object({
   message: z.string().min(1),
@@ -16,69 +11,28 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest) {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return authError(
-      "invalid_request",
-      "Body must contain { message, signature }.",
-      400,
-    );
+    return authError("invalid_request", "Body must contain { message, signature }.", 400);
   }
 
-  let session;
-  try {
-    session = await getSession();
-  } catch {
-    return authError(
-      "server_misconfigured",
-      "Session is not configured.",
-      500,
-    );
-  }
-  if (!session.nonce) {
-    return authError(
-      "missing_nonce",
-      "Fetch /api/auth/nonce before verifying.",
-      400,
-    );
+  const domain = new URL(req.url).host;
+  const result = await verifyAndClaim(parsed.data.message, parsed.data.signature, domain);
+
+  if ("code" in result) {
+    const map: Record<string, { code: string; message: string; status: number }> = {
+      missing_nonce: { code: "missing_nonce", message: result.message, status: 400 },
+      invalid_message: { code: "invalid_message", message: result.message, status: 400 },
+      invalid_signature: { code: "invalid_signature", message: result.message, status: 401 },
+      expired_nonce: { code: "expired_nonce", message: result.message, status: 400 },
+      session_error: { code: "session_error", message: result.message, status: 500 },
+      wrong_signer: { code: "wrong_signer", message: result.message, status: 403 },
+    };
+    const e = map[result.code] ?? { code: "claim_failed", message: result.message, status: 400 };
+    return authError(e.code, e.message, e.status);
   }
 
-  let siweMessage: SiweMessage;
-  try {
-    siweMessage = new SiweMessage(parsed.data.message);
-  } catch {
-    return authError("invalid_message", "Message is not valid SIWE.", 400);
-  }
-
-  const result = await siweMessage.verify({
-    signature: parsed.data.signature,
-    domain: new URL(req.url).host,
-    nonce: session.nonce,
-    time: new Date().toISOString(),
+  return NextResponse.json({
+    address: result.address,
+    authenticated: true,
+    alreadyClaimed: result.status === "already_claimed",
   });
-  if (!result.success) {
-    return authError(
-      "invalid_signature",
-      `Signature verification failed: ${result.error?.type ?? "unknown"}.`,
-      401,
-    );
-  }
-
-  // Nonce sekali pakai — replay attack ditolak.
-  session.nonce = undefined;
-
-  const address = normalizeAddress(siweMessage.address);
-  // Claim Profile (Spec 06): SIWE yang terverifikasi = bukti ownership.
-  // claimed_at diisi sekali (coalesce) — re-verify tidak mengubahnya. Tidak menyentuh reputasi.
-  await db
-    .insert(wallets)
-    .values({ address, claimedAt: new Date() })
-    .onConflictDoUpdate({
-      target: wallets.address,
-      set: { claimedAt: sql`coalesce(${wallets.claimedAt}, now())` },
-    });
-
-  session.walletAddress = address;
-  session.authenticated = true;
-  await session.save();
-
-  return NextResponse.json({ address, authenticated: true });
 }
