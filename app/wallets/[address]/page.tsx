@@ -7,7 +7,7 @@ import { explorerTransactionUrl } from "@/lib/chain/blockscout";
 import type { TrustGraphSummary } from "@/lib/chain/trust-graph";
 import { getWalletProfile, type WalletProfile } from "@/lib/wallet/profile";
 import type { Proof, ProofType } from "@/lib/score/proofs";
-import type { RiskState, RiskSignal, RiskSignalType } from "@/lib/score/risk";
+import type { RiskState } from "@/lib/score/risk";
 import type { Address } from "@/lib/score/types";
 import { CopyAddress } from "@/components/copy-address";
 import { ConnectButton } from "@/components/connect-button";
@@ -19,6 +19,7 @@ import { VouchForm } from "@/components/vouch-form";
 import { VouchWithdrawButton } from "@/components/vouch-withdraw-button";
 import { TrustGraphVisualization } from "@/components/trust-graph-visualization";
 import { ReputationDimensions } from "@/components/reputation-dimensions";
+import { RiskSignals } from "@/components/risk-signals";
 import { txPerActiveDay } from "@/lib/chain/wallet-metrics";
 
 export const dynamic = "force-dynamic";
@@ -36,18 +37,6 @@ const PROOF_LABELS: Record<ProofType, string> = {
   contract_history: "Contract history",
   protocol_history: "Protocol history",
   role_attestation: "Role attestation",
-};
-
-const RISK_LABELS: Record<RiskSignalType, string> = {
-  fresh_wallet: "Fresh wallet",
-  abnormal_transaction_pattern: "Abnormal transaction pattern",
-  circular_relationship_graph: "Circular relationship graph",
-  concentrated_counterparty_graph: "Concentrated counterparty graph",
-  suspicious_vouch_clustering: "Suspicious vouch clustering",
-  flagged_counterparty_exposure: "Flagged counterparty exposure",
-  malicious_contract_interaction: "Malicious contract interaction",
-  high_sybil_similarity: "High sybil similarity",
-  active_disputes: "Active disputes",
 };
 
 function ScoreSection({ reputation }: { reputation: WalletProfile["reputation"] }) {
@@ -70,19 +59,6 @@ function ScoreSection({ reputation }: { reputation: WalletProfile["reputation"] 
       </div>
     </section>
   );
-}
-
-/** Ringkas evidence risk signal untuk tampilan — hanya field primitif. */
-function formatRiskEvidence(evidence: Record<string, unknown>): string {
-  const parts: string[] = [];
-  for (const [key, value] of Object.entries(evidence)) {
-    if (Array.isArray(value)) {
-      parts.push(`${key}: ${value.length} item${value.length === 1 ? "" : "s"}`);
-    } else if (typeof value === "number" || typeof value === "string" || typeof value === "boolean") {
-      parts.push(`${key}: ${value}`);
-    }
-  }
-  return parts.join(" · ");
 }
 
 const WEI_PER_ETH = BigInt(10) ** BigInt(18);
@@ -924,89 +900,11 @@ function TrustGraphSection({
   );
 }
 
-function RiskSection({
-  states,
-  signals,
-}: {
-  states: RiskState[];
-  signals: RiskSignal[];
-}) {
-  const detected = new Set(signals.map((signal) => signal.type));
-  const hasClear = states.some((state) => state.status === "clear");
-  const hasNotEvaluable = states.some((state) => state.status === "not_evaluable");
-
-  const summary =
-    detected.size > 0
-      ? "Risk signals were detected — inspect each one's evidence."
-      : hasClear
-        ? "Signal checks ran without raising a detection. This is not a guarantee of safety; signals cover only what indexed data can evaluate."
-        : hasNotEvaluable
-          ? "No signal could be evaluated from the data available for this wallet. That does not mean it is clear — it means there is not enough evidence to check."
-          : "No risk signal was evaluated for this wallet.";
-
+function RiskSection({ states }: { states: RiskState[] }) {
   return (
-    <section id="risk" className="mt-10">
-      <h2 className="font-display text-lg">Risk Signals</h2>
-      <p className="mt-2 max-w-2xl text-sm text-slate400">
-        Risk is not proof of wrongdoing — every signal is backed by evidence you
-        can inspect, and a signal never labels a wallet malicious. These are kept
-        separate from reputation.
-      </p>
-
-      <div className="panel-brutal mt-5 p-6 text-sm text-slate400">
-        {summary}
-      </div>
-
-      <ul className="mt-5 space-y-3">
-        {states.map((state) => {
-          const isDetected = detected.has(state.id);
-          const statusLabel = state.status.replace("_", " ");
-          return (
-            <li
-              key={state.id}
-              className="panel-brutal p-5"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-display text-base">
-                  {RISK_LABELS[state.id]}
-                </span>
-                <span
-                  className={`font-mono text-[10px] uppercase tracking-[0.18em] ${
-                    isDetected
-                      ? "text-accent-ink"
-                      : state.status === "not_evaluable"
-                        ? "text-ink/40"
-                        : "text-slate400"
-                  }`}
-                >
-                  {statusLabel}
-                </span>
-              </div>
-              {state.evidence ? (
-                <p className="mt-2 font-mono text-sm text-ink">
-                  {formatRiskEvidence(state.evidence)}
-                </p>
-              ) : (
-                <p className="mt-2 text-sm text-slate400">
-                  {state.reason}
-                  {state.suppliedBy && ` Will be supplied by ${state.suppliedBy}.`}
-                </p>
-              )}
-              {state.evidence_reference && (
-                <a
-                  href={state.evidence_reference}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-block break-all font-mono text-[11px] text-accent-ink hover:underline"
-                >
-                  {state.evidence_reference}
-                </a>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+    <div className="mt-10">
+      <RiskSignals states={states} />
+    </div>
   );
 }
 
@@ -1494,7 +1392,7 @@ export default async function WalletProfilePage({
           <TrustGraphSection graph={profile.trustGraph} address={address} />
         }
         risk={
-          <RiskSection states={profile.riskStates} signals={profile.riskSignals} />
+          <RiskSection states={profile.riskStates} />
         }
         community={
           <>

@@ -50,6 +50,23 @@ export default function WalletProfileLoading() {
         <Block className="mt-4 h-64 w-full" />
       </div>
 
+      <div className="mt-10" aria-label="Loading risk signals">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+          Risk signals
+        </div>
+        <div className="panel-brutal mt-3 p-6">
+          <Block className="h-4 w-56" />
+        </div>
+        <div className="mt-3 space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="panel-brutal p-5">
+              <Block className="h-5 w-1/3" />
+              <Block className="mt-2 h-3 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-10 space-y-3">
         <Block className="h-5 w-40" />
         {[0, 1].map((i) => (
