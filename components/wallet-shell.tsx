@@ -1,9 +1,16 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { SearchWalletForm } from "@/components/search-wallet-form";
 import { ConnectButton } from "@/components/connect-button";
 
 export function WalletShell({ children }: { children: React.ReactNode }) {
+  // ponytail: /wallets renders its own hero search — one search box per page.
+  const pathname = usePathname();
+  const showSearch =
+    pathname === null || pathname.replace(/\/+$/, "") !== "/wallets";
   return (
     <div className="relative min-h-screen">
       <div className="bg-stars" />
@@ -28,7 +35,7 @@ export function WalletShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="relative z-10 mx-auto max-w-5xl px-5 pb-24 pt-10 sm:px-6 lg:px-8">
-        <SearchWalletForm hint={false} size="md" />
+        {showSearch && <SearchWalletForm hint={false} size="md" />}
         <div className="mt-14">{children}</div>
       </main>
     </div>

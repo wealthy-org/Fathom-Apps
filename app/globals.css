@@ -69,14 +69,23 @@ body {
   color: #777980;
 }
 
-/* fixed background layers */
+/* fixed background layers — reference atmo: red bloom + white glow, no dot grid */
 .bg-stars {
   position: fixed;
   inset: 0;
   z-index: -2;
   pointer-events: none;
-  background-image: radial-gradient(rgba(35, 36, 39, 0.05) 1px, transparent 1px);
-  background-size: 50px 50px;
+  background:
+    radial-gradient(
+      circle at 85% 100%,
+      rgba(227, 74, 50, 0.07),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 10% 30%,
+      rgba(255, 255, 255, 0.9),
+      transparent 55%
+    );
 }
 
 .bg-grid {

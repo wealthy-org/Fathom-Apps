@@ -422,10 +422,29 @@ export default function Home() {
         </section>
       </main>
 
+      {/* CTA */}
+      <section className="relative z-10 px-5 pb-28 sm:px-6 lg:px-8">
+        <div className="card mx-auto max-w-5xl px-6 py-16 text-center sm:px-10 sm:py-20">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-ink">
+            Start here
+          </p>
+          <h2 className="mx-auto mt-4 max-w-2xl font-display text-4xl font-medium tracking-tight sm:text-6xl">
+            Before you trust the wallet,{" "}
+            <span className="font-serif-accent">look at the history.</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate400">
+            Search a wallet and explore the evidence behind its reputation.
+          </p>
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <PrimaryLink href="/wallets">Check a Wallet</PrimaryLink>
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="relative z-10 border-t border-ink/10 px-5 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-10 lg:flex-row lg:justify-between">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div className="max-w-xs">
               <Logo />
               <p className="mt-4 text-sm text-slate400">
@@ -434,10 +453,33 @@ export default function Home() {
             </div>
             <div>
               <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
-                Fathom
+                Product
               </div>
               <ul className="mt-4 space-y-2">
                 {NAV_LINKS.map(([label, href]) => (
+                  <li key={href}>
+                    <a
+                      href={href}
+                      className="text-sm text-ink/70 transition hover:text-ink"
+                    >
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
+                Resources
+              </div>
+              <ul className="mt-4 space-y-2">
+                {(
+                  [
+                    ["Check a Wallet", "/wallets"],
+                    ["Privacy Model", "/#faq-identity"],
+                    ["How It Works", "/#how"],
+                  ] as Array<[string, string]>
+                ).map(([label, href]) => (
                   <li key={href}>
                     <a
                       href={href}
