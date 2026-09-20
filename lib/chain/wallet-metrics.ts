@@ -160,3 +160,18 @@ class DerivedWalletMetricsProvider implements WalletMetricsProvider {
 
 export const walletMetricsProvider: WalletMetricsProvider =
   new DerivedWalletMetricsProvider();
+
+/**
+ * Transaction frequency: direct transactions per active day, derived from the
+ * existing aggregates (`onchainStats.txCount` ÷ `wallet_metrics.activeDays`).
+ * Deterministic — same inputs always yield the same output. Returns null when
+ * either input is missing or activeDays is not positive (never 0/NaN).
+ * Neutral observation only: a higher frequency is not higher trust.
+ */
+export function txPerActiveDay(
+  txCount: number | null,
+  activeDays: number | null,
+): number | null {
+  if (txCount === null || activeDays === null || activeDays <= 0) return null;
+  return txCount / activeDays;
+}

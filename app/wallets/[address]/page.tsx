@@ -19,6 +19,7 @@ import { VouchForm } from "@/components/vouch-form";
 import { VouchWithdrawButton } from "@/components/vouch-withdraw-button";
 import { TrustGraphVisualization } from "@/components/trust-graph-visualization";
 import { ReputationDimensions } from "@/components/reputation-dimensions";
+import { txPerActiveDay } from "@/lib/chain/wallet-metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -1066,39 +1067,112 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
   ).length;
   const recentProofs = profile.proofs.slice(0, 4);
 
+  const frequency = profile.trustGraph.complete
+    ? txPerActiveDay(profile.txCount, profile.metrics.activeDays)
+    : null;
+
   return (
     <>
-      <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Field
-          label="Wallet age"
-          value={
-            profile.walletAgeDays === null
-              ? "Not available"
-              : `${profile.walletAgeDays} days`
-          }
-          note={
-            profile.walletAgeDays === null
-              ? "No reliable historical source yet."
-              : undefined
-          }
-        />
-        <Field
-          label="Direct transactions"
-          value={
-            profile.txCount === null ? "Not available" : String(profile.txCount)
-          }
-          note={
-            profile.txCount === null
-              ? "Exceeds the indexed query limit."
-              : "Native transfers where this wallet is the sender or receiver — not internal or token transfers."
-          }
-        />
-        <Field label="First on-chain tx" value={formatDate(profile.firstTxAt)} />
-        <Field label="Last on-chain tx" value={formatDate(profile.lastTxAt)} />
-        <Field
-          label="First seen on Fathom"
-          value={formatDate(profile.firstSeenAt)}
-        />
+      <section className="mt-10" aria-labelledby="wallet-history">
+        <h2 id="wallet-history" className="font-display text-lg">
+          Wallet History
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate400">
+          Objective historical information — observations, not trust judgments.
+        </p>
+        <div className="panel-brutal mt-5 p-6">
+          <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+            <div className="min-w-0">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                Wallet age
+              </dt>
+              <dd className="mt-1 font-display text-2xl tabular-nums">
+                {profile.walletAgeDays === null
+                  ? "Not available"
+                  : `${profile.walletAgeDays} days`}
+              </dd>
+              {profile.walletAgeDays === null && (
+                <p className="mt-1 text-xs text-slate400">
+                  No reliable historical source yet.
+                </p>
+              )}
+            </div>
+            <div className="min-w-0">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                Transaction count
+              </dt>
+              <dd className="mt-1 font-display text-2xl tabular-nums">
+                {profile.txCount === null ? "Not available" : profile.txCount}
+              </dd>
+              <p className="mt-1 text-xs text-slate400">
+                {profile.txCount === null
+                  ? "Exceeds the indexed query limit."
+                  : "Native/direct transactions where this wallet is the sender or receiver — not internal or token transfers."}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                First transaction
+              </dt>
+              <dd className="mt-1 font-display text-2xl">
+                {formatDate(profile.firstTxAt)}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                Last activity
+              </dt>
+              <dd className="mt-1 font-display text-2xl">
+                {formatDate(profile.lastTxAt)}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                Active days
+              </dt>
+              <dd className="mt-1 font-display text-2xl tabular-nums">
+                {profile.metrics.activeDays === null
+                  ? "Unavailable"
+                  : profile.metrics.activeDays}
+              </dd>
+              <p className="mt-1 text-xs text-slate400">
+                Distinct UTC days with at least one indexed transaction.
+              </p>
+            </div>
+            <div className="min-w-0">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                Active months
+              </dt>
+              <dd className="mt-1 font-display text-2xl tabular-nums">
+                {profile.metrics.activeMonths === null
+                  ? "Unavailable"
+                  : profile.metrics.activeMonths}
+              </dd>
+              <p className="mt-1 text-xs text-slate400">
+                Distinct calendar months with indexed activity (UTC).
+              </p>
+            </div>
+            <div className="min-w-0 border-t-2 border-ink/10 pt-5 sm:col-span-2">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                Transaction frequency
+              </dt>
+              <dd className="mt-1 font-display text-2xl tabular-nums">
+                {frequency === null
+                  ? "Insufficient data"
+                  : `${frequency.toFixed(1)} tx / active day`}
+              </dd>
+              <p className="mt-1 text-xs text-slate400">
+                {frequency === null
+                  ? "Needs a transaction count and at least one active day from a complete walk."
+                  : "Same dataset as transaction count and active days. Higher frequency is not higher trust."}
+              </p>
+            </div>
+          </dl>
+          <p className="mt-5 font-mono text-[11px] text-slate400">
+            First seen on Fathom: {formatDate(profile.firstSeenAt)} ·
+            ingestion metadata, not first activity.
+          </p>
+        </div>
       </section>
 
       <section className="mt-10" aria-labelledby="fathom-score">
