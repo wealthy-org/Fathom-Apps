@@ -11,6 +11,7 @@ import type { RiskState } from "@/lib/score/risk";
 import type { Address } from "@/lib/score/types";
 import { CopyAddress } from "@/components/copy-address";
 import { ShareReputation } from "@/components/share-reputation";
+import { NextSteps } from "@/components/next-steps";
 import { AliasEditor } from "@/components/alias-editor";
 import { ClaimFlow } from "@/components/claim-flow";
 import { ProfileTabs } from "@/components/profile-tabs";
@@ -1305,6 +1306,12 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
           </a>
         </div>
       </section>
+
+      <NextSteps
+        address={profile.address}
+        totalScore={profile.reputation.totalScore}
+        tierLabel={profile.reputation.tier?.label ?? null}
+      />
     </>
   );
 }

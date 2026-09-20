@@ -249,6 +249,15 @@ export function ClaimFlow({
                 You verified control of this wallet. Existing reputation and
                 evidence remain unchanged.
               </p>
+              <p className="mt-2 text-sm text-slate400">
+                Next: support wallets you trust —{" "}
+                <a
+                  href="#community"
+                  className="font-mono text-[11px] text-accent-ink hover:underline"
+                >
+                  Explore community →
+                </a>
+              </p>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
