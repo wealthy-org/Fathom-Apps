@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
@@ -35,8 +35,10 @@ export function SearchWalletForm({
   const router = useRouter();
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   function submit() {
+    if (isPending) return;
     const trimmed = value.trim();
     if (!trimmed) {
       setError("Enter a wallet address.");
@@ -47,7 +49,10 @@ export function SearchWalletForm({
       return;
     }
     setError(null);
-    router.push(`/wallets/${trimmed.toLowerCase()}`);
+    // ponytail: transition pending disables the form — no duplicate submit.
+    startTransition(() => {
+      router.push(`/wallets/${trimmed.toLowerCase()}`);
+    });
   }
 
   const compact = size === "sm";
@@ -64,6 +69,7 @@ export function SearchWalletForm({
         <input
           type="text"
           value={value}
+          disabled={isPending}
           onChange={(e) => {
             setValue(e.target.value);
             setError(null);
@@ -77,12 +83,13 @@ export function SearchWalletForm({
         />
         <button
           type="submit"
+          disabled={isPending}
           className={`btn-brutal shrink-0 ${
             compact ? "h-10 px-4 text-xs" : "h-12 px-6 text-sm"
           }`}
         >
-          {compact ? "Search" : "Search a Wallet"}
-          <Arrow />
+          {isPending ? "Searching…" : compact ? "Search" : "Search a Wallet"}
+          {!isPending && <Arrow />}
         </button>
       </div>
       {error && <p className="mt-2 font-mono text-xs text-red-600">{error}</p>}

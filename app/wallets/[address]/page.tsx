@@ -10,10 +10,10 @@ import type { Proof, ProofType } from "@/lib/score/proofs";
 import type { DimensionState } from "@/lib/score/dimensions";
 import type { RiskState, RiskSignal, RiskSignalType } from "@/lib/score/risk";
 import type { Address } from "@/lib/score/types";
-import { WalletShell } from "@/components/wallet-shell";
 import { CopyAddress } from "@/components/copy-address";
 import { ConnectButton } from "@/components/connect-button";
 import { AliasEditor } from "@/components/alias-editor";
+import { ProfileTabs } from "@/components/profile-tabs";
 import { AttestationForm } from "@/components/attestation-form";
 import { DisputeForm } from "@/components/dispute-form";
 import { VouchForm } from "@/components/vouch-form";
@@ -181,7 +181,7 @@ const PROOF_DERIVATION: Record<ProofType, string> = {
   protocol_history:
     "One proof per verified protocol mapping covering an interacted contract. Emitted only when the walk is complete and a verified mapping exists — without one, no protocol_history proof is emitted and the contract stays under contract_history.",
   role_attestation:
-    "Recorded from a stored signed attestation. The message and signature are inspectable and re-verifiable in the Attestations section below.",
+    "Recorded from a stored signed attestation. The message and signature are inspectable and re-verifiable in the Community tab.",
 };
 
 /** Max supporting rows shown per proof — display truncation, not a scoring parameter. */
@@ -442,10 +442,10 @@ function ProofSupporting({
           This claim comes from a signed attestation. Inspect and re-verify the
           message and signature in the{" "}
           <a
-            href="#attestations"
+            href="#community"
             className="font-mono text-[11px] text-accent-ink hover:underline"
           >
-            Attestations section
+            Community tab
           </a>
           .
         </p>
@@ -870,7 +870,7 @@ function TrustGraphSection({
     graph.invitedBy !== null;
   return (
     <section className="mt-10">
-      <h2 className="font-display text-lg">Trust Graph Summary</h2>
+      <h2 className="font-display text-lg">Trust Graph</h2>
       <TrustGraphVisualization graph={graph} address={address} />
       {graph.relationships.length > 0 && (
         <>
@@ -1098,6 +1098,211 @@ export async function generateMetadata({
   };
 }
 
+/**
+ * Overview tab: the minimum a reader needs — metrics, score compression
+ * with a path to its breakdown, dimension/risk/graph summaries, recent
+ * proofs. Full detail lives in the other tabs; nothing here is new data.
+ */
+function OverviewSection({ profile }: { profile: WalletProfile }) {
+  const prefix = profile.trustGraph.complete ? "" : "At least ";
+  const detected = new Set(profile.riskSignals.map((signal) => signal.type));
+  const clearCount = profile.riskStates.filter(
+    (state) => state.status === "clear",
+  ).length;
+  const notEvaluableCount = profile.riskStates.filter(
+    (state) => state.status === "not_evaluable",
+  ).length;
+  const activeVouches = profile.trustGraph.vouches.filter(
+    (vouch) => vouch.status === "active",
+  ).length;
+  const openDisputes = profile.trustGraph.disputes.filter(
+    (dispute) => dispute.status === "open",
+  ).length;
+  const recentProofs = profile.proofs.slice(0, 4);
+
+  return (
+    <>
+      <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Field
+          label="Wallet age"
+          value={
+            profile.walletAgeDays === null
+              ? "Not available"
+              : `${profile.walletAgeDays} days`
+          }
+          note={
+            profile.walletAgeDays === null
+              ? "No reliable historical source yet."
+              : undefined
+          }
+        />
+        <Field
+          label="Direct transactions"
+          value={
+            profile.txCount === null ? "Not available" : String(profile.txCount)
+          }
+          note={
+            profile.txCount === null
+              ? "Exceeds the indexed query limit."
+              : "Native transfers where this wallet is the sender or receiver — not internal or token transfers."
+          }
+        />
+        <Field label="First on-chain tx" value={formatDate(profile.firstTxAt)} />
+        <Field label="Last on-chain tx" value={formatDate(profile.lastTxAt)} />
+        <Field
+          label="First seen on Fathom"
+          value={formatDate(profile.firstSeenAt)}
+        />
+      </section>
+
+      <section className="mt-10" aria-labelledby="fathom-score">
+        <h2 id="fathom-score" className="font-display text-lg">
+          Fathom Score
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate400">
+          A provisional compression of the evidence on this profile, not a
+          trust decision.
+        </p>
+        <div className="panel-brutal mt-5 flex flex-wrap items-end justify-between gap-4 p-6">
+          <div>
+            <div className="font-display text-4xl text-accent-ink">
+              {profile.reputation.totalScore}
+            </div>
+            <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              {profile.reputation.tier
+                ? profile.reputation.tier.label
+                : "No tier — partial"}{" "}
+              · {profile.reputation.completeness} ·{" "}
+              {profile.reputation.formulaVersion}
+            </div>
+          </div>
+          <a href="#evidence" className="btn-brutal-light px-4 py-2 text-xs">
+            Why this score?
+          </a>
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-display text-lg">Reputation Dimensions</h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate400">
+          Reputation is presented as dimensions. A dimension appears only when
+          its underlying evidence has been indexed — empty slots are labeled,
+          never shown as zero.
+        </p>
+        <ul className="mt-5 space-y-3">
+          {profile.dimensions.map((dimension) => (
+            <DimensionRow key={dimension.id} dimension={dimension} />
+          ))}
+        </ul>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-display text-lg">Key Risks</h2>
+        <div className="panel-brutal mt-5 p-6">
+          <div className="flex flex-wrap gap-x-8 gap-y-2 font-mono text-sm">
+            <span>
+              <span className="text-accent-ink">{detected.size}</span>{" "}
+              <span className="text-slate400">detected</span>
+            </span>
+            <span>
+              <span className="text-ink">{clearCount}</span>{" "}
+              <span className="text-slate400">clear</span>
+            </span>
+            <span>
+              <span className="text-ink">{notEvaluableCount}</span>{" "}
+              <span className="text-slate400">not evaluable</span>
+            </span>
+          </div>
+          <a
+            href="#risk"
+            className="btn-brutal-light mt-4 inline-flex px-4 py-2 text-xs"
+          >
+            Inspect risk signals
+          </a>
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-display text-lg">Trust Graph Summary</h2>
+        <div className="panel-brutal mt-5 grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-5">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Counterparties
+            </div>
+            <div className="mt-1 font-display text-2xl">
+              {prefix}
+              {profile.trustGraph.uniqueCounterparties}
+            </div>
+          </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Repeat
+            </div>
+            <div className="mt-1 font-display text-2xl">
+              {prefix}
+              {profile.trustGraph.repeatCounterparties}
+            </div>
+          </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Attesters
+            </div>
+            <div className="mt-1 font-display text-2xl">
+              {profile.trustGraph.attesters.length}
+            </div>
+          </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Active vouches
+            </div>
+            <div className="mt-1 font-display text-2xl">{activeVouches}</div>
+          </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Open disputes
+            </div>
+            <div className="mt-1 font-display text-2xl">{openDisputes}</div>
+          </div>
+        </div>
+        <a
+          href="#graph"
+          className="btn-brutal-light mt-4 inline-flex px-4 py-2 text-xs"
+        >
+          Explore trust graph
+        </a>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-display text-lg">Recent Proofs</h2>
+        {recentProofs.length === 0 ? (
+          <div className="panel-brutal mt-5 p-6 text-sm text-slate400">
+            No proof can be produced for this wallet yet.
+          </div>
+        ) : (
+          <ul className="mt-5 space-y-3">
+            {recentProofs.map((proof, index) => (
+              <li key={`${proof.type}-${index}`} className="panel-brutal p-5">
+                <div className="font-display text-base">
+                  {PROOF_LABELS[proof.type]}
+                </div>
+                <p className="mt-1 font-mono text-sm text-ink">
+                  {formatProofValue(proof)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <a
+          href="#evidence"
+          className="btn-brutal-light mt-4 inline-flex px-4 py-2 text-xs"
+        >
+          View all evidence
+        </a>
+      </section>
+    </>
+  );
+}
+
 export default async function WalletProfilePage({
   params,
 }: {
@@ -1110,9 +1315,14 @@ export default async function WalletProfilePage({
 
   const address = normalizeAddress(parsed.data.address);
   const profile = await getWalletProfile(address);
+  const detectedRisk = new Set(profile.riskSignals.map((s) => s.type));
+  const communityCount =
+    profile.vouches.length +
+    profile.attestations.length +
+    profile.disputes.length;
 
   return (
-    <WalletShell>
+    <>
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate400">
         Wallet profile
       </p>
@@ -1145,73 +1355,12 @@ export default async function WalletProfilePage({
       )}
       <AliasEditor address={address} initialAlias={profile.alias} />
 
-      <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <Field
-            label="Wallet age"
-            value={
-              profile.walletAgeDays === null
-                ? "Not available"
-                : `${profile.walletAgeDays} days`
-            }
-            note={
-              profile.walletAgeDays === null
-                ? "No reliable historical source yet."
-                : undefined
-            }
-          />
-          <Field
-            label="Direct transactions"
-            value={
-              profile.txCount === null ? "Not available" : String(profile.txCount)
-            }
-            note={
-              profile.txCount === null
-                ? "Exceeds the indexed query limit."
-                : "Native transfers where this wallet is the sender or receiver — not internal or token transfers."
-            }
-          />
-          <Field label="First on-chain tx" value={formatDate(profile.firstTxAt)} />
-          <Field label="Last on-chain tx" value={formatDate(profile.lastTxAt)} />
-          <Field label="First seen on Fathom" value={formatDate(profile.firstSeenAt)} />
-        </section>
-
-        <section className="mt-10">
-          <h2 className="font-display text-lg">Reputation Dimensions</h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate400">
-            Reputation is presented as dimensions. A dimension appears only when
-            its underlying evidence has been indexed — empty slots are labeled,
-            never shown as zero.
-          </p>
-          <ul className="mt-5 space-y-3">
-            {profile.dimensions.map((dimension) => (
-              <DimensionRow key={dimension.id} dimension={dimension} />
-            ))}
-          </ul>
-        </section>
-
-        <TrustGraphSection graph={profile.trustGraph} address={address} />
-
-        <RiskSection
-          states={profile.riskStates}
-          signals={profile.riskSignals}
-        />
-
-        <ScoreSection reputation={profile.reputation} />
-
-        <VouchesSection
-          address={address}
-          vouches={profile.vouches}
-          vouchIndex={profile.vouchIndex}
-        />
-
-        <AttestationsSection
-          address={address}
-          attestations={profile.attestations}
-        />
-
-        <DisputesSection address={address} disputes={profile.disputes} />
-
-        <section id="why-evidence" className="mt-10">
+      <ProfileTabs
+        overview={<OverviewSection profile={profile} />}
+        evidence={
+          <>
+            <ScoreSection reputation={profile.reputation} />
+            <section id="why-evidence" className="mt-10">
           <h2 className="font-display text-lg">Recent Proofs</h2>
           <p className="mt-2 max-w-2xl text-sm text-slate400">
             Each proof records what is asserted, its source, and how to inspect
@@ -1236,69 +1385,73 @@ export default async function WalletProfilePage({
                   key={`${proof.type}-${index}`}
                   className="panel-brutal p-5"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-display text-base">
-                      {PROOF_LABELS[proof.type]}
-                    </span>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
-                      {proof.type}
-                    </span>
-                  </div>
-                  <p className="mt-2 font-mono text-sm text-ink">
-                    {formatProofValue(proof)}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[11px] text-slate400">
-                    <span>source: {proof.source}</span>
-                    <span>method: {proof.verification_method}</span>
-                    <span>confidence: {proof.confidence}</span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <a
-                      href={proof.evidence_reference}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-block break-all font-mono text-[11px] text-accent-ink hover:underline"
-                    >
-                      {proof.evidence_reference}
-                    </a>
-                    <span
-                      className={`rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] ${
-                        proof.evidence_references &&
-                        proof.evidence_references.length > 0
-                          ? "border-2 border-accent-ink/40 text-accent-ink"
-                          : "border-2 border-ink/20 text-slate400"
-                      }`}
-                    >
-                      {proof.evidence_references &&
-                      proof.evidence_references.length > 0
-                        ? "transaction-level"
-                        : "address-level"}
-                    </span>
-                  </div>
-                  {(proof.evidence_references ?? []).length > 1 && (
-                    <div className="mt-2">
-                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
-                        Evidence: {(proof.evidence_references ?? []).length}{" "}
-                        transactions
+                  <details>
+                    <summary className="cursor-pointer">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-display text-base">
+                          {PROOF_LABELS[proof.type]}
+                        </span>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                          {proof.type}
+                        </span>
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {(proof.evidence_references ?? [])
-                          .slice(1)
-                          .map((ref, i) => (
-                            <a
-                              key={ref}
-                              href={ref}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded-md border-2 border-ink/20 px-2 py-0.5 font-mono text-[10px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
-                            >
-                              tx {i + 2}
-                            </a>
-                          ))}
-                      </div>
+                      <p className="mt-2 font-mono text-sm text-ink">
+                        {formatProofValue(proof)}
+                      </p>
+                    </summary>
+                    <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[11px] text-slate400">
+                      <span>source: {proof.source}</span>
+                      <span>method: {proof.verification_method}</span>
+                      <span>confidence: {proof.confidence}</span>
                     </div>
-                  )}
-                  <ProofDetail proof={proof} graph={profile.trustGraph} />
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <a
+                        href={proof.evidence_reference}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block break-all font-mono text-[11px] text-accent-ink hover:underline"
+                      >
+                        {proof.evidence_reference}
+                      </a>
+                      <span
+                        className={`rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] ${
+                          proof.evidence_references &&
+                          proof.evidence_references.length > 0
+                            ? "border-2 border-accent-ink/40 text-accent-ink"
+                            : "border-2 border-ink/20 text-slate400"
+                        }`}
+                      >
+                        {proof.evidence_references &&
+                        proof.evidence_references.length > 0
+                          ? "transaction-level"
+                          : "address-level"}
+                      </span>
+                    </div>
+                    {(proof.evidence_references ?? []).length > 1 && (
+                      <div className="mt-2">
+                        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                          Evidence: {(proof.evidence_references ?? []).length}{" "}
+                          transactions
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {(proof.evidence_references ?? [])
+                            .slice(1)
+                            .map((ref, i) => (
+                              <a
+                                key={ref}
+                                href={ref}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="rounded-md border-2 border-ink/20 px-2 py-0.5 font-mono text-[10px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
+                              >
+                                tx {i + 2}
+                              </a>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                    <ProofDetail proof={proof} graph={profile.trustGraph} />
+                  </details>
                 </li>
               ))}
             </ul>
@@ -1325,6 +1478,35 @@ export default async function WalletProfilePage({
             </p>
           </div>
         </section>
-    </WalletShell>
+          </>
+        }
+        graph={
+          <TrustGraphSection graph={profile.trustGraph} address={address} />
+        }
+        risk={
+          <RiskSection states={profile.riskStates} signals={profile.riskSignals} />
+        }
+        community={
+          <>
+            <VouchesSection
+              address={address}
+              vouches={profile.vouches}
+              vouchIndex={profile.vouchIndex}
+            />
+            <AttestationsSection
+              address={address}
+              attestations={profile.attestations}
+            />
+            <DisputesSection address={address} disputes={profile.disputes} />
+          </>
+        }
+        badges={{
+          evidence:
+            profile.proofs.length > 0 ? String(profile.proofs.length) : "",
+          risk: detectedRisk.size > 0 ? String(detectedRisk.size) : "",
+          community: communityCount > 0 ? String(communityCount) : "",
+        }}
+      />
+    </>
   );
 }
