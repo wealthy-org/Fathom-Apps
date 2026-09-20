@@ -77,7 +77,7 @@ export function ClaimFlow({
         says nothing about trustworthiness.{" "}
         <span className="whitespace-nowrap">
           Pseudonymous by default ·{" "}
-          <Link href="/#privacy" className="underline hover:text-ink">
+          <Link href="/#faq-identity" className="underline hover:text-ink">
             Privacy Model →
           </Link>
         </span>
@@ -199,7 +199,7 @@ export function ClaimFlow({
         Unclaimed — owner has not verified control of this address.{" "}
         <span className="whitespace-nowrap">
           Pseudonymous by default ·{" "}
-          <Link href="/#privacy" className="underline hover:text-ink">
+          <Link href="/#faq-identity" className="underline hover:text-ink">
             Privacy Model →
           </Link>
         </span>
