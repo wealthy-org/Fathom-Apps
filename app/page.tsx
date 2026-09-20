@@ -6,6 +6,7 @@ import { useLayoutEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SearchWalletForm } from "@/components/search-wallet-form";
+import { MainShell } from "@/components/main-shell";
 
 const NAV_LINKS: Array<[string, string]> = [
   ["About", "#about"],
@@ -231,12 +232,10 @@ export default function Home() {
 
   return (
     <div className="font-sans text-ink">
-      <div className="bg-stars" />
-      <div className="bg-grid" />
-
+      <MainShell>
       {/* NAVBAR */}
       <nav
-        className="fixed left-0 right-0 top-0 z-50 mx-4 mt-3 sm:mx-8 sm:mt-5 lg:mx-12"
+        className="sticky top-3 z-50 mx-4 mt-3 sm:mx-8 sm:mt-5 lg:mx-12"
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 rounded-full border border-black/5 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-xl">
           <Logo />
@@ -292,7 +291,7 @@ export default function Home() {
 
       <main className="relative z-10">
         {/* HERO */}
-        <section className="relative px-5 pb-24 pt-28 sm:px-6 sm:pt-44 lg:px-8">
+        <section className="hero-shell relative flex min-h-[92svh] flex-col overflow-hidden px-5 pb-24 pt-28 sm:px-6 sm:pt-44 lg:px-8">
           <div className="mx-auto max-w-3xl">
             <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-full border border-black/5 bg-white/80 px-4 py-2 shadow-sm backdrop-blur-xl">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
@@ -497,6 +496,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      </MainShell>
     </div>
   );
 }

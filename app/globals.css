@@ -69,6 +69,79 @@ body {
   color: #777980;
 }
 
+/* Reference main shell — white rounded container over the canvas. */
+.main-shell {
+  background: #fff;
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.hero-shell {
+  background: #f4f5f5;
+}
+
+.atmo {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+.atmo-a {
+  left: -15rem;
+  top: 28%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.9),
+    transparent 65%
+  );
+  filter: blur(55px);
+}
+.atmo-b {
+  left: 25%;
+  bottom: -18rem;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(
+    circle,
+    rgba(227, 74, 50, 0.12),
+    transparent 68%
+  );
+  filter: blur(55px);
+}
+.bloom {
+  position: absolute;
+  right: -10rem;
+  top: 0;
+  width: 720px;
+  height: 720px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(227, 74, 50, 0.12),
+    transparent 62%
+  );
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .main-shell {
+    border-radius: 28px;
+  }
+  .bloom {
+    width: 420px;
+    height: 420px;
+    right: -12rem;
+  }
+  .atmo-a,
+  .atmo-b {
+    width: 340px;
+    height: 340px;
+  }
+}
+
 /* fixed background layers — reference atmo: red bloom + white glow, no dot grid */
 .bg-stars {
   position: fixed;

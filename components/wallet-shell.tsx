@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MainShell } from "@/components/main-shell";
 import { SearchWalletForm } from "@/components/search-wallet-form";
 import { ConnectButton } from "@/components/connect-button";
 
@@ -12,10 +13,8 @@ export function WalletShell({ children }: { children: React.ReactNode }) {
   const showSearch =
     pathname === null || pathname.replace(/\/+$/, "") !== "/wallets";
   return (
-    <div className="relative min-h-screen">
-      <div className="bg-stars" />
-      <div className="bg-grid" />
-
+    <div className="relative min-h-screen py-0 sm:py-3 lg:py-5">
+      <MainShell>
       <header className="mx-4 mt-3 sm:mx-8 sm:mt-5">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 rounded-full border border-black/5 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-xl">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
@@ -38,6 +37,7 @@ export function WalletShell({ children }: { children: React.ReactNode }) {
         {showSearch && <SearchWalletForm hint={false} size="md" />}
         <div className="mt-14">{children}</div>
       </main>
+      </MainShell>
     </div>
   );
 }
