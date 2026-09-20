@@ -78,7 +78,7 @@ export function PrivacyModel() {
           {NOT_REQUIRED.map((item) => (
             <li
               key={item}
-              className="rounded-md border-2 border-ink/15 px-2.5 py-1 font-mono text-[11px] text-slate400"
+              className="rounded-full border border-black/10 px-2.5 py-1 font-mono text-[11px] text-slate400"
             >
               {item}
             </li>

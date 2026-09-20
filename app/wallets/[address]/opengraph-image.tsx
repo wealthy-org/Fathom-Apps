@@ -15,12 +15,12 @@ const paramsSchema = z.object({
   address: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
 });
 
-const VOID = "#f6f8fa";
-const ACCENT = "#0f9d63";
+const VOID = "#f4f5f5";
+const ACCENT = "#e34a32";
 const PURPLE = "#9945ff";
-const SLATE = "#64748b";
-const BORDER = "rgba(15,23,42,0.12)";
-const INK = "#0b0f17";
+const SLATE = "#55575c";
+const BORDER = "rgba(35,36,39,0.1)";
+const INK = "#232427";
 
 function fallbackCard(address: string, reason: string): ImageResponse {
   return new ImageResponse(
@@ -115,7 +115,7 @@ export default async function Image({
           width: "100%", height: "100%",
           display: "flex", flexDirection: "column", justifyContent: "space-between",
           padding: 64,
-          background: `radial-gradient(circle at 15% 0%, rgba(153,69,255,0.10), transparent 45%), radial-gradient(circle at 85% 100%, rgba(20,241,149,0.10), transparent 45%), ${VOID}`,
+          background: `radial-gradient(circle at 15% 0%, rgba(153,69,255,0.10), transparent 45%), radial-gradient(circle at 85% 100%, rgba(227,74,50,0.10), transparent 45%), ${VOID}`,
           color: INK, fontFamily: "sans-serif",
         }}
       >

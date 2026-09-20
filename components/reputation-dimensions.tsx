@@ -157,7 +157,7 @@ export function ReputationDimensions({
                     aria-valuenow={pct}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    className="h-3 min-w-0 overflow-hidden rounded-md border-2 border-ink bg-white"
+                    className="h-3 min-w-0 overflow-hidden rounded-full border border-black/10 bg-white"
                   >
                     <div
                       className={`h-full ${isRisk ? "bg-purple" : "bg-accent"}`}

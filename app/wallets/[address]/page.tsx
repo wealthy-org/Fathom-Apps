@@ -191,7 +191,7 @@ function TxLink({ hash, label }: { hash: string; label: string }) {
       href={explorerTransactionUrl(hash)}
       target="_blank"
       rel="noreferrer"
-      className="rounded-md border-2 border-ink/20 px-2 py-0.5 font-mono text-[10px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
+      className="rounded-full border border-black/10 px-2 py-0.5 font-mono text-[10px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
     >
       {label}
     </a>
@@ -460,7 +460,7 @@ function ProofDetail({
   graph: TrustGraphSummary;
 }) {
   return (
-    <details className="mt-3 rounded-md border-2 border-ink bg-white px-4 py-3 shadow-brutal-sm">
+    <details className="mt-3 rounded-3xl border border-black/10 bg-white px-4 py-3 shadow-sm">
       <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.18em] text-slate400 hover:text-accent-ink">
         Proof detail
       </summary>
@@ -1350,7 +1350,7 @@ export default async function WalletProfilePage({
           tierLabel={profile.reputation.tier?.label ?? null}
         />
         {profile.alias && (
-          <span className="rounded-md border-2 border-ink bg-white px-3 py-1 text-sm text-ink shadow-brutal-sm">
+          <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-sm text-ink shadow-sm">
             {profile.alias}
             <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
               unverified
@@ -1433,8 +1433,8 @@ export default async function WalletProfilePage({
                         className={`rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] ${
                           proof.evidence_references &&
                           proof.evidence_references.length > 0
-                            ? "border-2 border-accent-ink/40 text-accent-ink"
-                            : "border-2 border-ink/20 text-slate400"
+                            ? "border border-accent-ink/40 text-accent-ink"
+                            : "border border-black/10 text-slate400"
                         }`}
                       >
                         {proof.evidence_references &&
@@ -1458,7 +1458,7 @@ export default async function WalletProfilePage({
                                 href={ref}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="rounded-md border-2 border-ink/20 px-2 py-0.5 font-mono text-[10px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
+                                className="rounded-full border border-black/10 px-2 py-0.5 font-mono text-[10px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
                               >
                                 tx {i + 2}
                               </a>

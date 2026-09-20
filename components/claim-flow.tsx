@@ -70,7 +70,7 @@ export function ClaimFlow({
   if (claimedLabel !== null) {
     return (
       <p className="mt-3 text-xs text-slate400">
-        <span className="mr-2 inline-block rounded-md border-2 border-ink bg-white px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink">
+        <span className="mr-2 inline-block rounded-full border border-black/10 bg-white px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink">
           Claimed
         </span>
         Verified owner · {claimedLabel}. Claiming proves control only — it

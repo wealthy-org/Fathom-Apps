@@ -186,7 +186,7 @@ export function ConnectButton({
   if (signedIn) {
     return (
       <span className="inline-flex flex-wrap items-center justify-end gap-2">
-        <span className="rounded-md border-2 border-ink bg-white px-3 py-2 font-mono text-xs text-ink shadow-[2px_2px_0_#0b0f17] sm:px-4 sm:text-sm">
+        <span className="rounded-full border border-black/10 bg-white px-3 py-2 font-mono text-xs text-ink shadow-sm sm:px-4 sm:text-sm">
           {shortAddress(address!)}
         </span>
         <button

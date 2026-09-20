@@ -64,7 +64,7 @@ export default function WalletsPage() {
             <li key={address}>
               <Link
                 href={`/wallets/${address}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md border-2 border-ink bg-white px-4 py-3 text-sm text-ink/80 shadow-[2px_2px_0_#0b0f17] transition hover:-translate-y-px"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm text-ink/80 shadow-sm transition hover:-translate-y-px"
               >
                 <span className="font-mono text-accent-ink">
                   {shortAddress(address)}

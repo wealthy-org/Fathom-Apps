@@ -70,22 +70,22 @@ function edgeWidth(count: number): number {
 }
 
 const NODE_STYLE: Record<NodeKind, { fill: string; stroke: string; sw: number; dash: string | null }> = {
-  primary: { fill: "#14F195", stroke: "#0B0F17", sw: 3, dash: null },
-  counterparty: { fill: "#0B0F17", stroke: "#6ab0e8", sw: 1.5, dash: null },
-  contract: { fill: "#9945FF", stroke: "#0B0F17", sw: 2, dash: null },
-  protocol: { fill: "#0B0F17", stroke: "#14F195", sw: 2.5, dash: null },
-  attester: { fill: "#0B0F17", stroke: "#14F195", sw: 2, dash: null },
-  reporter: { fill: "#0B0F17", stroke: "#94A3B8", sw: 1.5, dash: "4 3" },
-  voucher: { fill: "#9945FF", stroke: "#14F195", sw: 2, dash: null },
-  inviter: { fill: "#0B0F17", stroke: "#6ab0e8", sw: 1.5, dash: "4 3" },
+  primary: { fill: "#E34A32", stroke: "#232427", sw: 3, dash: null },
+  counterparty: { fill: "#232427", stroke: "#6ab0e8", sw: 1.5, dash: null },
+  contract: { fill: "#9945FF", stroke: "#232427", sw: 2, dash: null },
+  protocol: { fill: "#232427", stroke: "#E34A32", sw: 2.5, dash: null },
+  attester: { fill: "#232427", stroke: "#E34A32", sw: 2, dash: null },
+  reporter: { fill: "#232427", stroke: "#94A3B8", sw: 1.5, dash: "4 3" },
+  voucher: { fill: "#9945FF", stroke: "#E34A32", sw: 2, dash: null },
+  inviter: { fill: "#232427", stroke: "#6ab0e8", sw: 1.5, dash: "4 3" },
 };
 
 const EDGE_STYLE: Record<NodeKind, { stroke: string; dash: string | null }> = {
-  primary: { stroke: "#14F195", dash: null },
+  primary: { stroke: "#E34A32", dash: null },
   counterparty: { stroke: "#6ab0e8", dash: null },
   contract: { stroke: "#9945FF", dash: null },
-  protocol: { stroke: "#14F195", dash: null },
-  attester: { stroke: "#14F195", dash: null },
+  protocol: { stroke: "#E34A32", dash: null },
+  attester: { stroke: "#E34A32", dash: null },
   reporter: { stroke: "#94A3B8", dash: "5 4" },
   voucher: { stroke: "#9945FF", dash: null },
   inviter: { stroke: "#6ab0e8", dash: "5 4" },
@@ -355,7 +355,7 @@ export function TrustGraphVisualization({
       .attr("font-size", (d) => (d.kind === "primary" ? 12 : 10))
       .attr("font-weight", (d) => (d.kind === "primary" ? 700 : 400))
       .attr("font-family", "monospace")
-      .attr("fill", (d) => (d.kind === "protocol" || d.kind === "primary" ? "#0f9d63" : "#0B0F17"))
+      .attr("fill", (d) => (d.kind === "protocol" || d.kind === "primary" ? "#B93A26" : "#232427"))
       .attr("pointer-events", "none")
       .text((d) => d.label);
 
@@ -366,7 +366,7 @@ export function TrustGraphVisualization({
       .attr("text-anchor", "middle")
       .attr("font-size", 9)
       .attr("font-family", "monospace")
-      .attr("fill", "#64748b")
+      .attr("fill", "#55575C")
       .attr("pointer-events", "none")
       .text((d) => d.sublabel as string);
 
@@ -546,12 +546,12 @@ export function TrustGraphVisualization({
                   type="button"
                   aria-pressed={!off}
                   onClick={() => toggleKind(m.kind)}
-                  className={`flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left transition-opacity ${
+                  className={`flex w-full items-center gap-2 rounded-2xl border px-3 py-2 text-left transition-opacity ${
                     off ? "border-ink/10 opacity-40" : "border-ink/15"
                   }`}
                 >
                   <span
-                    className="inline-block h-3 w-3 shrink-0 rounded-full border-2"
+                    className="inline-block h-3 w-3 shrink-0 rounded-full border"
                     style={{ backgroundColor: NODE_STYLE[m.kind].fill, borderColor: NODE_STYLE[m.kind].stroke }}
                   />
                   <span className="min-w-0">
@@ -579,7 +579,7 @@ export function TrustGraphVisualization({
               type="button"
               aria-label="Zoom in"
               onClick={() => zoomBy(1.4)}
-              className="h-8 w-8 rounded-md border-2 border-ink bg-white font-mono text-sm font-bold shadow-[2px_2px_0_#0b0f17]"
+              className="h-8 w-8 rounded-full border border-black/10 bg-white font-mono text-sm font-bold shadow-sm"
             >
               +
             </button>
@@ -587,7 +587,7 @@ export function TrustGraphVisualization({
               type="button"
               aria-label="Zoom out"
               onClick={() => zoomBy(1 / 1.4)}
-              className="h-8 w-8 rounded-md border-2 border-ink bg-white font-mono text-sm font-bold shadow-[2px_2px_0_#0b0f17]"
+              className="h-8 w-8 rounded-full border border-black/10 bg-white font-mono text-sm font-bold shadow-sm"
             >
               −
             </button>
@@ -595,14 +595,14 @@ export function TrustGraphVisualization({
               type="button"
               aria-label="Reset zoom"
               onClick={resetZoom}
-              className="h-8 w-10 rounded-md border-2 border-ink bg-white font-mono text-[11px] font-bold shadow-[2px_2px_0_#0b0f17]"
+              className="h-8 w-10 rounded-full border border-black/10 bg-white font-mono text-[11px] font-bold shadow-sm"
             >
               1:1
             </button>
           </div>
           {tip && (
             <div
-              className="pointer-events-none fixed z-50 w-[240px] rounded-md border-2 border-ink bg-white p-2.5 shadow-[4px_4px_0_#0b0f17]"
+              className="pointer-events-none fixed z-50 w-[240px] rounded-3xl border border-black/10 bg-white p-4 shadow-xl"
               style={{ left: tipLeft, top: tipTop }}
             >
               <p className="font-mono text-[11px] font-bold text-ink">{tip.node.label}</p>

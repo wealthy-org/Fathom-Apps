@@ -56,7 +56,7 @@ export function RecentlyChecked() {
             <li key={item.address}>
               <Link
                 href={`/wallets/${item.address}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md border-2 border-ink bg-white px-4 py-3 text-sm shadow-[2px_2px_0_#0b0f17] transition hover:-translate-y-px"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm shadow-sm transition hover:-translate-y-px"
               >
                 <span>
                   <span className="font-mono text-accent-ink">

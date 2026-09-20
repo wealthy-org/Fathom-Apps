@@ -5,7 +5,7 @@ function Block({ className = "" }: { className?: string }) {
   return (
     <div
       aria-hidden="true"
-      className={`motion-safe:animate-pulse rounded-md bg-ink/10 ${className}`}
+      className={`motion-safe:animate-pulse rounded-2xl bg-ink/10 ${className}`}
     />
   );
 }

@@ -9,8 +9,8 @@ export function WalletShell({ children }: { children: React.ReactNode }) {
       <div className="bg-stars" />
       <div className="bg-grid" />
 
-      <header className="border-b border-ink/10 bg-white/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-5xl items-center justify-between gap-4 px-5 sm:px-6 lg:px-8">
+      <header className="mx-4 mt-3 sm:mx-8 sm:mt-5">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 rounded-full border border-black/5 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-xl">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
             <Image
               src="/logo-no-bg.png"
