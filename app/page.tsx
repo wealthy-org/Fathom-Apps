@@ -14,6 +14,9 @@ const NAV_LINKS: Array<[string, string]> = [
   ["FAQ", "#faq"],
 ];
 
+/** Public example wallet reused by /wallets — footer deep-links to its tabs. */
+const EXAMPLE_WALLET = "0xa6d9e296e6833d211278faf255c76ed193c9ac19";
+
 function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2.5">
@@ -293,7 +296,7 @@ export default function Home() {
         {/* HERO */}
         <section className="hero-shell relative flex min-h-[92svh] flex-col overflow-hidden px-5 pb-24 pt-28 sm:px-6 sm:pt-44 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-full border border-black/5 bg-white/80 px-4 py-2 shadow-sm backdrop-blur-xl">
+            <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 shadow-sm backdrop-blur-xl">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
                 Proof of Reputation
@@ -446,7 +449,7 @@ export default function Home() {
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div className="max-w-xs">
               <Logo />
-              <p className="mt-4 text-sm text-slate400">
+              <p className="mt-4 text-sm leading-6 text-slate400">
                 Proof of reputation for pseudonymous wallets.
               </p>
             </div>
@@ -455,8 +458,16 @@ export default function Home() {
                 Product
               </div>
               <ul className="mt-4 space-y-2">
-                {NAV_LINKS.map(([label, href]) => (
-                  <li key={href}>
+                {(
+                  [
+                    ["Check a Wallet", "/wallets"],
+                    ["How It Works", "/#how"],
+                    ["Trust Graph", `/wallets/${EXAMPLE_WALLET}#graph`],
+                    ["Risk", `/wallets/${EXAMPLE_WALLET}#risk`],
+                    ["Community", `/wallets/${EXAMPLE_WALLET}#community`],
+                  ] as Array<[string, string]>
+                ).map(([label, href]) => (
+                  <li key={label}>
                     <a
                       href={href}
                       className="text-sm text-ink/70 transition hover:text-ink"
@@ -474,12 +485,13 @@ export default function Home() {
               <ul className="mt-4 space-y-2">
                 {(
                   [
-                    ["Check a Wallet", "/wallets"],
+                    ["About", "/#about"],
+                    ["FAQ", "/#faq"],
                     ["Privacy Model", "/#faq-identity"],
-                    ["How It Works", "/#how"],
+                    ["Reputation Card", `/wallets/${EXAMPLE_WALLET}`],
                   ] as Array<[string, string]>
                 ).map(([label, href]) => (
-                  <li key={href}>
+                  <li key={label}>
                     <a
                       href={href}
                       className="text-sm text-ink/70 transition hover:text-ink"
@@ -490,9 +502,36 @@ export default function Home() {
                 ))}
               </ul>
             </div>
+            <div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
+                Status
+              </div>
+              <p className="mt-4 flex items-center gap-2 text-sm font-medium text-ink">
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2 w-2 rounded-full bg-accent"
+                />
+                Testnet
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate400">
+                Fathom is currently running on Robinhood Chain Testnet.
+              </p>
+              <p className="mt-2 font-mono text-[11px] text-slate400">2026</p>
+            </div>
           </div>
-          <div className="mt-14 border-t border-ink/10 pt-6 text-xs text-slate400">
-            © 2026 Fathom
+          <div className="mt-14 grid gap-6 border-t border-ink/10 pt-8 md:grid-cols-2 md:items-end">
+            <div className="text-xs leading-5 text-slate400">
+              <p>© 2026 Fathom</p>
+              <p className="mt-1">
+                Built for pseudonymous economic identities.
+              </p>
+            </div>
+            <p className="font-display text-2xl font-medium leading-snug tracking-tight sm:text-3xl md:text-right">
+              Don&apos;t trust the profile.
+              <span className="font-serif-accent block">
+                Verify the wallet.
+              </span>
+            </p>
           </div>
         </div>
       </footer>
