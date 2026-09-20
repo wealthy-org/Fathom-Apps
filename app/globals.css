@@ -24,7 +24,6 @@
   --shadow-brutal-sm: 0 8px 20px -12px rgba(35, 36, 39, 0.25);
 
   --animate-blob: blob 20s ease-in-out infinite alternate;
-  --animate-drift: drift 6s ease-in-out infinite alternate;
 
   @keyframes blob {
     0% {
@@ -37,24 +36,15 @@
       transform: translate(-40px, 100px) scale(0.95);
     }
   }
-
-  @keyframes drift {
-    from {
-      transform: translateY(-6px);
-    }
-    to {
-      transform: translateY(6px);
-    }
-  }
 }
 
 html {
   scroll-behavior: smooth;
-  background: #ecedee;
+  background: #fff;
 }
 
 body {
-  background: #ecedee;
+  background: #fff;
   color: #232427;
   font-family: var(--font-sans), sans-serif;
   overflow-x: hidden;
@@ -337,9 +327,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .glow-spot {
-    animation: none;
-  }
-  .animate-drift {
     animation: none;
   }
 }

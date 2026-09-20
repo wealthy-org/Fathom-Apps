@@ -23,7 +23,6 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "siwe": "^3.0.0",
-    "three": "^0.186.0",
     "viem": "^2.56.8",
     "wagmi": "^3.7.7",
     "zod": "^4.6.5"
@@ -34,7 +33,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.186.0",
     "drizzle-kit": "^1.0.0-rc.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
