@@ -768,7 +768,7 @@ export default function Home() {
                       See why.
                     </>
                   }
-                  sub="Fathom has no global score yet. It shows the dimensions and proofs behind a wallet so every claim can be traced back to evidence."
+                  sub="Fathom shows a provisional score alongside the dimensions and proofs behind a wallet, so every claim can be traced back to evidence."
                 />
                 <div className="card mt-10 space-y-4">
                   {[
@@ -802,8 +802,8 @@ export default function Home() {
                     <ExampleTag />
                   </div>
                   <p className="mt-2 text-sm text-slate400">
-                    No global score is produced. The profile exposes what the
-                    wallet actually did.
+                    The score is a provisional compression. The profile
+                    exposes what the wallet actually did.
                   </p>
                   <div className="my-6 h-px bg-ink/10" />
                   <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-accent-ink">
@@ -973,7 +973,7 @@ export default function Home() {
                 ["clock", "Fresh Wallet", "Detected when a wallet is young and has little activity."],
                 ["network", "Concentrated Counterparty Graph", "Detected when interactions concentrate on one counterparty."],
                 ["repeat", "Circular Relationship Graph", "Detected when value flows back and forth between several wallets."],
-                ["users", "Suspicious Vouch Clustering", "Not yet evaluable — vouching is not implemented (Spec 08)."],
+                ["users", "Suspicious Vouch Clustering", "Evaluated against indexed vouch edges — reciprocal and concentrated vouch patterns."],
               ].map(([icon, t, d]) => (
                 <article
                   key={t}
@@ -1015,8 +1015,9 @@ export default function Home() {
                 </div>
                 <div className="mt-1 text-xs text-accent-ink">Verified Wallet</div>
                 <p className="mt-4 text-sm text-slate400">
-                  Evidence first. No global score is produced yet — the profile
-                  exposes what the wallet actually did.
+                  Evidence first. The provisional score summarizes the
+                  dimensions — the profile exposes what the wallet actually
+                  did.
                 </p>
                 <dl className="mt-6 space-y-3 text-sm">
                   {[
@@ -1175,6 +1176,53 @@ export default function Home() {
               >
                 Explore the API <Arrow />
               </a>
+            </div>
+          </div>
+        </section>
+
+        {/* 13b. CONSUMER LOOP */}
+        <section className="px-5 py-28 sm:px-6 lg:px-8 lg:py-40">
+          <div className="mx-auto max-w-7xl">
+            <Head
+              kick="How Fathom grows"
+              title="From search to share."
+              sub="Every profile action leads naturally to the next — check a wallet, understand it, claim your own, attest to others, share what you found."
+            />
+            <ol className="card mt-14 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-xs sm:text-sm">
+              {[
+                "Check a wallet",
+                "Discover reputation",
+                "Explore evidence",
+                "Check your wallet",
+                "Claim profile",
+                "Attest / Vouch",
+                "Share",
+              ].map((step, i, all) => (
+                <li key={step} className="flex items-center gap-3">
+                  {i > 0 && (
+                    <span aria-hidden="true" className="text-slate400">
+                      →
+                    </span>
+                  )}
+                  <span
+                    className={
+                      i === all.length - 1
+                        ? "font-bold text-accent-ink"
+                        : "text-ink"
+                    }
+                  >
+                    {step}
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <p className="card mt-8 max-w-2xl text-sm leading-7 text-slate400">
+              Claiming proves wallet control — it never creates reputation.
+              Sharing brings the next person to a public profile, and the
+              loop starts again.
+            </p>
+            <div className="card mt-8">
+              <PrimaryLink href="/wallets">Check a Wallet</PrimaryLink>
             </div>
           </div>
         </section>

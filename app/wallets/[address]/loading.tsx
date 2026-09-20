@@ -1,4 +1,5 @@
 import { ProfileLoadingHeader } from "@/components/profile-loading-header";
+import { LoadingStages } from "@/components/loading-stages";
 
 function Block({ className = "" }: { className?: string }) {
   return (
@@ -13,8 +14,9 @@ function Block({ className = "" }: { className?: string }) {
 // visible via useParams, no spinner, no fake percentages.
 export default function WalletProfileLoading() {
   return (
-    <div aria-busy="true" aria-label="Loading wallet profile">
+      <div aria-busy="true" aria-label="Loading wallet profile">
       <ProfileLoadingHeader />
+      <LoadingStages />
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {["Wallet age", "Transactions", "First tx", "Last tx", "First seen"].map(

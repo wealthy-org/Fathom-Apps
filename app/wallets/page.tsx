@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { WalletShell } from "@/components/wallet-shell";
+import { SearchWalletForm } from "@/components/search-wallet-form";
+import { RecentlyChecked } from "@/components/recently-checked";
 
 export const metadata: Metadata = {
   title: "Fathom — Search a Wallet",
@@ -36,9 +38,26 @@ export default function WalletsPage() {
         justify.
       </p> */}
 
+      <div className="mx-auto max-w-2xl text-center">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-ink">
+          Check a wallet
+        </p>
+        <h1 className="mt-4 font-display text-4xl font-medium tracking-tight sm:text-5xl">
+          Analyze a wallet before interacting with it.
+        </h1>
+        <div className="mt-8">
+          <SearchWalletForm />
+        </div>
+        <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
+          Reputation · Evidence · Relationships · Risk
+        </p>
+      </div>
+
+      <RecentlyChecked />
+
       <div className="mt-10">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
-          Try an example
+          Try an example wallet
         </div>
         <ul className="mt-4 space-y-2">
           {EXAMPLES.map(([address, label]) => (

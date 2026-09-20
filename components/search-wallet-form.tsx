@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { recordRecentSearch } from "@/lib/wallet/search-history";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
@@ -49,6 +50,8 @@ export function SearchWalletForm({
       return;
     }
     setError(null);
+    // History records validated checks only — invalid input never reaches here.
+    recordRecentSearch(trimmed);
     // ponytail: transition pending disables the form — no duplicate submit.
     startTransition(() => {
       router.push(`/wallets/${trimmed.toLowerCase()}`);
