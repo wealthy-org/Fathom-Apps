@@ -1,18 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0b0f17;
-  --color-accent: #14f195;
-  --color-accent-ink: #0f9d63;
+  /* Reference language (docs/design/reference.html), Fathom-flavored:
+     warm neutrals, ink text, red accent, purple kept as risk secondary. */
+  --color-ink: #232427;
+  --color-coal: #171719;
+  --color-accent: #e34a32;
+  --color-accent-ink: #b93a26;
   --color-purple: #9945ff;
-  --color-slate400: #64748b;
+  --color-slate400: #55575c;
+  --color-faint: #777980;
+  --color-mist: #f4f5f5;
+  --color-canvas: #ecedee;
 
   --font-sans: var(--font-sans), sans-serif;
   --font-display: var(--font-display), sans-serif;
+  --font-serif-accent: var(--font-serif), serif;
   --font-mono: var(--font-mono), monospace;
 
-  --shadow-brutal: 4px 4px 0 #0b0f17;
-  --shadow-brutal-sm: 2px 2px 0 #0b0f17;
+  --shadow-brutal:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 14px 30px -18px rgba(35, 36, 39, 0.25);
+  --shadow-brutal-sm: 0 8px 20px -12px rgba(35, 36, 39, 0.25);
 
   --animate-blob: blob 20s ease-in-out infinite alternate;
 
@@ -31,19 +40,33 @@
 
 html {
   scroll-behavior: smooth;
-  background: #f6f8fa;
+  background: #ecedee;
 }
 
 body {
-  background: #f6f8fa;
-  color: #0b0f17;
+  background: #ecedee;
+  color: #232427;
   font-family: var(--font-sans), sans-serif;
   overflow-x: hidden;
 }
 
+.font-display {
+  letter-spacing: -0.035em;
+}
+
+.font-serif-accent {
+  font-family: var(--font-serif), serif;
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
 ::selection {
-  background: rgba(20, 241, 149, 0.28);
-  color: #0b0f17;
+  background: rgba(227, 74, 50, 0.22);
+  color: #232427;
+}
+
+::placeholder {
+  color: #777980;
 }
 
 /* fixed background layers */
@@ -52,7 +75,7 @@ body {
   inset: 0;
   z-index: -2;
   pointer-events: none;
-  background-image: radial-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(35, 36, 39, 0.05) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
@@ -61,12 +84,11 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, black 0%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, black 0%, transparent 100%);
+  background: radial-gradient(
+    ellipse 80% 55% at 50% 0%,
+    rgba(255, 255, 255, 0.9),
+    transparent 70%
+  );
 }
 
 /* gradient hairline on top of cards */
@@ -80,8 +102,8 @@ body {
   right: 0;
   top: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #0f9d63, #9945ff, #0f9d63, transparent);
-  opacity: 0.8;
+  background: linear-gradient(90deg, transparent, #e34a32, #9945ff, #e34a32, transparent);
+  opacity: 0.5;
 }
 
 .glow-spot {
@@ -91,8 +113,8 @@ body {
   border-radius: 9999px;
   background: radial-gradient(
     circle,
-    rgba(20, 241, 149, 0.07) 0%,
-    rgba(153, 69, 255, 0.04) 35%,
+    rgba(227, 74, 50, 0.1) 0%,
+    rgba(255, 255, 255, 0.5) 40%,
     transparent 70%
   );
   filter: blur(60px);
@@ -121,12 +143,13 @@ body {
   line-height: 1.8;
 }
 
-/* neo-brutalist system — single source of truth for cards/buttons/chips/inputs.
-   Matches trust-graph-visualization.tsx. */
+/* Surface system — single source of truth for cards/buttons/chips/inputs.
+   Class names predate the reference migration; visuals follow
+   docs/design/reference.html (soft layers, pills, hairlines). */
 @layer components {
   .panel-brutal {
-    border-radius: 1rem;
-    border: 2px solid var(--color-ink);
+    border-radius: 1.75rem;
+    border: 1px solid rgba(35, 36, 39, 0.08);
     background: #fff;
     box-shadow: var(--shadow-brutal);
   }
@@ -136,22 +159,21 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 0.75rem;
-    border: 2px solid var(--color-ink);
-    background: var(--color-ink);
+    border-radius: 9999px;
+    background: var(--color-coal);
     color: #fff;
-    font-family: var(--font-mono), monospace;
-    font-weight: 700;
+    font-family: var(--font-sans), sans-serif;
+    font-weight: 600;
     box-shadow: var(--shadow-brutal-sm);
-    transition: transform 120ms ease, box-shadow 120ms ease;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
   }
   .btn-brutal:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0 #0b0f17;
+    transform: translateY(-1px);
+    background: #000;
   }
   .btn-brutal:active {
-    transform: translate(2px, 2px);
-    box-shadow: 0 0 0 #0b0f17;
+    transform: translateY(0);
+    box-shadow: none;
   }
   .btn-brutal:disabled {
     opacity: 0.6;
@@ -163,22 +185,22 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 0.75rem;
-    border: 2px solid var(--color-ink);
-    background: #fff;
+    border-radius: 9999px;
+    border: 1px solid rgba(35, 36, 39, 0.1);
+    background: rgba(255, 255, 255, 0.7);
     color: var(--color-ink);
-    font-family: var(--font-mono), monospace;
-    font-weight: 700;
+    font-family: var(--font-sans), sans-serif;
+    font-weight: 600;
     box-shadow: var(--shadow-brutal-sm);
-    transition: transform 120ms ease, box-shadow 120ms ease;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
   }
   .btn-brutal-light:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0 #0b0f17;
+    transform: translateY(-1px);
+    background: #fff;
   }
   .btn-brutal-light:active {
-    transform: translate(2px, 2px);
-    box-shadow: 0 0 0 #0b0f17;
+    transform: translateY(0);
+    box-shadow: none;
   }
   .btn-brutal-light:disabled {
     opacity: 0.6;
@@ -188,9 +210,10 @@ body {
   .chip-mono {
     display: inline-flex;
     align-items: center;
-    border-radius: 0.375rem;
-    border: 2px solid var(--color-ink);
-    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(35, 36, 39, 0.1);
+    background: rgba(35, 36, 39, 0.04);
+    padding: 0.125rem 0.625rem;
     font-family: var(--font-mono), monospace;
     font-size: 10px;
     text-transform: uppercase;
@@ -198,17 +221,18 @@ body {
   }
 
   .input-brutal {
-    border-radius: 0.75rem;
-    border: 2px solid var(--color-ink);
-    background: #fff;
+    border-radius: 9999px;
+    border: 1px solid rgba(35, 36, 39, 0.1);
+    background: #f4f5f5;
     color: var(--color-ink);
     outline: none;
   }
   .input-brutal:focus {
-    box-shadow: var(--shadow-brutal-sm);
+    border-color: rgba(35, 36, 39, 0.25);
+    background: #fff;
   }
   .input-brutal::placeholder {
-    color: color-mix(in srgb, var(--color-ink) 40%, transparent);
+    color: #777980;
   }
 }
 
