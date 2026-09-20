@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title FathomAttestationRegistry — Spec 07 (Structured Attestations).
 /// @notice Attester → ATTEST → Subject dengan role/relationship/duration.
@@ -11,6 +12,8 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 ///      event (lihat config/thresholds.ts, PROVISIONAL). Tanpa upgradeability:
 ///      perubahan aturan berarti deploy registry baru, bukan upgrade diam-diam.
 contract FathomAttestationRegistry is Ownable {
+    using SafeCast for uint256;
+
     uint256 private nextAttestationId = 1;
 
     struct Attestation {
@@ -72,7 +75,7 @@ contract FathomAttestationRegistry is Ownable {
             role: role,
             relationship: relationship,
             durationMonths: durationMonths,
-            createdAt: uint64(block.timestamp),
+            createdAt: block.timestamp.toUint64(),
             revoked: false
         });
 

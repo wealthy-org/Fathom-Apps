@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title FathomDisputeRegistry — Spec 09 (Disputes).
 /// @notice Lifecycle sengketa on-chain: open → disputed → upheld | dismissed.
@@ -12,6 +13,8 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 ///      off-chain membaca status (lihat lib/score/risk.ts, PROVISIONAL).
 ///      Tanpa upgradeability: perubahan aturan berarti deploy registry baru.
 contract FathomDisputeRegistry is Ownable {
+    using SafeCast for uint256;
+
     uint256 private nextDisputeId = 1;
 
     /// @dev Status disimpan sebagai uint8 agar transisi eksplisit & murah.
@@ -87,7 +90,7 @@ contract FathomDisputeRegistry is Ownable {
             reasonHash: reasonHash,
             evidenceRef: evidenceRef,
             status: STATUS_OPEN,
-            openedAt: uint64(block.timestamp),
+            openedAt: block.timestamp.toUint64(),
             resolvedAt: 0
         });
 
@@ -117,7 +120,7 @@ contract FathomDisputeRegistry is Ownable {
         }
 
         dispute.status = STATUS_UPHELD;
-        dispute.resolvedAt = uint64(block.timestamp);
+        dispute.resolvedAt = block.timestamp.toUint64();
         emit DisputeUpheld(disputeId, dispute.reporter, dispute.target);
     }
 
@@ -133,7 +136,7 @@ contract FathomDisputeRegistry is Ownable {
         }
 
         dispute.status = STATUS_DISMISSED;
-        dispute.resolvedAt = uint64(block.timestamp);
+        dispute.resolvedAt = block.timestamp.toUint64();
         emit DisputeDismissed(disputeId, dispute.reporter, dispute.target);
     }
 }

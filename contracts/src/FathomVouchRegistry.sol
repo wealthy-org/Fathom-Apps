@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title FathomVouchRegistry — Spec 08 (Vouch).
 /// @notice Wallet A → VOUCH → Wallet B, opsional stake. Satu-satunya
@@ -14,6 +15,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 /// PROVISIONAL (cooldown + dispute lock); jangan jadikan final.
 contract FathomVouchRegistry is Ownable {
     using SafeERC20 for IERC20;
+    using SafeCast for uint256;
 
     /// @notice Token stake; address(0) = native. Immutable = ganti aset
     /// berarti deploy registry baru, bukan upgrade diam-diam.
@@ -96,9 +98,9 @@ contract FathomVouchRegistry is Ownable {
         VouchPosition storage pos = positions[voucher][to];
         uint256 total = uint256(pos.stake) + amount;
         if (total > type(uint128).max) revert InsufficientStake(); // overflow guard, bukan saldo
-        pos.stake = uint128(total);
+        pos.stake = total.toUint128();
         pos.pairCount += 1;
-        pos.lastStakedAt = uint64(block.timestamp);
+        pos.lastStakedAt = block.timestamp.toUint64();
 
         emit Vouched(voucher, to, amount, total, pos.pairCount);
     }
@@ -108,20 +110,25 @@ contract FathomVouchRegistry is Ownable {
         VouchPosition storage pos = positions[msg.sender][to];
         if (pos.disputed) revert DisputedLocked();
         if (uint256(pos.stake) < amount) revert InsufficientStake();
+        // forge-lint: disable-next-line block-timestamp
+        // Cooldown on-chain memakai block.timestamp — kontrak adalah penegak
+        // otoritatif (bukan timer off-chain); toleransi ±15 detik wajar untuk lock hari.
         if (
             block.timestamp <
             uint256(pos.lastStakedAt) + cooldownDays * SECONDS_PER_DAY
         ) revert CooldownActive();
 
-        pos.stake = uint128(uint256(pos.stake) - amount);
+        pos.stake = (uint256(pos.stake) - amount).toUint128();
+        // Event sebelum interaksi eksternal: indexers melihat lifecycle
+        // dalam urutan logis, dan reentrancy tidak bisa mendahului event ini.
+        // Gagal transfer me-revert seluruh tx termasuk event — atomik.
+        emit Withdrawn(msg.sender, to, amount, pos.stake);
         if (address(stakeToken) == address(0)) {
             (bool ok, ) = msg.sender.call{value: amount}("");
             require(ok, "native withdraw failed");
         } else {
             stakeToken.safeTransfer(msg.sender, amount);
         }
-
-        emit Withdrawn(msg.sender, to, amount, pos.stake);
     }
 
     /// @notice PROVISIONAL hook untuk alur dispute (Spec 09). Hanya owner

@@ -94,7 +94,28 @@ contract FathomVouchRegistryTest is Test {
         vm.warp(block.timestamp + 30 days + 1);
         vm.prank(ALICE);
         locked.withdraw(BOB, 4);
-        (uint128 stake, , , ) = registry.positions(ALICE, BOB);
+        (uint128 stake, , , ) = locked.positions(ALICE, BOB);
+        assertEq(stake, 6);
+    }
+
+    // 6b. Batas cooldown eksak: revert sebelum, sukses tepat saat kedaluwarsa.
+    function test_withdrawAtExactCooldown_succeeds() public {
+        FathomVouchRegistry locked = new FathomVouchRegistry(address(0), 1, 30);
+        vm.prank(ALICE);
+        locked.vouch{value: 10}(BOB);
+        (, , uint64 stakedAt, ) = locked.positions(ALICE, BOB);
+
+        // Satu detik sebelum kedaluwarsa: masih revert.
+        vm.warp(uint256(stakedAt) + 30 days - 1);
+        vm.prank(ALICE);
+        vm.expectRevert(FathomVouchRegistry.CooldownActive.selector);
+        locked.withdraw(BOB, 4);
+
+        // Tepat saat kedaluwarsa (block.timestamp < stakedAt + 30d salah): sukses.
+        vm.warp(uint256(stakedAt) + 30 days);
+        vm.prank(ALICE);
+        locked.withdraw(BOB, 4);
+        (uint128 stake, , , ) = locked.positions(ALICE, BOB);
         assertEq(stake, 6);
     }
 
