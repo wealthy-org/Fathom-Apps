@@ -7,7 +7,6 @@ import { explorerTransactionUrl } from "@/lib/chain/blockscout";
 import type { TrustGraphSummary } from "@/lib/chain/trust-graph";
 import { getWalletProfile, type WalletProfile } from "@/lib/wallet/profile";
 import type { Proof, ProofType } from "@/lib/score/proofs";
-import type { DimensionState } from "@/lib/score/dimensions";
 import type { RiskState, RiskSignal, RiskSignalType } from "@/lib/score/risk";
 import type { Address } from "@/lib/score/types";
 import { CopyAddress } from "@/components/copy-address";
@@ -19,6 +18,7 @@ import { DisputeForm } from "@/components/dispute-form";
 import { VouchForm } from "@/components/vouch-form";
 import { VouchWithdrawButton } from "@/components/vouch-withdraw-button";
 import { TrustGraphVisualization } from "@/components/trust-graph-visualization";
+import { ReputationDimensions } from "@/components/reputation-dimensions";
 
 export const dynamic = "force-dynamic";
 
@@ -49,16 +49,27 @@ const RISK_LABELS: Record<RiskSignalType, string> = {
   active_disputes: "Active disputes",
 };
 
-const SCORE_DIMENSION_LABELS: Record<
-  WalletProfile["reputation"]["breakdown"]["dimensions"][number]["id"],
-  string
-> = {
-  economic_history: "Economic history",
-  counterparty_history: "Counterparty history",
-  contract_history: "Contract history",
-  community_trust: "Community trust",
-  risk_signals: "Risk signals",
-};
+function ScoreSection({ reputation }: { reputation: WalletProfile["reputation"] }) {
+  return (
+    <section className="mt-10" aria-labelledby="reputation-score">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 id="reputation-score" className="font-display text-lg">Reputation Score</h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate400">
+            A provisional compression of the evidence on this profile, not a trust decision.
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="font-display text-3xl text-accent-ink">{reputation.totalScore}</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">{reputation.tier ? reputation.tier.label : "No tier — partial"} · {reputation.formulaVersion}</div>
+        </div>
+      </div>
+      <div className="mt-5">
+        <ReputationDimensions reputation={reputation} />
+      </div>
+    </section>
+  );
+}
 
 /** Ringkas evidence risk signal untuk tampilan — hanya field primitif. */
 function formatRiskEvidence(evidence: Record<string, unknown>): string {
@@ -537,32 +548,6 @@ function Field({
   );
 }
 
-function DimensionRow({ dimension }: { dimension: DimensionState }) {
-  return (
-    <li className="panel-brutal p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-display text-base">{dimension.label}</span>
-        <span
-          className={`font-mono text-[10px] uppercase tracking-[0.18em] ${
-            dimension.status === "supported" ? "text-accent-ink" : "text-slate400"
-          }`}
-        >
-          {dimension.status}
-        </span>
-      </div>
-      {dimension.status === "supported" ? (
-        <p className="mt-2 text-sm text-slate400">
-          {dimension.proofTypes.length > 0
-            ? `Backed by proofs: ${dimension.proofTypes.join(", ")}.`
-            : "Backed by dedicated risk signals."}
-        </p>
-      ) : (
-        <p className="mt-2 text-sm text-slate400">{dimension.reason}</p>
-      )}
-    </li>
-  );
-}
-
 function AttestationsSection({
   address,
   attestations,
@@ -1024,45 +1009,6 @@ function RiskSection({
   );
 }
 
-function ScoreSection({ reputation }: { reputation: WalletProfile["reputation"] }) {
-  const items = [
-    ...reputation.breakdown.dimensions,
-    reputation.breakdown.riskAdjustment,
-  ];
-  return (
-    <section className="mt-10" aria-labelledby="reputation-score">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 id="reputation-score" className="font-display text-lg">Reputation Score</h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate400">
-            A provisional compression of the evidence on this profile, not a trust decision.
-          </p>
-        </div>
-        <div className="text-right">
-          <div className="font-display text-3xl text-accent-ink">{reputation.totalScore}</div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">{reputation.tier ? reputation.tier.label : "No tier — partial"} · {reputation.formulaVersion}</div>
-        </div>
-      </div>
-      <ul className="mt-5 space-y-3">
-        {items.map((dimension) => (
-          <li key={dimension.id} className="panel-brutal p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-display text-base">{SCORE_DIMENSION_LABELS[dimension.id]}</span>
-              <span className="font-mono text-sm text-ink">{dimension.available ? `${dimension.contribution >= 0 ? "+" : ""}${dimension.contribution}` : "Unavailable"}</span>
-            </div>
-            <p className="mt-2 text-sm text-slate400">{dimension.explanation}</p>
-            {dimension.evidenceReferences.proofs.length + dimension.evidenceReferences.direct.length > 0 && (
-              <Link href="#why-evidence" className="mt-2 inline-block font-mono text-[11px] text-accent-ink hover:underline">
-                Why → evidence ({dimension.evidenceReferences.proofs.length + dimension.evidenceReferences.direct.length})
-              </Link>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -1182,19 +1128,9 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
         </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="font-display text-lg">Reputation Dimensions</h2>
-        <p className="mt-2 max-w-2xl text-sm text-slate400">
-          Reputation is presented as dimensions. A dimension appears only when
-          its underlying evidence has been indexed — empty slots are labeled,
-          never shown as zero.
-        </p>
-        <ul className="mt-5 space-y-3">
-          {profile.dimensions.map((dimension) => (
-            <DimensionRow key={dimension.id} dimension={dimension} />
-          ))}
-        </ul>
-      </section>
+      <div className="mt-10">
+        <ReputationDimensions reputation={profile.reputation} evidenceHref="#evidence" />
+      </div>
 
       <section className="mt-10">
         <h2 className="font-display text-lg">Key Risks</h2>
