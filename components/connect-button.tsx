@@ -8,6 +8,7 @@ import {
   useDisconnect,
   useSignMessage,
   useSwitchChain,
+  type Connector,
 } from "wagmi";
 import { robinhoodTestnet } from "@/lib/wallet/chains";
 import { wagmiConfig } from "@/lib/wallet/config";
@@ -22,12 +23,25 @@ function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-function isMobileBrowser() {
+export function isMobileBrowser() {
   if (typeof navigator === "undefined") return false;
   return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
 }
 
-function handleMissingWallet() {
+// Shared with ClaimFlow: Phantom-first connector resolution.
+// EIP-6963 announce can be late: one 800ms retry before giving up.
+export async function resolvePhantomConnector(
+  connectors: readonly Connector[],
+): Promise<Connector | undefined> {
+  const match = (c: { id: string; name: string }) =>
+    /phantom/i.test(`${c.id} ${c.name}`);
+  const found = connectors.find(match);
+  if (found) return found;
+  await new Promise((r) => setTimeout(r, 800));
+  return wagmiConfig.connectors.find(match);
+}
+
+export function handleMissingWallet() {
   if (isMobileBrowser()) {
     if (
       window.confirm(
@@ -96,13 +110,9 @@ export function ConnectButton({
     !!address &&
     session.walletAddress === address.toLowerCase();
 
+  // Shared with ClaimFlow: same Phantom-first resolution, incl. EIP-6963 delay.
   async function resolvePhantom() {
-    const match = (c: { id: string; name: string }) =>
-      /phantom/i.test(`${c.id} ${c.name}`);
-    const found = connectors.find(match);
-    if (found) return found;
-    await new Promise((r) => setTimeout(r, 800));
-    return wagmiConfig.connectors.find(match);
+    return resolvePhantomConnector(connectors);
   }
 
   async function handlePrimary() {
