@@ -73,7 +73,7 @@ export function VouchWithdrawButton({
         type="button"
         disabled={isPending || isSuccess}
         onClick={() => void withdraw()}
-        className="rounded-xl border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition hover:border-accent-ink hover:text-accent-ink disabled:opacity-60"
+        className="btn-brutal-light px-3 py-1.5 text-xs"
       >
         {isPending ? "Withdrawing…" : isSuccess ? "Withdrawn" : "Withdraw"}
       </button>

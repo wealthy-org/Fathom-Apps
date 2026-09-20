@@ -28,7 +28,7 @@ export function AttestationForm({ subject }: { subject: string }) {
   if (isLoading) return null;
   if (!session?.authenticated || !attester) {
     return (
-      <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-5">
+      <div className="panel-brutal mt-4 p-5">
         <h3 className="font-display text-base">Attest to this wallet</h3>
         <p className="mt-1 text-xs text-slate400">
           Connect your wallet to attest to this profile. Attestations are
@@ -97,7 +97,7 @@ export function AttestationForm({ subject }: { subject: string }) {
   }
 
   return (
-    <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-5">
+    <div className="panel-brutal mt-4 p-5">
       <h3 className="font-display text-base">Attest to this wallet</h3>
       <p className="mt-1 text-xs text-slate400">
         Attestations are pseudonymous supporting evidence. Signing proves you
@@ -107,7 +107,7 @@ export function AttestationForm({ subject }: { subject: string }) {
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="rounded-xl border border-ink/15 bg-ink/[0.03] px-3 py-2 text-sm text-ink outline-none focus:border-accent-ink"
+          className="input-brutal px-3 py-2 text-sm"
         >
           {ATTESTATION_ROLES.map((r) => (
             <option key={r} value={r} className="bg-white text-ink">
@@ -120,19 +120,19 @@ export function AttestationForm({ subject }: { subject: string }) {
           maxLength={THRESHOLDS.attestation.maxRelationshipLength}
           onChange={(e) => setRelationship(e.target.value)}
           placeholder="Relationship (e.g. Worked Together)"
-          className="rounded-xl border border-ink/15 bg-ink/[0.03] px-3 py-2 text-sm text-ink outline-none focus:border-accent-ink sm:col-span-2"
+          className="input-brutal px-3 py-2 text-sm sm:col-span-2"
         />
         <input
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
           placeholder="Duration in months (optional)"
-          className="rounded-xl border border-ink/15 bg-ink/[0.03] px-3 py-2 text-sm text-ink outline-none focus:border-accent-ink"
+          className="input-brutal px-3 py-2 text-sm"
         />
         <button
           type="button"
           disabled={isPending || relationship.trim() === ""}
           onClick={() => void submit()}
-          className="rounded-xl bg-ink px-4 py-2 text-xs font-semibold text-white transition hover:scale-105 disabled:opacity-60 sm:col-span-2"
+          className="btn-brutal px-4 py-2 text-xs sm:col-span-2"
         >
           {isPending ? "Signing…" : "Sign & attest"}
         </button>

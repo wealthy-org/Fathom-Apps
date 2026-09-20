@@ -56,7 +56,7 @@ export function VouchForm({ target }: { target: string }) {
 
   if (REGISTRY === "") {
     return (
-      <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-5">
+      <div className="panel-brutal mt-4 p-5">
         <h3 className="font-display text-base">Vouch for this wallet</h3>
         <p className="mt-1 text-xs text-slate400">
           Vouch registry is not configured. On-chain vouches are unavailable
@@ -68,7 +68,7 @@ export function VouchForm({ target }: { target: string }) {
 
   if (!isConnected || !address) {
     return (
-      <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-5">
+      <div className="panel-brutal mt-4 p-5">
         <h3 className="font-display text-base">Vouch for this wallet</h3>
         <p className="mt-1 text-xs text-slate400">
           A vouch is economic-backing evidence: you stake native assets (or the
@@ -156,7 +156,7 @@ export function VouchForm({ target }: { target: string }) {
       router.refresh();
     }
     return (
-      <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-5">
+      <div className="panel-brutal mt-4 p-5">
         <h3 className="font-display text-base">Vouch for this wallet</h3>
         <p className="mt-3 text-xs text-accent-ink">
           Vouch confirmed on-chain. It will appear below once indexed.
@@ -175,7 +175,7 @@ export function VouchForm({ target }: { target: string }) {
           : "Approve & vouch";
 
   return (
-    <div className="shine-border mt-4 rounded-2xl border border-ink/10 bg-ink/[0.03] p-5">
+    <div className="panel-brutal mt-4 p-5">
       <h3 className="font-display text-base">Vouch for this wallet</h3>
       <p className="mt-1 text-xs text-slate400">
         Stake {isNative ? "native assets" : "tokens"} behind this wallet. The
@@ -187,13 +187,13 @@ export function VouchForm({ target }: { target: string }) {
           onChange={(e) => setStake(e.target.value)}
           placeholder={`Stake in ${isNative ? "ETH" : "tokens"}`}
           inputMode="decimal"
-          className="rounded-xl border border-ink/15 bg-ink/[0.03] px-3 py-2 text-sm text-ink outline-none focus:border-accent-ink"
+          className="input-brutal px-3 py-2 text-sm"
         />
         <button
           type="button"
           disabled={busy || stake.trim() === ""}
           onClick={() => void submit()}
-          className="rounded-xl bg-ink px-4 py-2 text-xs font-semibold text-white transition hover:scale-105 disabled:opacity-60 sm:col-span-2"
+          className="btn-brutal px-4 py-2 text-xs sm:col-span-2"
         >
           {buttonLabel}
         </button>

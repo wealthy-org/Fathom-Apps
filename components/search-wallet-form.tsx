@@ -71,23 +71,18 @@ export function SearchWalletForm({
           placeholder="0x7A3…91F2"
           spellCheck={false}
           autoComplete="off"
-          className={`min-w-0 flex-1 rounded-full border border-ink/15 bg-ink/[0.03] font-mono text-ink placeholder:text-ink/40 focus:border-accent-ink/60 focus:outline-none ${
+          className={`input-brutal min-w-0 flex-1 font-mono ${
             compact ? "h-10 px-4 text-xs" : "h-12 px-5 text-sm"
           }`}
         />
         <button
           type="submit"
-          className="group relative inline-flex shrink-0 overflow-hidden rounded-full bg-ink p-[1px] transition duration-300 hover:scale-105"
+          className={`btn-brutal shrink-0 ${
+            compact ? "h-10 px-4 text-xs" : "h-12 px-6 text-sm"
+          }`}
         >
-          <span className="absolute inset-0 bg-gradient-to-r from-accent via-purple to-accent opacity-0 transition duration-300 group-hover:opacity-100" />
-          <span
-            className={`relative flex items-center justify-center gap-2 rounded-full bg-ink font-semibold text-white ${
-              compact ? "h-10 px-4 text-xs" : "h-12 px-6 text-sm"
-            }`}
-          >
-            {compact ? "Search" : "Search a Wallet"}
-            <Arrow />
-          </span>
+          {compact ? "Search" : "Search a Wallet"}
+          <Arrow />
         </button>
       </div>
       {error && <p className="mt-2 font-mono text-xs text-red-600">{error}</p>}

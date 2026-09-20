@@ -23,7 +23,7 @@ export function WalletShell({ children }: { children: React.ReactNode }) {
               Fathom
             </span>
           </Link>
-          <ConnectButton className="shrink-0 rounded-full bg-ink px-3 py-2 text-xs font-semibold text-white transition duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-sm" />
+          <ConnectButton className="btn-brutal shrink-0 px-3 py-2 text-xs sm:px-4 sm:text-sm disabled:cursor-not-allowed" />
         </div>
       </header>
 

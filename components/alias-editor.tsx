@@ -59,7 +59,7 @@ export function AliasEditor({
             setDraft(alias ?? "");
             setEditing(true);
           }}
-          className="rounded-full border border-ink/15 px-3 py-1 text-ink transition hover:border-ink/40"
+          className="btn-brutal-light px-3 py-1 text-xs"
         >
           {alias ? "Edit alias" : "Set alias"}
         </button>
@@ -74,13 +74,13 @@ export function AliasEditor({
         maxLength={MAX_ALIAS_LENGTH}
         onChange={(e) => setDraft(e.target.value)}
         placeholder="Alias (optional)"
-        className="rounded-full border border-ink/15 bg-ink/[0.03] px-4 py-2 text-sm text-ink outline-none focus:border-accent-ink"
+        className="input-brutal px-4 py-2 text-sm"
       />
       <button
         type="button"
         disabled={busy}
         onClick={() => void save(draft)}
-        className="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white transition hover:scale-105 disabled:opacity-60"
+        className="btn-brutal px-4 py-2 text-xs"
       >
         {busy ? "Saving…" : "Save"}
       </button>
@@ -89,7 +89,7 @@ export function AliasEditor({
           type="button"
           disabled={busy}
           onClick={() => void save(null)}
-          className="rounded-full border border-ink/15 px-4 py-2 text-xs text-ink/70 transition hover:border-red-400/60 hover:text-red-600 disabled:opacity-60"
+          className="btn-brutal-light px-4 py-2 text-xs hover:border-red-400/60 hover:text-red-600"
         >
           Clear
         </button>

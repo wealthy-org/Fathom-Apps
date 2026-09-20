@@ -215,7 +215,7 @@ function IconBox({
   };
   return (
     <div
-      className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${tones[tone]}`}
+      className={`flex h-12 w-12 items-center justify-center rounded-md border-2 shadow-[2px_2px_0_#0b0f17] ${tones[tone]}`}
     >
       <Icon name={name} />
     </div>
@@ -272,7 +272,7 @@ function Head({
 
 function ExampleTag() {
   return (
-    <span className="rounded border border-ink/10 bg-ink/5 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate400">
+    <span className="chip-mono bg-ink/5 text-slate400">
       Example
     </span>
   );
@@ -313,13 +313,10 @@ function PrimaryLink({
   return (
     <a
       href={href}
-      className="group relative inline-flex overflow-hidden rounded-full bg-ink p-[1px] transition duration-300 hover:scale-105"
+      className="btn-brutal group px-6 py-3.5 text-sm"
     >
-      <span className="absolute inset-0 bg-gradient-to-r from-accent via-purple to-accent opacity-0 transition duration-300 group-hover:opacity-100" />
-      <span className="relative flex items-center justify-center gap-2 rounded-full bg-ink px-6 py-3.5 text-sm font-semibold text-white">
-        {children}
-        <Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
-      </span>
+      {children}
+      <Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
     </a>
   );
 }
@@ -435,12 +432,12 @@ export default function Home() {
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-ink/10 bg-white/70 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-2 px-5 sm:px-6 lg:px-8">
           <Logo />
-          <div className="hidden items-center gap-1 rounded-full border border-ink/10 bg-ink/[0.03] p-1 backdrop-blur-md md:flex">
+          <div className="hidden items-center gap-1 rounded-md border-2 border-ink/10 bg-ink/[0.03] p-1 backdrop-blur-md md:flex">
             {NAV_LINKS.map(([t, href]) => (
               <a
                 key={t}
                 href={href}
-                className="rounded-full px-4 py-2 text-xs font-medium text-slate400 transition duration-200 hover:bg-ink/5 hover:text-ink"
+                className="rounded-md px-4 py-2 text-xs font-medium text-slate400 transition duration-200 hover:bg-ink/5 hover:text-ink"
               >
                 {t}
               </a>
@@ -449,7 +446,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Link
               href="/wallets"
-              className="hidden rounded-full border border-ink/15 px-4 py-2 text-xs font-medium text-ink transition hover:border-ink/40 sm:block"
+              className="hidden btn-brutal-light px-4 py-2 text-xs sm:block"
             >
               Search Wallet
             </Link>
@@ -459,7 +456,7 @@ export default function Home() {
               aria-label="Toggle menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-ink/15 text-ink transition hover:border-ink/40 md:hidden"
+              className="flex h-9 w-9 items-center justify-center rounded-md border-2 border-ink bg-white text-ink shadow-[2px_2px_0_#0b0f17] md:hidden"
             >
               <Icon name={menuOpen ? "x" : "menu"} />
             </button>
@@ -473,7 +470,7 @@ export default function Home() {
                   key={t}
                   href={href}
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-slate400 transition hover:bg-ink/5 hover:text-ink"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-slate400 transition hover:bg-ink/5 hover:text-ink"
                 >
                   {t}
                 </a>
@@ -481,7 +478,7 @@ export default function Home() {
               <Link
                 href="/wallets"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate400 transition hover:bg-ink/5 hover:text-ink"
+                className="rounded-md px-3 py-2 text-sm font-medium text-slate400 transition hover:bg-ink/5 hover:text-ink"
               >
                 Search Wallet
               </Link>
@@ -496,7 +493,7 @@ export default function Home() {
           <div className="mx-auto max-w-7xl">
             <div className="grid items-center gap-16 lg:grid-cols-[1.05fr_.95fr]">
               <div>
-                <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-full border border-accent-ink/20 bg-accent/5 px-3 py-1.5">
+                <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-md border-2 border-ink bg-accent/10 px-3 py-1.5 shadow-[2px_2px_0_#0b0f17]">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
                   <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
                     On-chain trust layer
@@ -532,7 +529,7 @@ export default function Home() {
 
               {/* Wallet Reputation Preview */}
               <div className="card">
-                <div className="glass shine-border rounded-3xl border border-ink/10 p-7 sm:p-9">
+                <div className="panel-brutal p-7 sm:p-9">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-sm text-ink">
                       0x7A3…91F2
@@ -623,7 +620,7 @@ export default function Home() {
               ].map(([icon, t, d]) => (
                 <article
                   key={t}
-                  className="card glass flex flex-col rounded-3xl border border-ink/10 p-7 sm:p-9"
+                  className="card panel-brutal flex flex-col p-7 sm:p-9"
                 >
                   <IconBox name={icon as IconName} />
                   <h3 className="mt-6 font-display text-lg font-medium">{t}</h3>
@@ -674,7 +671,7 @@ export default function Home() {
               ].map(([icon, n, t, d]) => (
                 <article
                   key={n}
-                  className="card glass relative flex flex-col rounded-3xl border border-ink/10 p-7 sm:p-9"
+                   className="card panel-brutal relative flex flex-col p-7 sm:p-9"
                 >
                   <IconBox name={icon as IconName} />
                   <span className="absolute right-7 top-7 font-mono text-[9px] text-slate400 sm:right-9 sm:top-9">
@@ -689,7 +686,7 @@ export default function Home() {
                 </article>
               ))}
             </div>
-            <div className="card mt-14 rounded-3xl border border-ink/10 bg-white/60 p-8">
+            <div className="card panel-brutal mt-14 p-8">
               <div>
                 <div className="flex flex-col items-center gap-1 font-mono text-sm text-slate400">
                   {[
@@ -729,7 +726,7 @@ export default function Home() {
               ].map(([icon, k, v, src]) => (
                 <article
                   key={k}
-                  className="card glass shine-border flex flex-col rounded-3xl border border-ink/10 p-7 sm:p-9"
+                   className="card panel-brutal flex flex-col p-7 sm:p-9"
                 >
                   <IconBox name={icon as IconName} />
                   <div className="mt-6 font-mono text-[9px] uppercase tracking-[0.18em] text-accent-ink">
@@ -796,7 +793,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="card">
-                <div className="glass shine-border rounded-3xl border border-ink/10 p-7 sm:p-9">
+                <div className="panel-brutal p-7 sm:p-9">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
                       Evidence
@@ -834,7 +831,7 @@ export default function Home() {
                       (t) => (
                         <span
                           key={t}
-                          className="rounded-full border border-ink/15 px-3 py-1 text-ink/70"
+                          className="rounded-md border-2 border-ink bg-white px-3 py-1 text-ink shadow-[2px_2px_0_#0b0f17]"
                         >
                           {t}
                         </span>
@@ -856,7 +853,7 @@ export default function Home() {
               sub="A wallet doesn't exist in isolation. Fathom maps interactions between wallets, contracts, and counterparties, alongside attestations, to reveal the relationships behind on-chain behavior."
             />
             <div className="mt-14 grid gap-10 lg:grid-cols-2">
-              <div className="card glass overflow-x-auto rounded-3xl border border-ink/10 p-7 sm:p-9">
+              <div className="card panel-brutal overflow-x-auto p-7 sm:p-9">
                 <div className="min-w-[300px] font-mono text-[11px] leading-8 text-slate400 sm:text-xs">
                   <div className="text-center text-accent-ink">Contract</div>
                   <div className="text-center text-slate400">│</div>
@@ -890,7 +887,7 @@ export default function Home() {
                   ].map((t) => (
                     <div
                       key={t}
-                      className="flex items-center gap-3 rounded-xl border border-ink/10 bg-ink/[0.03] px-4 py-3 text-sm text-ink/80"
+                      className="flex items-center gap-3 rounded-md border-2 border-ink bg-white px-4 py-3 text-sm text-ink/80 shadow-[2px_2px_0_#0b0f17]"
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                       {t}
@@ -929,7 +926,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="card">
-                <div className="glass shine-border rounded-3xl border border-ink/10 p-7 sm:p-9">
+                <div className="panel-brutal p-7 sm:p-9">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <IconBox name="fileCheck" />
@@ -979,7 +976,7 @@ export default function Home() {
               ].map(([icon, t, d]) => (
                 <article
                   key={t}
-                  className="card flex flex-col rounded-3xl border border-ink/10 bg-ink/[0.03] p-7 sm:p-9"
+                   className="card panel-brutal flex flex-col p-7 sm:p-9"
                 >
                   <IconBox name={icon as IconName} />
                   <div className="mt-6 font-mono text-[9px] uppercase tracking-[0.18em] text-accent-ink">
@@ -1010,7 +1007,7 @@ export default function Home() {
               }
             />
             <div className="card mx-auto mt-14 max-w-sm">
-              <div className="glass shine-border rounded-3xl border border-ink/10 p-7 sm:p-9">
+              <div className="panel-brutal p-7 sm:p-9">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-sm text-ink">0x7A3…91F2</span>
                   <ExampleTag />
@@ -1058,7 +1055,7 @@ export default function Home() {
                     </div>
                   ))}
                 </dl>
-                <button className="mt-6 w-full rounded-full border border-accent-ink/40 py-2.5 text-sm font-medium text-accent-ink transition hover:bg-accent/10">
+                <button className="btn-brutal-light mt-6 w-full py-2.5 text-sm">
                   View Evidence
                 </button>
               </div>
@@ -1080,7 +1077,7 @@ export default function Home() {
               }
               sub="Fathom is designed around wallet-based identity. You don't need to reveal your real-world identity to build or inspect reputation."
             />
-            <div className="card mt-14 max-w-md rounded-3xl border border-ink/10 bg-white/60 p-7 sm:p-9">
+            <div className="card panel-brutal mt-14 max-w-md p-7 sm:p-9">
               <div className="flex items-center gap-3">
                 <IconBox name="lock" />
                 <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
@@ -1136,7 +1133,7 @@ export default function Home() {
               ].map(([icon, t, d], i) => (
                 <article
                   key={t}
-                  className="card glass flex flex-col rounded-3xl border border-ink/10 p-7 sm:p-9"
+                  className="card panel-brutal flex flex-col p-7 sm:p-9"
                 >
                   <IconBox
                     name={icon as IconName}
@@ -1166,7 +1163,7 @@ export default function Home() {
               title="Make wallet reputation part of your product."
               sub="Fathom exposes reputation, proofs, risk signals, relationship metrics, and attestations through an integration layer."
             />
-            <div className="card mt-14 max-w-2xl overflow-hidden rounded-3xl border border-ink/10 bg-terminal shadow-[0_30px_100px_-40px_rgba(20,241,149,0.2)]">
+            <div className="card mt-14 max-w-2xl overflow-hidden rounded-2xl border-2 border-ink bg-terminal shadow-[4px_4px_0_#0b0f17]">
               <div className="flex items-center justify-between border-b border-ink/10 px-4 py-3">
                 <div className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
@@ -1225,7 +1222,7 @@ export default function Home() {
               <PrimaryLink href="/wallets">Search a Wallet</PrimaryLink>
               <a
                 href="#builders"
-                className="flex items-center justify-center gap-2 rounded-full border border-ink/15 px-6 py-3.5 text-sm font-medium text-ink transition hover:border-ink/40"
+                className="btn-brutal-light px-6 py-3.5 text-sm"
               >
                 Build with Fathom
               </a>
