@@ -19,6 +19,10 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Absolute base so file-convention og:image unfurls with a full URL.
+  ...(process.env.NEXT_PUBLIC_SITE_URL
+    ? { metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL) }
+    : {}),
   title: "Fathom — Know the Wallet Before You Trust It",
   description:
     "Fathom turns wallet history, economic relationships, behavioral signals, and attestations into verifiable trust evidence.",

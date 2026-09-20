@@ -22,14 +22,6 @@ const SLATE = "#64748b";
 const BORDER = "rgba(15,23,42,0.12)";
 const INK = "#0b0f17";
 
-const DIMENSION_LABELS = {
-  economic_history: "Economic",
-  counterparty_history: "Counterparty",
-  contract_history: "Contract",
-  community_trust: "Community",
-  risk_signals: "Risk",
-};
-
 function fallbackCard(address: string, reason: string): ImageResponse {
   return new ImageResponse(
     (
@@ -105,16 +97,16 @@ export default async function Image({
     return fallbackCard(address, "Reputation data is still being indexed.");
   }
 
-  const { completeness, tier, totalScore, formulaVersion, breakdown, availability } = reputation;
+  const { completeness, tier, totalScore, formulaVersion, availability } = reputation;
   const incomplete = completeness !== "complete";
   const openDisputes = profile.disputes.filter((d) => d.status === "open").length;
   const riskState = availability.riskSignals?.state;
-
-  const dimValues = breakdown.dimensions.map((d) => ({
-    label: DIMENSION_LABELS[d.id] ?? d.id,
-    value: d.available ? String(d.contribution) : null,
-  }));
-  dimValues.push({ label: "Risk", value: metric(-(breakdown.riskAdjustment.contribution ?? 0)) });
+  // Vouches: index state unknown = "—", never a fake zero.
+  const vouches = profile.vouchIndex === null ? null : profile.vouches.length;
+  // Incomplete walks yield lower bounds — mark them, don't imply exactness.
+  const counterparties = profile.trustGraph.complete
+    ? String(profile.trustGraph.uniqueCounterparties)
+    : `≥${profile.trustGraph.uniqueCounterparties}`;
 
   return new ImageResponse(
     (
@@ -164,16 +156,16 @@ export default async function Image({
           </span>
 
           <div style={{ display: "flex", gap: 24, alignItems: "flex-end" }}>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: SLATE }}>
                 Score
               </div>
-              <div style={{ fontSize: 52, fontWeight: 600, color: INK, fontFamily: "Space Grotesk, sans-serif" }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8, fontSize: 52, fontWeight: 600, color: INK, fontFamily: "Space Grotesk, sans-serif" }}>
                 {totalScore}
                 <span style={{ fontSize: 22, color: SLATE }}>/1000</span>
               </div>
             </div>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: SLATE }}>
                 Tier
               </div>
@@ -186,7 +178,7 @@ export default async function Image({
                   : "Complete"}
               </div>
             </div>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: SLATE }}>
                 Formula
               </div>
@@ -204,38 +196,17 @@ export default async function Image({
               <span style={{ fontSize: 30, color: INK }}>{metric(profile.walletAgeDays === null ? null : `${profile.walletAgeDays}d`)}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Transactions</span>
-              <span style={{ fontSize: 30, color: INK }}>{metric(profile.txCount)}</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Counterparties</span>
-              <span style={{ fontSize: 30, color: INK }}>{metric(profile.trustGraph.uniqueCounterparties)}</span>
+              <span style={{ fontSize: 30, color: INK }}>{metric(counterparties)}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Repeat</span>
-              <span style={{ fontSize: 30, color: INK }}>{metric(profile.trustGraph.repeatCounterparties)}</span>
+              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Vouches</span>
+              <span style={{ fontSize: 30, color: INK }}>{metric(vouches)}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Attestations</span>
-              <span style={{ fontSize: 30, color: INK }}>{metric(profile.attestations.length)}</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Open disputes</span>
+              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Disputes</span>
               <span style={{ fontSize: 30, color: INK }}>{metric(openDisputes)}</span>
             </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-            {dimValues.map((d) => (
-              <div key={d.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontSize: 12, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>
-                  {d.label}
-                </span>
-                <span style={{ fontSize: 22, color: INK }}>
-                  {metric(d.value)}
-                </span>
-              </div>
-            ))}
           </div>
 
           <span style={{ fontSize: 16, color: SLATE }}>

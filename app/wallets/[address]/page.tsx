@@ -10,6 +10,7 @@ import type { Proof, ProofType } from "@/lib/score/proofs";
 import type { RiskState } from "@/lib/score/risk";
 import type { Address } from "@/lib/score/types";
 import { CopyAddress } from "@/components/copy-address";
+import { ShareReputation } from "@/components/share-reputation";
 import { AliasEditor } from "@/components/alias-editor";
 import { ClaimFlow } from "@/components/claim-flow";
 import { ProfileTabs } from "@/components/profile-tabs";
@@ -1336,6 +1337,11 @@ export default async function WalletProfilePage({
           {shortAddress(address)}
         </h1>
         <CopyAddress address={address} />
+        <ShareReputation
+          address={address}
+          totalScore={profile.reputation.totalScore}
+          tierLabel={profile.reputation.tier?.label ?? null}
+        />
         {profile.alias && (
           <span className="rounded-md border-2 border-ink bg-white px-3 py-1 text-sm text-ink shadow-brutal-sm">
             {profile.alias}
