@@ -1,35 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import {
   clearRecentSearches,
-  readRecentSearches,
+  getRecentSearchesServerSnapshot,
+  getRecentSearchesSnapshot,
   relativeTime,
-  type RecentSearch,
+  subscribeRecentSearches,
 } from "@/lib/wallet/search-history";
 
 function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-// ponytail: store-driven mount — no setState-in-effect, SSR/first render identical.
-function useRecentSearches(): RecentSearch[] | null {
-  return useSyncExternalStore(
-    (notify) => {
-      window.addEventListener("storage", notify);
-      return () => window.removeEventListener("storage", notify);
-    },
-    () => readRecentSearches(),
-    () => null,
-  );
-}
-
 export function RecentlyChecked() {
-  const items = useRecentSearches();
-  const [, force] = useState(0);
+  // ponytail: mount gate — SSR/first render identical (null), store after mount.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const items = useSyncExternalStore(
+    subscribeRecentSearches,
+    getRecentSearchesSnapshot,
+    getRecentSearchesServerSnapshot,
+  );
 
-  if (items === null) return null;
+  if (!mounted) return null;
 
   return (
     <div className="mt-10">
@@ -40,10 +38,7 @@ export function RecentlyChecked() {
         {items.length > 0 && (
           <button
             type="button"
-            onClick={() => {
-              clearRecentSearches();
-              force((n) => n + 1);
-            }}
+            onClick={() => clearRecentSearches()}
             className="font-mono text-[11px] text-slate400 underline hover:text-ink"
           >
             Clear

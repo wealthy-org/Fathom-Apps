@@ -25,6 +25,7 @@ function isValid(entry: unknown): entry is RecentSearch {
 }
 
 export function readRecentSearches(): RecentSearch[] {
+  if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return [];
@@ -48,6 +49,8 @@ export function recordRecentSearch(address: string): RecentSearch[] {
   } catch {
     // Storage full or blocked — history is a convenience, not a requirement.
   }
+  cache = next;
+  listeners.forEach((notify) => notify());
   return next;
 }
 
@@ -57,6 +60,53 @@ export function clearRecentSearches(): void {
   } catch {
     // Ignore — see above.
   }
+  notifyRecentSearches();
+}
+
+/**
+ * Cached external store for useSyncExternalStore.
+ *
+ * getSnapshot must return a stable reference — a fresh array per call
+ * makes React re-render forever. The cache refreshes on writes (same tab)
+ * and on `storage` events (other tabs).
+ */
+type RecentSearchesListener = () => void;
+
+const listeners = new Set<RecentSearchesListener>();
+let cache: RecentSearch[] | null = null;
+
+function refreshCache(): RecentSearch[] {
+  cache = readRecentSearches();
+  return cache;
+}
+
+function notifyRecentSearches(): void {
+  refreshCache();
+  listeners.forEach((notify) => notify());
+}
+
+export function getRecentSearchesSnapshot(): RecentSearch[] {
+  if (cache === null) refreshCache();
+  return cache as RecentSearch[];
+}
+
+export function getRecentSearchesServerSnapshot(): RecentSearch[] {
+  return [];
+}
+
+export function subscribeRecentSearches(
+  notify: RecentSearchesListener,
+): () => void {
+  listeners.add(notify);
+  const onStorage = () => {
+    refreshCache();
+    notify();
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(notify);
+    window.removeEventListener("storage", onStorage);
+  };
 }
 
 /** "just now" / "12 minutes ago" / "3 hours ago" / "5 days ago". */
