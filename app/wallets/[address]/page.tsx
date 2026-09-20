@@ -19,6 +19,8 @@ import { VouchForm } from "@/components/vouch-form";
 import { VouchWithdrawButton } from "@/components/vouch-withdraw-button";
 import { TrustGraphVisualization } from "@/components/trust-graph-visualization";
 import { ReputationDimensions } from "@/components/reputation-dimensions";
+import { ScoringPhilosophy } from "@/components/scoring-philosophy";
+import { THRESHOLDS } from "@/config/thresholds";
 import { RiskSignals } from "@/components/risk-signals";
 import { txPerActiveDay } from "@/lib/chain/wallet-metrics";
 
@@ -50,13 +52,14 @@ function ScoreSection({ reputation }: { reputation: WalletProfile["reputation"] 
           </p>
         </div>
         <div className="text-right">
-          <div className="font-display text-3xl text-accent-ink">{reputation.totalScore}</div>
+          <div className="font-display text-3xl text-accent-ink tabular-nums">{reputation.totalScore} <span className="text-lg text-slate400">/ {THRESHOLDS.score.maxScore}</span></div>
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">{reputation.tier ? reputation.tier.label : "No tier — partial"} · {reputation.formulaVersion}</div>
         </div>
       </div>
       <div className="mt-5">
         <ReputationDimensions reputation={reputation} />
       </div>
+      <ScoringPhilosophy />
     </section>
   );
 }
@@ -1083,8 +1086,9 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
         </p>
         <div className="panel-brutal mt-5 flex flex-wrap items-end justify-between gap-4 p-6">
           <div>
-            <div className="font-display text-4xl text-accent-ink">
-              {profile.reputation.totalScore}
+            <div className="font-display text-4xl text-accent-ink tabular-nums">
+              {profile.reputation.totalScore}{" "}
+              <span className="text-xl text-slate400">/ {THRESHOLDS.score.maxScore}</span>
             </div>
             <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
               {profile.reputation.tier

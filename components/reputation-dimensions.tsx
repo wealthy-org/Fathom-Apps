@@ -37,6 +37,16 @@ const NOTES: Record<DimensionId, string> = {
   risk_signals: "More fill = more observed risk. This is not reputation.",
 };
 
+/** ScoreInput fields behind each dimension — words for the engine's inputs, no new meaning. */
+const INPUTS: Record<DimensionId, string> = {
+  economic_history: "Wallet age · Direct transaction count · Indexed native volume.",
+  counterparty_history:
+    "Unique counterparties · Repeat counterparties · Longest relationship.",
+  contract_history: "Verified contract-history proofs only (capped count).",
+  community_trust:
+    "Active vouches (stake-weighted, decayed, anti-farming discounted) · Role attestations (capped).",
+  risk_signals: "Detected risk signals only — a penalty mechanism, not reputation.",
+};
 function stateLabel(state: SourceState): string {
   switch (state) {
     case "empty":
@@ -113,57 +123,95 @@ export function ReputationDimensions({
       </p>
 
       <div className="panel-brutal mt-5 space-y-6 p-6">
-        {rows.map(({ id, dimension, showBar, pct, refCount, status, max }) => (
-          <div key={id}>
-            <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[200px_1fr_auto] sm:items-center sm:gap-4">
-              <div className="min-w-0">
-                <div className="font-display text-base">{LABELS[id]}</div>
-                <div className="mt-0.5 text-xs text-slate400">{NOTES[id]}</div>
+        {rows.map(({ id, dimension, showBar, pct, refCount, status, max }) => {
+          if (!showBar || !dimension) {
+            return (
+              <div key={id}>
+                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[200px_1fr_auto] sm:items-center sm:gap-4">
+                  <div className="min-w-0">
+                    <div className="font-display text-base">{LABELS[id]}</div>
+                    <div className="mt-0.5 text-xs text-slate400">{NOTES[id]}</div>
+                  </div>
+                  <div className="min-w-0 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
+                    {status}
+                  </div>
+                  <div className="shrink-0 font-mono text-sm text-ink tabular-nums">
+                    {status}
+                  </div>
+                </div>
               </div>
-              {showBar && dimension ? (
-                <div
-                  role="progressbar"
-                  aria-label={LABELS[id]}
-                  aria-valuenow={pct}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  className="h-3 min-w-0 overflow-hidden rounded-md border-2 border-ink bg-white"
-                >
+            );
+          }
+          const isRisk = id === "risk_signals";
+          return (
+            <details key={id}>
+              <summary className="cursor-pointer">
+                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[200px_1fr_auto] sm:items-center sm:gap-4">
+                  <div className="min-w-0">
+                    <div className="font-display text-base">{LABELS[id]}</div>
+                    <div className="mt-0.5 text-xs text-slate400">{NOTES[id]}</div>
+                  </div>
                   <div
-                    className={`h-full ${id === "risk_signals" ? "bg-purple" : "bg-accent"}`}
-                    style={{ width: `${pct}%` }}
-                  />
+                    role="progressbar"
+                    aria-label={LABELS[id]}
+                    aria-valuenow={pct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    className="h-3 min-w-0 overflow-hidden rounded-md border-2 border-ink bg-white"
+                  >
+                    <div
+                      className={`h-full ${isRisk ? "bg-purple" : "bg-accent"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="shrink-0 font-mono text-sm text-ink tabular-nums">
+                    {isRisk ? `${dimension.contribution} penalty` : `${pct}/100`}
+                  </div>
                 </div>
-              ) : (
-                <div className="min-w-0 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-                  {status}
-                </div>
-              )}
-              <div className="shrink-0 font-mono text-sm text-ink tabular-nums">
-                {showBar && dimension ? `${pct}/100` : status}
-              </div>
-            </div>
-            {showBar && dimension && (
-              <div className="mt-2 sm:pl-[216px]">
-                <p className="text-sm text-slate400">{dimension.explanation}</p>
-                <p className="mt-1 font-mono text-[11px] text-slate400">
-                  {id === "risk_signals"
-                    ? `Risk adjustment ${dimension.contribution} / ${max} max penalty`
-                    : `Contribution +${dimension.contribution} / ${max} max pts`}
-                  {" · ScoreStrategyV1"}
-                </p>
+              </summary>
+              <div className="mt-3 border-t-2 border-ink/10 pt-3 sm:ml-[216px]">
+                <dl className="space-y-2 text-sm">
+                  <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">Result</dt>
+                    <dd className="font-mono text-ink tabular-nums">
+                      {isRisk
+                        ? `${dimension.contribution} (penalty of max ${max})`
+                        : `+${dimension.contribution} of ${max} max pts · ${pct}/100 visual`}
+                    </dd>
+                  </div>
+                  <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">Input</dt>
+                    <dd className="text-slate400">{INPUTS[id]}</dd>
+                  </div>
+                  <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">Calculation</dt>
+                    <dd className="text-slate400">
+                      ScoreStrategyV1 over the available evidence. Subcomponent
+                      splits are not exposed by the engine — inspect the evidence.
+                    </dd>
+                  </div>
+                  <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">Weight</dt>
+                    <dd className="text-slate400">
+                      {isRisk
+                        ? `Configured max penalty ${max} — controlled by ScoreStrategy/config, not this UI.`
+                        : `Configured dimension maximum ${max} — controlled by ScoreStrategy/config, not this UI.`}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-2 text-sm text-slate400">{dimension.explanation}</p>
                 {refCount > 0 && (
                   <a
                     href={evidenceHref}
                     className="mt-1 inline-block font-mono text-[11px] text-accent-ink hover:underline"
                   >
-                    View evidence → ({refCount})
+                    Why → evidence ({refCount})
                   </a>
                 )}
               </div>
-            )}
-          </div>
-        ))}
+            </details>
+          );
+        })}
       </div>
     </section>
   );
