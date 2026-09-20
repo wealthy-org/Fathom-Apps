@@ -2,19 +2,19 @@ import { ImageResponse } from "next/og";
 import { z } from "zod";
 import { normalizeAddress } from "@/lib/chain/address";
 import { getWalletProfile } from "@/lib/wallet/profile";
+import { metric, truncateAlias } from "@/lib/wallet/card-utils";
+import { profileUrl } from "@/lib/wallet/profile-url";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "Fathom reputation card for a wallet";
 
-// Profil dibaca dari DB/explorer — tidak boleh di-cache statis.
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({
   address: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
 });
 
-// Warna dari app/globals.css (@theme). Route OG tidak bisa pakai kelas Tailwind.
 const VOID = "#f6f8fa";
 const ACCENT = "#0f9d63";
 const PURPLE = "#9945ff";
@@ -22,52 +22,63 @@ const SLATE = "#64748b";
 const BORDER = "rgba(15,23,42,0.12)";
 const INK = "#0b0f17";
 
+const DIMENSION_LABELS = {
+  economic_history: "Economic",
+  counterparty_history: "Counterparty",
+  contract_history: "Contract",
+  community_trust: "Community",
+  risk_signals: "Risk",
+};
+
+function fallbackCard(address: string, reason: string): ImageResponse {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%", height: "100%",
+          display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+          padding: 64, background: VOID, color: INK, fontFamily: "sans-serif", textAlign: "center",
+        }}
+      >
+        <span style={{ fontSize: 30, letterSpacing: 10, textTransform: "uppercase", color: ACCENT }}>
+          Fathom
+        </span>
+        <span style={{ fontSize: 20, color: SLATE, marginTop: 14 }}>
+          Reputation unavailable
+        </span>
+        <span style={{ fontSize: 24, marginTop: 6 }}>
+          {shortAddress(address)}
+        </span>
+        <span style={{ fontSize: 16, color: SLATE, marginTop: 12, maxWidth: 560 }}>
+          {reason}
+        </span>
+        <span style={{ fontSize: 18, color: SLATE, marginTop: 18 }}>
+          Evidence before score — inspect what this wallet actually did.
+        </span>
+        <span style={{ fontFamily: "monospace", color: ACCENT, marginTop: 24 }}>
+          {profileUrl(address as `0x${string}`)}
+        </span>
+      </div>
+    ),
+    size,
+  );
+}
+
 function shortAddress(address: string) {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
+    year: "numeric", month: "short", day: "numeric", timeZone: "UTC",
   });
 }
 
-/** Null = tidak diketahui; tampilkan "—", jangan pernah 0 palsu. */
-function metric(value: string | number | null): string {
-  if (value === null) return "—";
-  return String(value);
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-        padding: "20px 22px",
-        borderRadius: 18,
-        border: `1px solid ${BORDER}`,
-        background: "rgba(15,23,42,0.03)",
-      }}
-    >
-      <span
-        style={{
-          fontSize: 15,
-          letterSpacing: 2,
-          textTransform: "uppercase",
-          color: SLATE,
-        }}
-      >
-        {label}
-      </span>
-      <span style={{ fontSize: 34, color: INK }}>{value}</span>
-    </div>
-  );
+function riskStateLabel(state?: string): string {
+  if (state === "clear") return "Risk clear";
+  if (state === "detected") return "Risk signals detected";
+  return "Risk not evaluable";
 }
 
 export default async function Image({
@@ -81,43 +92,44 @@ export default async function Image({
   }
 
   const address = normalizeAddress(parsed.data.address);
-  const profile = await getWalletProfile(address);
 
-  const openDisputes = profile.disputes.filter(
-    (dispute) => dispute.status === "open",
-  ).length;
+  let profile;
+  try {
+    profile = await getWalletProfile(address);
+  } catch {
+    return fallbackCard(address, "Wallet profile could not be loaded.");
+  }
+
+  const reputation = profile.reputation;
+  if (!reputation || !reputation.breakdown) {
+    return fallbackCard(address, "Reputation data is still being indexed.");
+  }
+
+  const { completeness, tier, totalScore, formulaVersion, breakdown, availability } = reputation;
+  const incomplete = completeness !== "complete";
+  const openDisputes = profile.disputes.filter((d) => d.status === "open").length;
+  const riskState = availability.riskSignals?.state;
+
+  const dimValues = breakdown.dimensions.map((d) => ({
+    label: DIMENSION_LABELS[d.id] ?? d.id,
+    value: d.available ? String(d.contribution) : null,
+  }));
+  dimValues.push({ label: "Risk", value: metric(-(breakdown.riskAdjustment.contribution ?? 0)) });
 
   return new ImageResponse(
     (
       <div
         style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
+          width: "100%", height: "100%",
+          display: "flex", flexDirection: "column", justifyContent: "space-between",
           padding: 64,
           background: `radial-gradient(circle at 15% 0%, rgba(153,69,255,0.10), transparent 45%), radial-gradient(circle at 85% 100%, rgba(20,241,149,0.10), transparent 45%), ${VOID}`,
-          color: INK,
-          fontFamily: "sans-serif",
+          color: INK, fontFamily: "sans-serif",
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span
-              style={{
-                fontSize: 30,
-                letterSpacing: 10,
-                textTransform: "uppercase",
-                color: ACCENT,
-              }}
-            >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 30, letterSpacing: 10, textTransform: "uppercase", color: ACCENT }}>
               Fathom
             </span>
             <span style={{ fontSize: 20, letterSpacing: 4, color: SLATE }}>
@@ -129,27 +141,16 @@ export default async function Image({
             <span style={{ fontSize: 60, color: INK }}>
               {shortAddress(address)}
             </span>
-            {profile.alias && (
+            {truncateAlias(profile.alias) && (
               <span
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  fontSize: 22,
-                  padding: "8px 18px",
-                  borderRadius: 999,
+                  display: "flex", alignItems: "center", gap: 10,
+                  fontSize: 20, padding: "8px 18px", borderRadius: 999,
                   border: `1px solid ${BORDER}`,
                 }}
               >
-                {profile.alias}
-                <span
-                  style={{
-                    fontSize: 14,
-                    letterSpacing: 2,
-                    textTransform: "uppercase",
-                    color: SLATE,
-                  }}
-                >
+                {truncateAlias(profile.alias)}
+                <span style={{ fontSize: 14, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>
                   unverified
                 </span>
               </span>
@@ -161,33 +162,86 @@ export default async function Image({
               ? `Ownership proven · ${formatDate(profile.claim?.claimedAt ?? profile.claimedAt)}`
               : "Unclaimed — owner has not signed in yet."}
           </span>
+
+          <div style={{ display: "flex", gap: 24, alignItems: "flex-end" }}>
+            <div>
+              <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: SLATE }}>
+                Score
+              </div>
+              <div style={{ fontSize: 52, fontWeight: 600, color: INK, fontFamily: "Space Grotesk, sans-serif" }}>
+                {totalScore}
+                <span style={{ fontSize: 22, color: SLATE }}>/1000</span>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: SLATE }}>
+                Tier
+              </div>
+              <div style={{ fontSize: 32, color: ACCENT }}>
+                {tier ? tier.label : incomplete ? "Incomplete" : "Unavailable"}
+              </div>
+              <div style={{ fontSize: 13, color: SLATE, marginTop: 4 }}>
+                {incomplete
+                  ? (completeness === "unavailable" ? "Evidence unavailable" : `${completeness} — evidence still being indexed`)
+                  : "Complete"}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: SLATE }}>
+                Formula
+              </div>
+              <div style={{ fontSize: 16, color: INK, fontFamily: "JetBrains Mono, monospace" }}>
+                {formulaVersion}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "flex", gap: 16 }}>
-            <Metric
-              label="Wallet age"
-              value={
-                profile.walletAgeDays === null
-                  ? "—"
-                  : `${profile.walletAgeDays}d`
-              }
-            />
-            <Metric label="Transactions" value={metric(profile.txCount)} />
-            <Metric
-              label="Counterparties"
-              value={metric(profile.trustGraph.uniqueCounterparties)}
-            />
-            <Metric
-              label="Repeat"
-              value={metric(profile.trustGraph.repeatCounterparties)}
-            />
-            <Metric
-              label="Attestations"
-              value={metric(profile.attestations.length)}
-            />
-            <Metric label="Open disputes" value={metric(openDisputes)} />
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Wallet age</span>
+              <span style={{ fontSize: 30, color: INK }}>{metric(profile.walletAgeDays === null ? null : `${profile.walletAgeDays}d`)}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Transactions</span>
+              <span style={{ fontSize: 30, color: INK }}>{metric(profile.txCount)}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Counterparties</span>
+              <span style={{ fontSize: 30, color: INK }}>{metric(profile.trustGraph.uniqueCounterparties)}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Repeat</span>
+              <span style={{ fontSize: 30, color: INK }}>{metric(profile.trustGraph.repeatCounterparties)}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Attestations</span>
+              <span style={{ fontSize: 30, color: INK }}>{metric(profile.attestations.length)}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>Open disputes</span>
+              <span style={{ fontSize: 30, color: INK }}>{metric(openDisputes)}</span>
+            </div>
           </div>
+
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+            {dimValues.map((d) => (
+              <div key={d.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: 12, letterSpacing: 2, textTransform: "uppercase", color: SLATE }}>
+                  {d.label}
+                </span>
+                <span style={{ fontSize: 22, color: INK }}>
+                  {metric(d.value)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <span style={{ fontSize: 16, color: SLATE }}>
+            Risk: {riskStateLabel(riskState)} — score summarizes available evidence.
+          </span>
+
           <span style={{ fontSize: 18, color: SLATE }}>
             Evidence before score — inspect what this wallet actually did.
           </span>
@@ -195,16 +249,12 @@ export default async function Image({
 
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderTop: `1px solid ${BORDER}`,
-            paddingTop: 24,
-            fontSize: 20,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            borderTop: `1px solid ${BORDER}`, paddingTop: 24, fontSize: 20,
           }}
         >
           <span style={{ color: ACCENT, fontFamily: "monospace" }}>
-            /wallets/{address}
+            {profileUrl(address as `0x${string}`)}
           </span>
           <span style={{ color: PURPLE, letterSpacing: 4 }}>
             EVIDENCE BEFORE SCORE
