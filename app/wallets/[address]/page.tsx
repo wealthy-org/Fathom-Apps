@@ -21,7 +21,7 @@ import { TrustGraphVisualization } from "@/components/trust-graph-visualization"
 import { ReputationDimensions } from "@/components/reputation-dimensions";
 import { ScoringPhilosophy } from "@/components/scoring-philosophy";
 import { THRESHOLDS } from "@/config/thresholds";
-import { RiskSignals } from "@/components/risk-signals";
+import { RiskSignals, riskSignalLabel } from "@/components/risk-signals";
 import { txPerActiveDay } from "@/lib/chain/wallet-metrics";
 
 export const dynamic = "force-dynamic";
@@ -967,6 +967,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
     (dispute) => dispute.status === "open",
   ).length;
   const recentProofs = profile.proofs.slice(0, 4);
+  const topDetected = [...detected].slice(0, 2);
 
   const frequency = profile.trustGraph.complete
     ? txPerActiveDay(profile.txCount, profile.metrics.activeDays)
@@ -974,6 +975,40 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
 
   return (
     <>
+      <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
+        <section aria-labelledby="fathom-score">
+          <h2 id="fathom-score" className="font-display text-lg">
+            Fathom Score
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate400">
+            A provisional compression of the evidence on this profile, not a
+            trust decision.
+          </p>
+          <div className="panel-brutal mt-5 flex flex-wrap items-end justify-between gap-4 p-6">
+            <div>
+              <div className="font-display text-4xl text-accent-ink tabular-nums">
+                {profile.reputation.totalScore}{" "}
+                <span className="text-xl text-slate400">/ {THRESHOLDS.score.maxScore}</span>
+              </div>
+              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                {profile.reputation.tier
+                  ? profile.reputation.tier.label
+                  : "No tier — partial"}{" "}
+                · {profile.reputation.completeness} ·{" "}
+                {profile.reputation.formulaVersion}
+              </div>
+            </div>
+            <a href="#evidence" className="btn-brutal-light px-4 py-2 text-xs">
+              Why this score?
+            </a>
+          </div>
+        </section>
+
+        <div>
+          <ReputationDimensions reputation={profile.reputation} evidenceHref="#evidence" />
+        </div>
+      </div>
+
       <section className="mt-10" aria-labelledby="wallet-history">
         <h2 id="wallet-history" className="font-display text-lg">
           Wallet History
@@ -1076,67 +1111,10 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
         </div>
       </section>
 
-      <section className="mt-10" aria-labelledby="fathom-score">
-        <h2 id="fathom-score" className="font-display text-lg">
-          Fathom Score
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-slate400">
-          A provisional compression of the evidence on this profile, not a
-          trust decision.
-        </p>
-        <div className="panel-brutal mt-5 flex flex-wrap items-end justify-between gap-4 p-6">
-          <div>
-            <div className="font-display text-4xl text-accent-ink tabular-nums">
-              {profile.reputation.totalScore}{" "}
-              <span className="text-xl text-slate400">/ {THRESHOLDS.score.maxScore}</span>
-            </div>
-            <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
-              {profile.reputation.tier
-                ? profile.reputation.tier.label
-                : "No tier — partial"}{" "}
-              · {profile.reputation.completeness} ·{" "}
-              {profile.reputation.formulaVersion}
-            </div>
-          </div>
-          <a href="#evidence" className="btn-brutal-light px-4 py-2 text-xs">
-            Why this score?
-          </a>
-        </div>
-      </section>
-
-      <div className="mt-10">
-        <ReputationDimensions reputation={profile.reputation} evidenceHref="#evidence" />
-      </div>
-
-      <section className="mt-10">
-        <h2 className="font-display text-lg">Key Risks</h2>
-        <div className="panel-brutal mt-5 p-6">
-          <div className="flex flex-wrap gap-x-8 gap-y-2 font-mono text-sm">
-            <span>
-              <span className="text-accent-ink">{detected.size}</span>{" "}
-              <span className="text-slate400">detected</span>
-            </span>
-            <span>
-              <span className="text-ink">{clearCount}</span>{" "}
-              <span className="text-slate400">clear</span>
-            </span>
-            <span>
-              <span className="text-ink">{notEvaluableCount}</span>{" "}
-              <span className="text-slate400">not evaluable</span>
-            </span>
-          </div>
-          <a
-            href="#risk"
-            className="btn-brutal-light mt-4 inline-flex px-4 py-2 text-xs"
-          >
-            Inspect risk signals
-          </a>
-        </div>
-      </section>
-
-      <section className="mt-10">
+      <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
+      <section>
         <h2 className="font-display text-lg">Trust Graph Summary</h2>
-        <div className="panel-brutal mt-5 grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="panel-brutal mt-5 grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
               Counterparties
@@ -1175,6 +1153,16 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
             </div>
             <div className="mt-1 font-display text-2xl">{openDisputes}</div>
           </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Longest relationship
+            </div>
+            <div className="mt-1 font-display text-2xl">
+              {profile.trustGraph.longestRelationshipDays === null
+                ? "Not available"
+                : `${prefix}${profile.trustGraph.longestRelationshipDays} days`}
+            </div>
+          </div>
         </div>
         <a
           href="#graph"
@@ -1184,7 +1172,92 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
         </a>
       </section>
 
-      <section className="mt-10">
+      <section>
+        <h2 className="font-display text-lg">Risk Signals</h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate400">
+          Patterns that may need inspection — not verdicts.
+        </p>
+        <div className="panel-brutal mt-5 p-6">
+          <div className="flex flex-wrap gap-x-8 gap-y-2 font-mono text-sm">
+            <span>
+              <span className="text-accent-ink tabular-nums">{detected.size}</span>{" "}
+              <span className="text-slate400">detected</span>
+            </span>
+            <span>
+              <span className="text-ink tabular-nums">{clearCount}</span>{" "}
+              <span className="text-slate400">clear</span>
+            </span>
+            <span>
+              <span className="text-ink tabular-nums">{notEvaluableCount}</span>{" "}
+              <span className="text-slate400">not evaluable</span>
+            </span>
+          </div>
+          {topDetected.length > 0 && (
+            <ul className="mt-4 space-y-2">
+              {topDetected.map((type) => (
+                <li key={type} className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm text-ink">{riskSignalLabel(type)}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
+                    Detected
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <a
+            href="#risk"
+            className="btn-brutal-light mt-4 inline-flex px-4 py-2 text-xs"
+          >
+            View risk evidence
+          </a>
+        </div>
+      </section>
+      </div>
+
+      <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
+      <section>
+        <h2 className="font-display text-lg">Community</h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate400">
+          Supporting evidence — never reputation on its own. Disputes are
+          claims, not verdicts.
+        </p>
+        <div className="panel-brutal mt-5 grid gap-4 p-6 sm:grid-cols-3">
+          <div className="min-w-0">
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Vouches
+            </div>
+            <div className="mt-1 font-display text-2xl tabular-nums">
+              {profile.vouchIndex === null
+                ? "Not indexed"
+                : profile.vouches.length}
+            </div>
+          </div>
+          <div className="min-w-0">
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Role attestations
+            </div>
+            <div className="mt-1 font-display text-2xl tabular-nums">
+              {profile.attestations.length}
+            </div>
+          </div>
+          <div className="min-w-0">
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              Active disputes
+            </div>
+            <div className="mt-1 font-display text-2xl tabular-nums">
+              {openDisputes}
+            </div>
+          </div>
+        </div>
+        <a
+          href="#community"
+          className="btn-brutal-light mt-4 inline-flex px-4 py-2 text-xs"
+        >
+          Explore community
+        </a>
+      </section>
+
+      <section>
         <h2 className="font-display text-lg">Recent Proofs</h2>
         {recentProofs.length === 0 ? (
           <div className="panel-brutal mt-5 p-6 text-sm text-slate400">
@@ -1210,6 +1283,26 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
         >
           View all evidence
         </a>
+      </section>
+      </div>
+
+      <section className="mt-10">
+        <h2 className="font-display text-lg">Why This Score?</h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate400">
+          The Fathom Score is a provisional compression of the evidence
+          available for this wallet.
+        </p>
+        <div className="panel-brutal mt-5 p-6">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
+            Score → Dimension → Evidence → Proof → Raw source
+          </p>
+          <a
+            href="#evidence"
+            className="btn-brutal-light mt-4 inline-flex px-4 py-2 text-xs"
+          >
+            View score breakdown
+          </a>
+        </div>
       </section>
     </>
   );

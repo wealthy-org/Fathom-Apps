@@ -46,6 +46,11 @@ const CATEGORIES: { title: string; ids: RiskSignalType[] }[] = [
   },
 ];
 
+/** Human-readable label for a risk signal type — shared with Overview summaries. */
+export function riskSignalLabel(type: RiskSignalType): string {
+  return LABELS[type];
+}
+
 /** Signals whose evidence is rooted in the counterparty graph. */
 const GRAPH_BACKED: ReadonlySet<RiskSignalType> = new Set([
   "circular_relationship_graph",
