@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ConnectButton } from "@/components/connect-button";
 import { SearchWalletForm } from "@/components/search-wallet-form";
+import { PrivacyModel } from "@/components/privacy-model";
 
 const ICON_PATHS: Record<string, React.ReactNode> = {
   search: (
@@ -1064,7 +1065,7 @@ export default function Home() {
         </section>
 
         {/* 11. PRIVACY */}
-        <section className="px-5 py-28 sm:px-6 lg:px-8 lg:py-40">
+        <section id="privacy" className="px-5 py-28 sm:px-6 lg:px-8 lg:py-40">
           <div className="mx-auto max-w-7xl">
             <Head
               kick="Pseudonymous by design"
@@ -1077,37 +1078,8 @@ export default function Home() {
               }
               sub="Fathom is designed around wallet-based identity. You don't need to reveal your real-world identity to build or inspect reputation."
             />
-            <div className="card panel-brutal mt-14 max-w-md p-7 sm:p-9">
-              <div className="flex items-center gap-3">
-                <IconBox name="lock" />
-                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
-                  Identity requirements
-                </span>
-              </div>
-              <div className="mt-6">
-                {[
-                  ["Wallet address", "Required"],
-                  ["Real name", "Not required"],
-                  ["Profile photo", "Not required"],
-                  ["Email", "Not required"],
-                  ["Phone", "Not required"],
-                  ["Government ID", "Not required"],
-                ].map(([k, v]) => (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between border-b border-ink/10 py-3 text-sm last:border-b-0"
-                  >
-                    <span className="text-slate400">{k}</span>
-                    <span
-                      className={`font-mono text-xs ${
-                        v === "Required" ? "text-accent-ink" : "text-ink/60"
-                      }`}
-                    >
-                      {v}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <div className="card mt-14">
+              <PrivacyModel />
             </div>
             <p className="card mt-8 font-display text-2xl tracking-tight">
               Trust wallets, not identities.
