@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { normalizeAddress } from "@/lib/chain/address";
+import { toJsonSafe } from "@/lib/api/json-safe";
 import { getWalletProfile } from "@/lib/wallet/profile";
 
 const paramsSchema = z.object({
@@ -34,20 +35,32 @@ export async function GET(
   try {
     const profile = await getWalletProfile(normalizeAddress(parsed.data.address));
 
-    return NextResponse.json({
-      address: profile.address,
-      walletAgeDays: profile.walletAgeDays,
-      uniqueCounterparties: profile.trustGraph.complete
-        ? profile.trustGraph.uniqueCounterparties
-        : null,
-      repeatCounterparties: profile.trustGraph.complete
-        ? profile.trustGraph.repeatCounterparties
-        : null,
-      attestations: profile.attestations.length,
-      activeDisputes: profile.disputes.filter((d) => d.status === "open").length,
-      riskSignals: profile.riskSignals,
-      proofs: profile.proofs,
-    });
+    // ponytail: vouches membawa stakeAmount bigint — kirim sebagai string
+    // desimal via toJsonSafe. Field lain (score/tier/completeness/dimensions/
+    // proofs/riskSignals/claim) sudah JSON-safe (number/string/null).
+    return NextResponse.json(
+      toJsonSafe({
+        address: profile.address,
+        walletAgeDays: profile.walletAgeDays,
+        uniqueCounterparties: profile.trustGraph.complete
+          ? profile.trustGraph.uniqueCounterparties
+          : null,
+        repeatCounterparties: profile.trustGraph.complete
+          ? profile.trustGraph.repeatCounterparties
+          : null,
+        attestations: profile.attestations.length,
+        activeDisputes: profile.disputes.filter((d) => d.status === "open").length,
+        riskSignals: profile.riskSignals,
+        proofs: profile.proofs,
+        claim: profile.claim,
+        vouches: profile.vouches,
+        dimensions: profile.dimensions,
+        score: profile.reputation.totalScore,
+        tier: profile.reputation.tier,
+        formulaVersion: profile.reputation.formulaVersion,
+        completeness: profile.reputation.completeness,
+      }),
+    );
   } catch {
     return errorResponse("server_error", "Wallet data is temporarily unavailable.", 500);
   }

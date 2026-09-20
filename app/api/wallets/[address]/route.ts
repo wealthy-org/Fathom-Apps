@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { normalizeAddress } from "@/lib/chain/address";
+import { toJsonSafe } from "@/lib/api/json-safe";
 import { getWalletProfile } from "@/lib/wallet/profile";
 import { normalizeAlias, AliasError } from "@/lib/wallet/alias";
 import { getSession } from "@/lib/auth/session";
@@ -39,7 +40,9 @@ export async function GET(
 
   try {
     const profile = await getWalletProfile(normalizeAddress(parsed.data.address));
-    return NextResponse.json(profile);
+    // ponytail: profile membawa bigint (trustGraph valueSent/valueReceived,
+    // vouches stakeAmount, metrics wei) — kirim sebagai string desimal.
+    return NextResponse.json(toJsonSafe(profile));
   } catch {
     return errorResponse(
       "server_error",
