@@ -235,16 +235,14 @@ export default function Home() {
       <div className="bg-grid" />
 
       {/* NAVBAR */}
-      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-ink/10 bg-white/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-2 px-5 sm:px-6 lg:px-8">
+      <nav
+        className="fixed left-0 right-0 top-0 z-50 mx-4 mt-3 sm:mx-8 sm:mt-5 lg:mx-12"
+      >
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 rounded-full border border-black/5 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-xl">
           <Logo />
-          <div className="hidden items-center gap-1 rounded-md border-2 border-ink/10 bg-ink/[0.03] p-1 backdrop-blur-md md:flex">
+          <div className="hidden items-center gap-7 text-sm text-slate400 md:flex">
             {NAV_LINKS.map(([t, href]) => (
-              <a
-                key={t}
-                href={href}
-                className="rounded-md px-4 py-2 text-xs font-medium text-slate400 transition duration-200 hover:bg-ink/5 hover:text-ink"
-              >
+              <a key={t} href={href} className="transition hover:text-ink">
                 {t}
               </a>
             ))}
@@ -252,7 +250,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Link
               href="/wallets"
-              className="btn-brutal hidden px-4 py-2 text-xs sm:block"
+              className="btn-brutal hidden px-5 py-2.5 text-sm sm:block"
             >
               Check a Wallet
             </Link>
@@ -261,21 +259,21 @@ export default function Home() {
               aria-label="Toggle menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-9 w-9 items-center justify-center rounded-md border-2 border-ink bg-white text-ink shadow-[2px_2px_0_#0b0f17] md:hidden"
+              className="rounded-full p-2 text-ink md:hidden"
             >
               <MenuIcon open={menuOpen} />
             </button>
           </div>
         </div>
         {menuOpen && (
-          <div className="border-t border-ink/10 bg-white/80 px-5 py-4 backdrop-blur-xl md:hidden">
-            <div className="flex flex-col gap-1">
+          <div className="mt-2 rounded-3xl border border-black/5 bg-white/95 p-4 shadow-xl backdrop-blur-xl md:hidden">
+            <div className="grid gap-2 text-sm">
               {NAV_LINKS.map(([t, href]) => (
                 <a
                   key={t}
                   href={href}
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-slate400 transition hover:bg-ink/5 hover:text-ink"
+                  className="rounded-2xl px-4 py-3 text-slate400 transition hover:bg-black/5 hover:text-ink"
                 >
                   {t}
                 </a>
@@ -283,7 +281,7 @@ export default function Home() {
               <Link
                 href="/wallets"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-md px-3 py-2 text-sm font-medium text-slate400 transition hover:bg-ink/5 hover:text-ink"
+                className="rounded-2xl bg-ink px-4 py-3 font-medium text-white"
               >
                 Check a Wallet
               </Link>
@@ -296,7 +294,7 @@ export default function Home() {
         {/* HERO */}
         <section className="relative px-5 pb-24 pt-28 sm:px-6 sm:pt-44 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-md border-2 border-ink bg-accent/10 px-3 py-1.5 shadow-[2px_2px_0_#0b0f17]">
+            <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-full border border-black/5 bg-white/80 px-4 py-2 shadow-sm backdrop-blur-xl">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
                 Proof of Reputation
@@ -304,7 +302,7 @@ export default function Home() {
             </div>
             <h1 className="animate-title font-display text-5xl font-medium leading-[0.95] tracking-tighter sm:text-7xl">
               Proof of Reputation
-              <span className="block bg-gradient-to-b from-ink to-ink/50 bg-clip-text text-transparent">
+              <span className="font-serif-accent block">
                 for pseudonymous wallets.
               </span>
             </h1>
@@ -331,7 +329,14 @@ export default function Home() {
           <div className="mx-auto max-w-3xl">
             <Head
               kick="About Fathom"
-              title="A reputation layer for pseudonymous wallets."
+              title={
+                <>
+                  A reputation layer for{" "}
+                  <span className="font-serif-accent">
+                    pseudonymous wallets.
+                  </span>
+                </>
+              }
             />
             <div className="card panel-brutal mt-14 space-y-5 p-7 text-base leading-8 text-slate400 sm:p-9">
               <p>
@@ -359,7 +364,12 @@ export default function Home() {
           <div className="mx-auto max-w-3xl">
             <Head
               kick="How it works"
-              title="From an unknown wallet to your own decision."
+              title={
+                <>
+                  From an unknown wallet to{" "}
+                  <span className="font-serif-accent">your own decision.</span>
+                </>
+              }
               sub="Five steps. Every claim traces back to evidence you can inspect."
             />
             <ol className="mt-14 space-y-4">
@@ -388,7 +398,11 @@ export default function Home() {
           <div className="mx-auto max-w-3xl">
             <Head
               kick="FAQ"
-              title="What you need to know."
+              title={
+                <>
+                  What you <span className="font-serif-accent">need to know.</span>
+                </>
+              }
             />
             <div className="mt-14 space-y-3">
               {FAQ.map(([q, a], i) => (
