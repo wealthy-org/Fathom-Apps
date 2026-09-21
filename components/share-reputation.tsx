@@ -37,6 +37,8 @@ export function ShareReputation({
     try {
       await navigator.clipboard.writeText(url());
       setNotice("Profile link copied.");
+      // ponytail: auto-hilang seperti "Copied" — notice bukan isi permanen.
+      window.setTimeout(() => setNotice(null), 2000);
     } catch {
       setNotice("Copy failed — long-press the address instead.");
     }
@@ -68,14 +70,14 @@ export function ShareReputation({
       <button
         type="button"
         onClick={() => void handleShare()}
-        className="btn-brutal-light px-3 py-2 text-xs sm:px-4 sm:text-sm"
+        className="btn-brutal-light px-4 py-2 text-xs"
       >
         Share reputation
       </button>
       <button
         type="button"
         onClick={() => void copyLink()}
-        className="px-2 py-2 font-mono text-[11px] text-slate400 underline hover:text-ink"
+        className="btn-brutal-light px-4 py-2 text-xs"
       >
         Copy link
       </button>

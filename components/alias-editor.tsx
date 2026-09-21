@@ -59,7 +59,7 @@ export function AliasEditor({
             setDraft(alias ?? "");
             setEditing(true);
           }}
-          className="btn-brutal-light px-3 py-1 text-xs"
+          className="btn-brutal-light px-4 py-2 text-xs"
         >
           {alias ? "Edit alias" : "Set alias"}
         </button>

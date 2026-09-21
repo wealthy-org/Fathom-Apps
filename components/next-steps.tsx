@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useAccount } from "wagmi";
 import { SearchWalletForm } from "@/components/search-wallet-form";
@@ -15,8 +16,15 @@ import type { Address } from "@/lib/score/types";
 
 function CheckMyWalletButton({ viewed }: { viewed: Address }) {
   const { address, isConnected } = useAccount();
+  // ponytail: server tidak tahu status wallet — snapshot server selalu
+  // "belum mount" agar hydration cocok; auto-reconnect wallet hanya di klien.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
-  if (!isConnected || !address) {
+  if (!mounted || !isConnected || !address) {
     return (
       <p className="text-sm text-slate400">
         Connect your wallet to inspect your own public profile — checking
@@ -54,7 +62,7 @@ export function NextSteps({
   return (
     <section aria-label="What's next" className="mt-10">
       <h2 className="font-display text-lg">What&apos;s next?</h2>
-      <div className="panel-brutal mt-5 grid gap-6 p-6 sm:grid-cols-2">
+      <div className="panel-brutal mt-5 grid gap-6 p-6">
         <div className="min-w-0">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
             Check your own wallet
@@ -75,7 +83,7 @@ export function NextSteps({
             />
           </div>
         </div>
-        <div className="min-w-0 sm:col-span-2">
+        <div className="min-w-0">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
             Check another wallet
           </div>

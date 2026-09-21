@@ -19,7 +19,7 @@ export function CopyAddress({ address }: { address: string }) {
     <button
       type="button"
       onClick={() => void copy()}
-      className="rounded-full border border-black/10 bg-white px-4 py-1.5 font-mono text-xs text-slate400 shadow-sm transition hover:text-ink"
+      className="btn-brutal-light px-4 py-2 text-xs"
     >
       {copied ? "Copied" : "Copy address"}
     </button>

@@ -339,7 +339,7 @@ function EvidenceValue({
 /** Detail rows for the expanded card — engine keys, human labels, no new math. */
 export function evidenceRows(
   state: RiskState,
-): { label: string; value: unknown }[] {
+): { key: string; label: string; value: unknown }[] {
   const evidence = state.evidence;
   if (!evidence) return [];
   const PRETTY: Record<string, string> = {
@@ -384,7 +384,9 @@ export function evidenceRows(
     disputes: "Active dispute records",
   };
   // ponytail: engine key order is already meaningful — no re-sorting.
+  // key = engine key (unik); label boleh bertabrakan antar key berbeda.
   return Object.entries(evidence).map(([key, value]) => ({
+    key,
     label: PRETTY[key] ?? key,
     value,
   }));
@@ -431,7 +433,7 @@ function SignalCard({ state }: { state: RiskState }) {
         {rows.length > 0 ? (
           <dl className="space-y-2 font-mono text-[12px]">
             {rows.map((row) => (
-              <div key={row.label} className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[220px_1fr] sm:gap-3">
+              <div key={row.key} className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[220px_1fr] sm:gap-3">
                 <dt className="uppercase tracking-[0.12em] text-slate400">
                   {row.label}
                 </dt>
