@@ -110,9 +110,9 @@ contract FathomVouchRegistry is Ownable {
         VouchPosition storage pos = positions[msg.sender][to];
         if (pos.disputed) revert DisputedLocked();
         if (uint256(pos.stake) < amount) revert InsufficientStake();
-        // forge-lint: disable-next-line block-timestamp
         // Cooldown on-chain memakai block.timestamp — kontrak adalah penegak
-        // otoritatif (bukan timer off-chain); toleransi ±15 detik wajar untuk lock hari.
+        // otoritatif (bukan timer off-chain); toleransi ±15 detik wajar untuk
+        // lock hari. Warning block-timestamp di-exclude via [lint] foundry.toml.
         if (
             block.timestamp <
             uint256(pos.lastStakedAt) + cooldownDays * SECONDS_PER_DAY
