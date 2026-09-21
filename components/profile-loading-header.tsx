@@ -21,11 +21,6 @@ export function ProfileLoadingHeader() {
       <h1 className="mt-3 font-display text-3xl font-medium sm:text-4xl">
         {address ? shortAddress(address) : "…"}
       </h1>
-      {address && (
-        <p className="mt-3 break-all font-mono text-xs text-slate400">
-          {address}
-        </p>
-      )}
     </div>
   );
 }
