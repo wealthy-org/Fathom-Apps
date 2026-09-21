@@ -70,7 +70,7 @@ export function ClaimFlow({
   if (claimedLabel !== null) {
     return (
       <p className="mt-3 text-xs text-slate400">
-        <span className="mr-2 inline-block rounded-full border border-black/10 bg-white px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink">
+        <span className="mr-2 inline-block rounded-full border border-black/10 bg-white px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.18em] text-ink">
           Claimed
         </span>
         Verified owner · {claimedLabel}. Claiming proves control only — it
@@ -115,7 +115,7 @@ export function ClaimFlow({
     setError(null);
     const phantom = await resolvePhantomConnector(connectors);
     if (!phantom) {
-      handleMissingWallet();
+      setError(handleMissingWallet());
       return;
     }
     try {
@@ -143,7 +143,7 @@ export function ClaimFlow({
     if (!connected || !matches) return;
     const phantom = await resolvePhantomConnector(connectors);
     if (!phantom) {
-      handleMissingWallet();
+      setError(handleMissingWallet());
       return;
     }
     setPhase("verify");
@@ -344,7 +344,7 @@ export function ClaimFlow({
               )}
               {error && (
                 <div>
-                  <p className="text-sm text-ink">{error}</p>
+                  <p role="alert" className="text-sm text-ink">{error}</p>
                   <button
                     type="button"
                     onClick={() => setError(null)}

@@ -13,7 +13,7 @@ function Block({ className = "" }: { className?: string }) {
 function Metric({ label }: { label: string }) {
   return (
     <div className="min-w-0">
-      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+      <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
         {label}
       </div>
       <Block className="mt-1 h-8 w-1/2" />

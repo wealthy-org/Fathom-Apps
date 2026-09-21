@@ -48,11 +48,24 @@ export function ProfileTabs({
 }) {
   const [active, setActive] = useState<ProfileTabId>("overview");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tablistRef = useRef<HTMLDivElement | null>(null);
+  // Hash changes we cause ourselves (clicking a pill) must not scroll —
+  // only external deep links (#evidence, cold load) do.
+  const ownHashNav = useRef(false);
 
   useEffect(() => {
     const sync = () => {
       const id = tabIdFromHash(window.location.hash);
-      if (id) setActive((prev) => (prev === id ? prev : id));
+      if (!id) return;
+      setActive((prev) => (prev === id ? prev : id));
+      // Panels are hidden pre-hydration, so the browser's native hash
+      // scroll on cold load never fires — bring the tablist into view.
+      // behavior "auto" follows CSS scroll-behavior (smooth; auto under
+      // prefers-reduced-motion via the html override).
+      if (!ownHashNav.current) {
+        tablistRef.current?.scrollIntoView({ block: "start" });
+      }
+      ownHashNav.current = false;
     };
     sync();
     window.addEventListener("hashchange", sync);
@@ -62,6 +75,7 @@ export function ProfileTabs({
   const select = useCallback((id: ProfileTabId) => {
     setActive(id);
     if (tabIdFromHash(window.location.hash) !== id) {
+      ownHashNav.current = true;
       window.location.hash = id;
     }
   }, []);
@@ -90,10 +104,11 @@ export function ProfileTabs({
   return (
     <div className="mt-8">
       <div
+        ref={tablistRef}
         role="tablist"
         aria-label="Wallet profile sections"
         onKeyDown={onKeyDown}
-        className="flex gap-2 overflow-x-auto pb-1"
+        className="flex scroll-mt-6 gap-2 overflow-x-auto pb-1"
       >
         {TABS.map((tab, i) => {
           const selected = active === tab.id;
@@ -111,13 +126,13 @@ export function ProfileTabs({
               aria-controls={`panel-${tab.id}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => select(tab.id)}
-              className={`shrink-0 whitespace-nowrap px-4 py-2 text-xs ${
+              className={`min-touch shrink-0 whitespace-nowrap px-4 py-2 text-xs ${
                 selected ? "btn-brutal" : "btn-brutal-light"
               }`}
             >
               {tab.label}
               {badge ? (
-                <span className="ml-2 rounded-sm border border-current px-1 font-mono text-[10px]">
+                <span className="ml-2 rounded-sm border border-current px-1 font-mono text-[11px]">
                   {badge}
                 </span>
               ) : null}

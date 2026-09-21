@@ -49,31 +49,31 @@ function ScoreSection({
   reputation: WalletProfile["reputation"];
 }) {
   return (
-    <section className="mt-10" aria-labelledby="reputation-score">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 id="reputation-score" className="font-display text-lg">
-            Reputation Score
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate400">
-            A provisional compression of the evidence on this profile, not a
-            trust decision.
-          </p>
+    <section className="mt-12" aria-labelledby="reputation-score">
+      <h2 id="reputation-score" className="font-display text-xl font-semibold">
+        Reputation Score
+      </h2>
+      <p className="mt-2 max-w-2xl text-sm text-slate400">
+        A provisional compression of the evidence on this profile, not a
+        trust decision.
+      </p>
+      <div className="panel-brutal mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-5 p-8">
+        <div className="font-display text-6xl font-semibold leading-none text-ink tabular-nums sm:text-7xl">
+          {reputation.totalScore}{" "}
+          <span className="text-2xl font-medium text-slate400">
+            / {THRESHOLDS.score.maxScore}
+          </span>
         </div>
-        <div className="text-right">
-          <div className="font-display text-3xl text-accent-ink tabular-nums">
-            {reputation.totalScore}{" "}
-            <span className="text-lg text-slate400">
-              / {THRESHOLDS.score.maxScore}
-            </span>
+        <div>
+          <div className="font-display text-2xl text-accent-ink">
+            {reputation.tier ? reputation.tier.label : "No tier — partial"}
           </div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
-            {reputation.tier ? reputation.tier.label : "No tier — partial"} ·{" "}
+          <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-faint">
             {reputation.formulaVersion}
           </div>
         </div>
       </div>
-      <div className="mt-5">
+      <div className="mt-6">
         <ReputationDimensions reputation={reputation} />
       </div>
       <ScoringPhilosophy />
@@ -82,6 +82,126 @@ function ScoreSection({
 }
 
 const WEI_PER_ETH = BigInt(10) ** BigInt(18);
+
+/**
+ * In-profile rendition of the opengraph reputation card (same layout
+ * language, same page props — no new fetching). Identity rows live in the
+ * page header and ownership block; the card carries the summary: score trio,
+ * headline metrics, risk line, and the score-breakdown path.
+ */
+function ReputationHero({ profile }: { profile: WalletProfile }) {
+  const reputation = profile.reputation;
+  const incomplete = reputation.completeness !== "complete";
+  const tierLabel = reputation.tier
+    ? reputation.tier.label
+    : incomplete
+      ? "Incomplete"
+      : "Unavailable";
+  const tierNote = incomplete
+    ? reputation.completeness === "unavailable"
+      ? "Evidence unavailable"
+      : `${reputation.completeness} — evidence still being indexed`
+    : "Complete";
+  const openDisputes = profile.disputes.filter(
+    (dispute) => dispute.status === "open",
+  ).length;
+  // Vouches: index state unknown = "—", never a fake zero.
+  const vouches = profile.vouchIndex === null ? null : profile.vouches.length;
+  // Incomplete walks yield lower bounds — mark them, don't imply exactness.
+  const counterparties = profile.trustGraph.complete
+    ? String(profile.trustGraph.uniqueCounterparties)
+    : `≥${profile.trustGraph.uniqueCounterparties}`;
+  const detected = profile.riskStates.some(
+    (state) => state.status === "detected",
+  );
+  const evaluable = profile.riskStates.some(
+    (state) => state.status !== "not_evaluable",
+  );
+  const riskHeadline = detected
+    ? "Risk signals detected"
+    : evaluable
+      ? "Risk clear"
+      : "Risk not evaluable";
+  const metrics: { label: string; value: string }[] = [
+    {
+      label: "Wallet age",
+      value: profile.walletAgeDays === null ? "—" : `${profile.walletAgeDays}d`,
+    },
+    { label: "Counterparties", value: counterparties },
+    { label: "Vouches", value: vouches === null ? "—" : String(vouches) },
+    { label: "Disputes", value: String(openDisputes) },
+  ];
+
+  return (
+    <div className="panel-brutal bg-mist p-6 sm:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="font-mono text-sm font-semibold uppercase tracking-[0.3em] text-accent-ink">
+          Fathom
+        </span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
+          Proof of Reputation
+        </span>
+      </div>
+
+      <div className="mt-7 flex flex-wrap items-end gap-x-12 gap-y-6">
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
+            Score
+          </div>
+          <div className="mt-1 font-display text-6xl font-semibold leading-none text-ink tabular-nums sm:text-7xl">
+            {reputation.totalScore}{" "}
+            <span className="text-2xl font-medium text-slate400">
+              / {THRESHOLDS.score.maxScore}
+            </span>
+          </div>
+        </div>
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
+            Tier
+          </div>
+          <div className="mt-1 font-display text-2xl text-accent-ink">
+            {tierLabel}
+          </div>
+          <div className="mt-1 text-xs text-slate400">{tierNote}</div>
+        </div>
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
+            Formula
+          </div>
+          <div className="mt-1 font-mono text-sm text-ink">
+            {reputation.formulaVersion}
+          </div>
+        </div>
+      </div>
+
+      <dl className="mt-7 flex flex-wrap gap-x-12 gap-y-4 border-t border-black/10 pt-5">
+        {metrics.map((metric) => (
+          <div key={metric.label}>
+            <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
+              {metric.label}
+            </dt>
+            <dd className="mt-1 font-display text-2xl text-ink tabular-nums">
+              {metric.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className="mt-5 text-sm text-slate400">
+        Risk: {riskHeadline} — score summarizes available evidence.
+      </p>
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4">
+        <p className="text-sm text-slate400">
+          Evidence before score — inspect what this wallet actually did.
+        </p>
+        <a href="#evidence" className="btn-brutal-light px-4 py-2 text-xs">
+          Why this score?
+        </a>
+      </div>
+    </div>
+  );
+}
 
 /** Format nilai wei ke native unit untuk tampilan (AGENTS §9: hanya di boundary presentasi). */
 function formatNative(wei: string): string {
@@ -208,7 +328,7 @@ function TxLink({ hash, label }: { hash: string; label: string }) {
       href={explorerTransactionUrl(hash)}
       target="_blank"
       rel="noreferrer"
-      className="rounded-full border border-black/10 px-2 py-0.5 font-mono text-[10px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
+      className="inline-flex min-touch items-center rounded-full border border-black/10 px-3 py-2 font-mono text-[11px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
     >
       {label}
     </a>
@@ -482,19 +602,19 @@ function ProofDetail({
       </summary>
       <div className="mt-3 space-y-3 text-sm text-slate400">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em]">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em]">
             Claim
           </div>
           <p className="mt-1 text-ink">{PROOF_CLAIM[proof.type]}</p>
         </div>
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em]">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em]">
             How it was derived
           </div>
           <p className="mt-1">{PROOF_DERIVATION[proof.type]}</p>
         </div>
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em]">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em]">
             Verification
           </div>
           <p className="mt-1 font-mono text-[11px]">
@@ -504,7 +624,7 @@ function ProofDetail({
           </p>
         </div>
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em]">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em]">
             Supporting evidence
           </div>
           <div className="mt-1">
@@ -537,7 +657,7 @@ function Field({
 }) {
   return (
     <div className="panel-brutal p-5">
-      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+      <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
         {label}
       </div>
       <div className="mt-2 font-display text-2xl">{value}</div>
@@ -554,8 +674,8 @@ function AttestationsSection({
   attestations: WalletProfile["attestations"];
 }) {
   return (
-    <section id="attestations" className="mt-10">
-      <h2 className="font-display text-lg">Attestations</h2>
+    <section id="attestations" className="mt-12">
+      <h2 className="font-display text-xl font-semibold">Attestations</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         Structured, signed claims from other wallets. Attestations are
         supporting evidence — they never replace on-chain behavior, and they do
@@ -574,7 +694,7 @@ function AttestationsSection({
                 <span className="font-display text-base">
                   {attestation.role}
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
                   {attestation.onchainIdentity ? "on-chain" : "signed"}
                 </span>
               </div>
@@ -616,7 +736,7 @@ function AttestationsSection({
                     <summary className="cursor-pointer text-xs text-slate400">
                       Verify signature
                     </summary>
-                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[10px] text-slate400">
+                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[11px] text-slate400">
                       {attestation.message}
                       {"\n"}
                       {attestation.signature}
@@ -641,8 +761,8 @@ function DisputesSection({
   disputes: WalletProfile["disputes"];
 }) {
   return (
-    <section className="mt-10">
-      <h2 className="font-display text-lg">Disputes</h2>
+    <section className="mt-12">
+      <h2 className="font-display text-xl font-semibold">Disputes</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         Signed reports filed against this wallet. A dispute is a claim, not
         proof of wrongdoing — it never changes reputation or risk here. On-chain
@@ -665,7 +785,7 @@ function DisputesSection({
                       ? `On-chain dispute #${dispute.onchainIdentity.registryId}`
                       : "Dispute")}
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                   {dispute.status}
                   {dispute.onchainIdentity ? " · on-chain" : ""}
                 </span>
@@ -708,7 +828,7 @@ function DisputesSection({
                   <summary className="cursor-pointer text-xs text-slate400">
                     Verify signature
                   </summary>
-                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[10px] text-slate400">
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[11px] text-slate400">
                     {dispute.message}
                     {"\n"}
                     {dispute.signature}
@@ -735,8 +855,8 @@ function VouchesSection({
   vouchIndex: WalletProfile["vouchIndex"];
 }) {
   return (
-    <section id="vouches" className="mt-10">
-      <h2 className="font-display text-lg">Vouches</h2>
+    <section id="vouches" className="mt-12">
+      <h2 className="font-display text-xl font-semibold">Vouches</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         On-chain vouch edges indexed from the Fathom registry (Spec 08). A vouch
         is economic-backing evidence — it never creates reputation score on its
@@ -770,7 +890,7 @@ function VouchesSection({
                       <span className="font-display text-base">
                         {received ? "Vouch received" : "Vouch given"}
                       </span>
-                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                      <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                         {vouch.status}
                       </span>
                     </div>
@@ -847,8 +967,8 @@ function TrustGraphSection({
     graph.vouches.length > 0 ||
     graph.invitedBy !== null;
   return (
-    <section className="mt-10">
-      <h2 className="font-display text-lg">Trust Graph</h2>
+    <section className="mt-12">
+      <h2 className="font-display text-xl font-semibold">Trust Graph</h2>
       <TrustGraphVisualization graph={graph} address={address} />
       {graph.relationships.length > 0 && (
         <>
@@ -995,56 +1115,37 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
 
   return (
     <>
-      <div className="mt-10 grid items-start gap-6">
-        <section aria-labelledby="fathom-score">
-          <h2 id="fathom-score" className="font-display text-lg">
-            Fathom Score
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate400">
-            A provisional compression of the evidence on this profile, not a
-            trust decision.
-          </p>
-          <div className="panel-brutal mt-5 flex flex-wrap items-end justify-between gap-4 p-6">
-            <div>
-              <div className="font-display text-4xl text-accent-ink tabular-nums">
-                {profile.reputation.totalScore}{" "}
-                <span className="text-xl text-slate400">
-                  / {THRESHOLDS.score.maxScore}
-                </span>
-              </div>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
-                {profile.reputation.tier
-                  ? profile.reputation.tier.label
-                  : "No tier — partial"}{" "}
-                · {profile.reputation.completeness} ·{" "}
-                {profile.reputation.formulaVersion}
-              </div>
-            </div>
-            <a href="#evidence" className="btn-brutal-light px-4 py-2 text-xs">
-              Why this score?
-            </a>
-          </div>
-        </section>
-
-        <div>
-          <ReputationDimensions
-            reputation={profile.reputation}
-            evidenceHref="#evidence"
-          />
+      <section aria-labelledby="fathom-score" className="mt-12">
+        <h2 id="fathom-score" className="font-display text-xl font-semibold">
+          Fathom Score
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate400">
+          A provisional compression of the evidence on this profile, not a
+          trust decision.
+        </p>
+        <div className="mt-6">
+          <ReputationHero profile={profile} />
         </div>
+      </section>
+
+      <div className="mt-12">
+        <ReputationDimensions
+          reputation={profile.reputation}
+          evidenceHref="#evidence"
+        />
       </div>
 
-      <section className="mt-10" aria-labelledby="wallet-history">
-        <h2 id="wallet-history" className="font-display text-lg">
+      <section className="mt-12" aria-labelledby="wallet-history">
+        <h2 id="wallet-history" className="font-display text-xl font-semibold">
           Wallet History
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-slate400">
           Objective historical information — observations, not trust judgments.
         </p>
-        <div className="panel-brutal mt-5 p-6">
+        <div className="panel-brutal mt-6 p-6">
           <dl className="grid gap-x-6 gap-y-5">
             <div className="min-w-0">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Wallet age
               </dt>
               <dd className="mt-1 font-display text-2xl tabular-nums">
@@ -1059,7 +1160,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               )}
             </div>
             <div className="min-w-0">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Transaction count
               </dt>
               <dd className="mt-1 font-display text-2xl tabular-nums">
@@ -1072,7 +1173,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </p>
             </div>
             <div className="min-w-0">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 First transaction
               </dt>
               <dd className="mt-1 font-display text-2xl">
@@ -1080,7 +1181,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Last activity
               </dt>
               <dd className="mt-1 font-display text-2xl">
@@ -1088,7 +1189,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Active days
               </dt>
               <dd className="mt-1 font-display text-2xl tabular-nums">
@@ -1101,7 +1202,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </p>
             </div>
             <div className="min-w-0">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Active months
               </dt>
               <dd className="mt-1 font-display text-2xl tabular-nums">
@@ -1114,7 +1215,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </p>
             </div>
             <div className="min-w-0 border-t-2 border-ink/10 pt-5">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Transaction frequency
               </dt>
               <dd className="mt-1 font-display text-2xl tabular-nums">
@@ -1138,10 +1239,12 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
 
       <div className="mt-10 grid items-start gap-6">
         <section>
-          <h2 className="font-display text-lg">Trust Graph Summary</h2>
+          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-slate400">
+            Trust Graph Summary
+          </h2>
           <div className="panel-brutal mt-5 grid gap-4 p-6">
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Counterparties
               </div>
               <div className="mt-1 font-display text-2xl">
@@ -1150,7 +1253,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </div>
             </div>
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Repeat
               </div>
               <div className="mt-1 font-display text-2xl">
@@ -1159,7 +1262,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </div>
             </div>
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Attesters
               </div>
               <div className="mt-1 font-display text-2xl">
@@ -1167,19 +1270,19 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </div>
             </div>
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Active vouches
               </div>
               <div className="mt-1 font-display text-2xl">{activeVouches}</div>
             </div>
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Open disputes
               </div>
               <div className="mt-1 font-display text-2xl">{openDisputes}</div>
             </div>
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Longest relationship
               </div>
               <div className="mt-1 font-display text-2xl">
@@ -1198,7 +1301,9 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
         </section>
 
         <section>
-          <h2 className="font-display text-lg">Risk Signals</h2>
+          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-slate400">
+            Risk Signals
+          </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate400">
             Patterns that may need inspection — not verdicts.
           </p>
@@ -1231,7 +1336,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
                     <span className="text-sm text-ink">
                       {riskSignalLabel(type)}
                     </span>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
                       Detected
                     </span>
                   </li>
@@ -1250,14 +1355,16 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
 
       <div className="mt-10 grid items-start gap-6">
         <section>
-          <h2 className="font-display text-lg">Community</h2>
+          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-slate400">
+            Community
+          </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate400">
             Supporting evidence — never reputation on its own. Disputes are
             claims, not verdicts.
           </p>
           <div className="panel-brutal mt-5 grid gap-4 p-6">
             <div className="min-w-0">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Vouches
               </div>
               <div className="mt-1 font-display text-2xl tabular-nums">
@@ -1267,7 +1374,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </div>
             </div>
             <div className="min-w-0">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Role attestations
               </div>
               <div className="mt-1 font-display text-2xl tabular-nums">
@@ -1275,7 +1382,7 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
               </div>
             </div>
             <div className="min-w-0">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 Active disputes
               </div>
               <div className="mt-1 font-display text-2xl tabular-nums">
@@ -1292,7 +1399,9 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
         </section>
 
         <section>
-          <h2 className="font-display text-lg">Recent Proofs</h2>
+          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-slate400">
+            Recent Proofs
+          </h2>
           {recentProofs.length === 0 ? (
             <div className="panel-brutal mt-5 p-6 text-sm text-slate400">
               No proof can be produced for this wallet yet.
@@ -1321,7 +1430,9 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
       </div>
 
       <section className="mt-10">
-        <h2 className="font-display text-lg">Why This Score?</h2>
+        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-slate400">
+          Why This Score?
+        </h2>
         <p className="mt-2 max-w-2xl text-sm text-slate400">
           The Fathom Score is a provisional compression of the evidence
           available for this wallet.
@@ -1376,7 +1487,7 @@ export default async function WalletProfilePage({
 
   return (
     <>
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate400">
+      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
         Wallet profile
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-4">
@@ -1398,7 +1509,7 @@ export default async function WalletProfilePage({
       {/* Full address sengaja tidak ditampilkan — h1 sudah menunjukkan
           short form, dan Copy address menyediakan salinan lengkap. */}
       <div className="mt-6 border-t-2 border-ink/10 pt-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate400">
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
           Ownership
         </p>
         <ClaimFlow
@@ -1417,8 +1528,10 @@ export default async function WalletProfilePage({
         evidence={
           <>
             <ScoreSection reputation={profile.reputation} />
-            <section id="why-evidence" className="mt-10">
-              <h2 className="font-display text-lg">Recent Proofs</h2>
+            <section id="why-evidence" className="mt-12">
+              <h2 className="font-display text-xl font-semibold">
+                Recent Proofs
+              </h2>
               <p className="mt-2 max-w-2xl text-sm text-slate400">
                 Each proof records what is asserted, its source, and how to
                 inspect it. Proofs are evidence — they never contain a
@@ -1449,7 +1562,7 @@ export default async function WalletProfilePage({
                             <span className="font-display text-base">
                               {PROOF_LABELS[proof.type]}
                             </span>
-                            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                               {proof.type}
                             </span>
                           </div>
@@ -1472,7 +1585,7 @@ export default async function WalletProfilePage({
                             {proof.evidence_reference}
                           </a>
                           <span
-                            className={`rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] ${
+                            className={`rounded px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] ${
                               proof.evidence_references &&
                               proof.evidence_references.length > 0
                                 ? "border border-accent-ink/40 text-accent-ink"
@@ -1487,7 +1600,7 @@ export default async function WalletProfilePage({
                         </div>
                         {(proof.evidence_references ?? []).length > 1 && (
                           <div className="mt-2">
-                            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                               Evidence:{" "}
                               {(proof.evidence_references ?? []).length}{" "}
                               transactions
@@ -1501,7 +1614,7 @@ export default async function WalletProfilePage({
                                     href={ref}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="rounded-full border border-black/10 px-2 py-0.5 font-mono text-[10px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
+                                    className="inline-flex min-touch items-center rounded-full border border-black/10 px-3 py-2 font-mono text-[11px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
                                   >
                                     tx {i + 2}
                                   </a>
@@ -1517,8 +1630,10 @@ export default async function WalletProfilePage({
               )}
             </section>
 
-            <section className="mt-10">
-              <h2 className="font-display text-lg">Why This Evidence?</h2>
+            <section className="mt-12">
+              <h2 className="font-display text-xl font-semibold">
+                Why This Evidence?
+              </h2>
               <p className="mt-2 max-w-2xl text-sm text-slate400">
                 This profile is built from evidence, not from a single number.
                 Each layer points at the one above it, so every claim can be

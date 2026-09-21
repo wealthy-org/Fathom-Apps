@@ -90,8 +90,10 @@ export function getRecentSearchesSnapshot(): RecentSearch[] {
   return cache as RecentSearch[];
 }
 
+const EMPTY: RecentSearch[] = [];
+
 export function getRecentSearchesServerSnapshot(): RecentSearch[] {
-  return [];
+  return EMPTY;
 }
 
 export function subscribeRecentSearches(

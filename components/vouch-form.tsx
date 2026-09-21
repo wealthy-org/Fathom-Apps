@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseEther } from "viem";
 import {
@@ -32,6 +32,20 @@ const REGISTRY = process.env.NEXT_PUBLIC_FATHOM_VOUCH_REGISTRY_ADDRESS ?? "";
 const TOKEN = process.env.NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS ?? "";
 const isNative = TOKEN === "";
 
+const WEI_PER_TOKEN = BigInt(10) ** BigInt(18);
+
+// ponytail: fixed 4-dp trim, no rounding — amounts under 1e14 wei read as "0",
+// fine for min-stake copy; swap for a real formatter if token decimals differ.
+function formatTokenAmount(wei: bigint): string {
+  const whole = wei / WEI_PER_TOKEN;
+  const frac = (wei % WEI_PER_TOKEN)
+    .toString()
+    .padStart(18, "0")
+    .slice(0, 4)
+    .replace(/0+$/, "");
+  return frac === "" ? whole.toString() : `${whole}.${frac}`;
+}
+
 export function VouchForm({ target }: { target: string }) {
   const router = useRouter();
   const { address, isConnected } = useAccount();
@@ -39,6 +53,8 @@ export function VouchForm({ target }: { target: string }) {
   const [error, setError] = useState<string | null>(null);
   const [txState, setTxState] = useState<TxState>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
+  const stakeId = useId();
+  const errorId = useId();
 
   const { writeContractAsync } = useWriteContract();
   const { data: minStake } = useReadContract({
@@ -107,7 +123,11 @@ export function VouchForm({ target }: { target: string }) {
       return;
     }
     if (minStakeWei !== null && amount < minStakeWei) {
-      setError(`Stake must be at least ${minStakeWei.toString()} wei.`);
+      setError(
+        `Stake must be at least ${formatTokenAmount(minStakeWei)} ${
+          isNative ? "ETH" : "tokens"
+        }.`,
+      );
       return;
     }
     try {
@@ -181,34 +201,50 @@ export function VouchForm({ target }: { target: string }) {
         Stake {isNative ? "native assets" : "tokens"} behind this wallet. The
         registry records the vouch; a cooldown applies before withdrawal.
       </p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
+        }}
+        className="mt-4 grid gap-3 sm:grid-cols-3"
+      >
+        <label htmlFor={stakeId} className="sr-only">
+          Stake amount in {isNative ? "ETH" : "tokens"}
+        </label>
         <input
+          id={stakeId}
           value={stake}
           onChange={(e) => setStake(e.target.value)}
           placeholder={`Stake in ${isNative ? "ETH" : "tokens"}`}
           inputMode="decimal"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className="input-brutal px-3 py-2 text-sm"
         />
         <button
-          type="button"
+          type="submit"
           disabled={busy || stake.trim() === ""}
-          onClick={() => void submit()}
           className="btn-brutal px-4 py-2 text-xs sm:col-span-2"
         >
           {buttonLabel}
         </button>
-      </div>
+      </form>
       {minStakeWei !== null && (
         <p className="mt-2 font-mono text-[11px] text-slate400">
-          Minimum stake: {minStakeWei.toString()} wei
+          Minimum stake: {formatTokenAmount(minStakeWei)}{" "}
+          {isNative ? "ETH" : "tokens"}
         </p>
       )}
       {receiptFailed && !confirmed && (
-        <p className="mt-3 text-xs text-red-600">
+        <p role="alert" className="mt-3 text-xs text-red-600">
           Transaction reverted on-chain. Check the explorer for details.
         </p>
       )}
-      {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+      {error && (
+        <p id={errorId} role="alert" className="mt-3 text-xs text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

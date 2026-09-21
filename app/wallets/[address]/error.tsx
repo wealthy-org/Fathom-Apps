@@ -18,7 +18,7 @@ export default function WalletProfileError({
       role="alert"
       className="panel-brutal mt-6 max-w-2xl p-6"
     >
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate400">
+      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
         Wallet profile
       </p>
       <h1 className="mt-3 font-display text-2xl font-medium">

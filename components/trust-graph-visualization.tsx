@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import * as d3 from "d3";
+import { drag } from "d3-drag";
+import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation } from "d3-force";
+import type { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
+import { select } from "d3-selection";
+import "d3-transition";
+import { zoom, zoomIdentity } from "d3-zoom";
+import type { ZoomBehavior } from "d3-zoom";
 import type { TrustGraphSummary } from "@/lib/chain/trust-graph";
 import type { Address } from "@/lib/score/types";
 
@@ -26,7 +32,7 @@ type NodeKind =
   | "voucher"
   | "inviter";
 
-interface GNode extends d3.SimulationNodeDatum {
+interface GNode extends SimulationNodeDatum {
   id: string;
   kind: NodeKind;
   addr: Address;
@@ -40,7 +46,7 @@ interface GNode extends d3.SimulationNodeDatum {
   note: string | null;
 }
 
-interface GLink extends d3.SimulationLinkDatum<GNode> {
+interface GLink extends SimulationLinkDatum<GNode> {
   kind: NodeKind;
   width: number;
   dashed: string | null;
@@ -71,24 +77,24 @@ function edgeWidth(count: number): number {
 
 const NODE_STYLE: Record<NodeKind, { fill: string; stroke: string; sw: number; dash: string | null }> = {
   primary: { fill: "#E34A32", stroke: "#232427", sw: 3, dash: null },
-  counterparty: { fill: "#232427", stroke: "#6ab0e8", sw: 1.5, dash: null },
+  counterparty: { fill: "#232427", stroke: "#55575C", sw: 1.5, dash: null },
   contract: { fill: "#9945FF", stroke: "#232427", sw: 2, dash: null },
   protocol: { fill: "#232427", stroke: "#E34A32", sw: 2.5, dash: null },
   attester: { fill: "#232427", stroke: "#E34A32", sw: 2, dash: null },
-  reporter: { fill: "#232427", stroke: "#94A3B8", sw: 1.5, dash: "4 3" },
+  reporter: { fill: "#232427", stroke: "#777980", sw: 1.5, dash: "4 3" },
   voucher: { fill: "#9945FF", stroke: "#E34A32", sw: 2, dash: null },
-  inviter: { fill: "#232427", stroke: "#6ab0e8", sw: 1.5, dash: "4 3" },
+  inviter: { fill: "#232427", stroke: "#55575C", sw: 1.5, dash: "4 3" },
 };
 
 const EDGE_STYLE: Record<NodeKind, { stroke: string; dash: string | null }> = {
   primary: { stroke: "#E34A32", dash: null },
-  counterparty: { stroke: "#6ab0e8", dash: null },
+  counterparty: { stroke: "#55575C", dash: null },
   contract: { stroke: "#9945FF", dash: null },
   protocol: { stroke: "#E34A32", dash: null },
   attester: { stroke: "#E34A32", dash: null },
-  reporter: { stroke: "#94A3B8", dash: "5 4" },
+  reporter: { stroke: "#777980", dash: "5 4" },
   voucher: { stroke: "#9945FF", dash: null },
-  inviter: { stroke: "#6ab0e8", dash: "5 4" },
+  inviter: { stroke: "#55575C", dash: "5 4" },
 };
 
 const LEGEND_META: { kind: NodeKind; label: string; desc: string }[] = [
@@ -110,7 +116,7 @@ export function TrustGraphVisualization({
   address: Address;
 }) {
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [hidden, setHidden] = useState<Set<NodeKind>>(new Set());
   const [tip, setTip] = useState<{ x: number; y: number; node: GNode } | null>(null);
 
@@ -263,7 +269,7 @@ export function TrustGraphVisualization({
   useEffect(() => {
     const svgEl = svgRef.current;
     if (!svgEl || built.empty) return;
-    const svg = d3.select(svgEl);
+    const svg = select(svgEl);
     svg.selectAll("*").remove();
 
     const defs = svg.append("defs");
@@ -283,11 +289,11 @@ export function TrustGraphVisualization({
         .attr("opacity", 0.9);
     });
 
-    const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([0.15, 5]).on("zoom", (e) => {
+    const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.15, 5]).on("zoom", (e) => {
       g.attr("transform", e.transform.toString());
     });
-    zoomRef.current = zoom;
-    svg.call(zoom);
+    zoomRef.current = zoomBehavior;
+    svg.call(zoomBehavior);
     // ponytail: default viewport already framed; no initial transform needed.
 
     const g = svg.append("g");
@@ -313,7 +319,7 @@ export function TrustGraphVisualization({
       .attr("text-anchor", "middle")
       .attr("font-size", 10)
       .attr("font-family", "monospace")
-      .attr("fill", "#64748b")
+      .attr("fill", "#777980")
       .attr("pointer-events", "none")
       .text((d) => d.label as string);
 
@@ -330,7 +336,7 @@ export function TrustGraphVisualization({
       .append("circle")
       .attr("r", (d) => d.radius + 8)
       .attr("fill", "none")
-      .attr("stroke", "#14F195")
+      .attr("stroke", "#E34A32")
       .attr("stroke-opacity", 0.35)
       .attr("stroke-width", 2);
 
@@ -346,7 +352,7 @@ export function TrustGraphVisualization({
       .filter((d) => d.kind === "primary")
       .append("circle")
       .attr("r", 5)
-      .attr("fill", "#0B0F17");
+      .attr("fill", "#232427");
 
     nodeSel
       .append("text")
@@ -370,21 +376,19 @@ export function TrustGraphVisualization({
       .attr("pointer-events", "none")
       .text((d) => d.sublabel as string);
 
-    const sim = d3
-      .forceSimulation<GNode>(built.nodes)
+    const sim = forceSimulation<GNode>(built.nodes)
       .force(
         "link",
-        d3
-          .forceLink<GNode, GLink>(built.links)
+        forceLink<GNode, GLink>(built.links)
           .id((d) => d.id)
           .distance((l) => (l.kind === "protocol" ? 150 : 115))
           .strength(0.55),
       )
-      .force("charge", d3.forceManyBody().strength(-260))
-      .force("center", d3.forceCenter(CX, CY))
+      .force("charge", forceManyBody().strength(-260))
+      .force("center", forceCenter(CX, CY))
       .force(
         "collide",
-        d3.forceCollide<GNode>().radius((d) => d.radius + 18).strength(0.9),
+        forceCollide<GNode>().radius((d) => d.radius + 18).strength(0.9),
       )
       .alphaDecay(0.05);
 
@@ -429,8 +433,7 @@ export function TrustGraphVisualization({
       return axis === "x" ? (sx + tx) / 2 : (sy + ty) / 2 - 4;
     }
 
-    const drag = d3
-      .drag<SVGGElement, GNode>()
+    const dragBehavior = drag<SVGGElement, GNode>()
       .on("start", (e, d) => {
         if (!e.active) sim.alphaTarget(0.3).restart();
         d.fx = d.x;
@@ -450,12 +453,12 @@ export function TrustGraphVisualization({
           d.fy = null;
         }
       });
-    nodeSel.call(drag);
+    nodeSel.call(dragBehavior);
 
     nodeSel
       .on("mouseenter", (e: MouseEvent, d) => {
         const el = e.currentTarget as SVGGElement | null;
-        if (el) d3.select(el).selectAll("circle").attr("stroke-width", NODE_STYLE[d.kind].sw + 1.5);
+        if (el) select(el).selectAll("circle").attr("stroke-width", NODE_STYLE[d.kind].sw + 1.5);
         setTip({ x: e.clientX, y: e.clientY, node: { ...d } });
       })
       .on("mousemove", (e: MouseEvent, d) => {
@@ -463,7 +466,7 @@ export function TrustGraphVisualization({
       })
       .on("mouseleave", (e: MouseEvent, d) => {
         const el = e.currentTarget as SVGGElement | null;
-        if (el) d3.select(el).selectAll("circle").attr("stroke-width", NODE_STYLE[d.kind].sw);
+        if (el) select(el).selectAll("circle").attr("stroke-width", NODE_STYLE[d.kind].sw);
         setTip(null);
       });
 
@@ -478,11 +481,11 @@ export function TrustGraphVisualization({
   useEffect(() => {
     const svgEl = svgRef.current;
     if (!svgEl) return;
-    const svg = d3.select(svgEl);
+    const svg = select(svgEl);
     svg.selectAll<SVGGElement, GNode>("g[data-kind]").each(function (d) {
       if (!d) return;
       const isHidden = hidden.has(d.kind);
-      const el = d3.select(this);
+      const el = select(this);
       if (this.tagName.toLowerCase() === "line" || this.tagName.toLowerCase() === "text") {
         el.attr("opacity", isHidden ? 0.06 : null);
         const tag = this.tagName.toLowerCase();
@@ -505,24 +508,24 @@ export function TrustGraphVisualization({
 
   function zoomBy(factor: number): void {
     const svgEl = svgRef.current;
-    const zoom = zoomRef.current;
-    if (!svgEl || !zoom) return;
-    d3.select(svgEl).transition().duration(200).call(zoom.scaleBy, factor);
+    const zoomBehavior = zoomRef.current;
+    if (!svgEl || !zoomBehavior) return;
+    select(svgEl).transition().duration(200).call(zoomBehavior.scaleBy, factor);
   }
 
   function resetZoom(): void {
     const svgEl = svgRef.current;
-    const zoom = zoomRef.current;
-    if (!svgEl || !zoom) return;
-    d3.select(svgEl).transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+    const zoomBehavior = zoomRef.current;
+    if (!svgEl || !zoomBehavior) return;
+    select(svgEl).transition().duration(300).call(zoomBehavior.transform, zoomIdentity);
   }
 
   if (built.empty) {
     return (
       <div className="panel-brutal mt-4 p-6 text-center text-sm text-slate400">
         <svg viewBox={`0 0 ${VB_W} 120`} role="img" aria-label="Empty trust graph" className="mx-auto h-28 w-full max-w-md">
-          <circle cx={VB_W / 2} cy={60} r={26} fill="none" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="5 5" />
-          <circle cx={VB_W / 2} cy={60} r={4} fill="#14F195" />
+          <circle cx={VB_W / 2} cy={60} r={26} fill="none" stroke="#777980" strokeWidth={1.5} strokeDasharray="5 5" />
+          <circle cx={VB_W / 2} cy={60} r={4} fill="#E34A32" />
         </svg>
         <p className="mt-2">No counterparty relationships indexed for this wallet yet.</p>
       </div>
@@ -536,7 +539,7 @@ export function TrustGraphVisualization({
     <div className="mt-4 flex flex-col gap-4 lg:flex-row">
       <aside className="panel-brutal w-full shrink-0 p-3 lg:w-60">
         <p className="font-mono text-[11px] font-bold tracking-widest text-ink uppercase">Legend</p>
-        <p className="mt-0.5 font-mono text-[10px] text-slate400">Click to hide / show</p>
+        <p className="mt-0.5 font-mono text-[11px] text-slate400">Click to hide / show</p>
         <ul className="mt-2 space-y-1">
           {LEGEND_META.filter((m) => built.kindsPresent.has(m.kind)).map((m) => {
             const off = hidden.has(m.kind);
@@ -556,7 +559,7 @@ export function TrustGraphVisualization({
                   />
                   <span className="min-w-0">
                     <span className="block font-mono text-[11px] font-bold text-ink">{m.label}</span>
-                    <span className="block truncate font-mono text-[10px] text-slate400">{m.desc}</span>
+                    <span className="block truncate font-mono text-[11px] text-slate400">{m.desc}</span>
                   </span>
                 </button>
               </li>
@@ -574,12 +577,12 @@ export function TrustGraphVisualization({
             aria-label={`Trust graph for ${address}: ${graph.relationships.length} counterparties`}
             className="h-full w-full"
           />
-          <div className="absolute top-3 right-3 flex gap-1">
+          <div className="absolute top-3 right-3 flex gap-1.5">
             <button
               type="button"
               aria-label="Zoom in"
               onClick={() => zoomBy(1.4)}
-              className="h-8 w-8 rounded-full border border-black/10 bg-white font-mono text-sm font-bold shadow-sm"
+              className="min-touch flex items-center justify-center rounded-full border border-black/10 bg-white font-mono text-lg font-bold shadow-sm"
             >
               +
             </button>
@@ -587,7 +590,7 @@ export function TrustGraphVisualization({
               type="button"
               aria-label="Zoom out"
               onClick={() => zoomBy(1 / 1.4)}
-              className="h-8 w-8 rounded-full border border-black/10 bg-white font-mono text-sm font-bold shadow-sm"
+              className="min-touch flex items-center justify-center rounded-full border border-black/10 bg-white font-mono text-lg font-bold shadow-sm"
             >
               −
             </button>
@@ -595,7 +598,7 @@ export function TrustGraphVisualization({
               type="button"
               aria-label="Reset zoom"
               onClick={resetZoom}
-              className="h-8 w-10 rounded-full border border-black/10 bg-white font-mono text-[11px] font-bold shadow-sm"
+              className="min-touch flex items-center justify-center rounded-full border border-black/10 bg-white px-3 font-mono text-[11px] font-bold shadow-sm"
             >
               1:1
             </button>
@@ -606,8 +609,8 @@ export function TrustGraphVisualization({
               style={{ left: tipLeft, top: tipTop }}
             >
               <p className="font-mono text-[11px] font-bold text-ink">{tip.node.label}</p>
-              <p className="truncate font-mono text-[10px] text-slate400">{tip.node.addr}</p>
-              <dl className="mt-1.5 space-y-0.5 font-mono text-[10px]">
+              <p className="truncate font-mono text-[11px] text-slate400">{tip.node.addr}</p>
+              <dl className="mt-1.5 space-y-0.5 font-mono text-[11px]">
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate400">type</dt>
                   <dd className="text-ink">{tip.node.kind}</dd>

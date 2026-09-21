@@ -13,41 +13,54 @@
   --color-mist: #f4f5f5;
   --color-canvas: #ecedee;
 
-  --font-sans: var(--font-sans), sans-serif;
-  --font-display: var(--font-display), sans-serif;
-  --font-serif-accent: var(--font-serif), serif;
-  --font-mono: var(--font-mono), monospace;
+  --font-sans: var(--font-inter), sans-serif;
+  --font-display: var(--font-space-grotesk), sans-serif;
+  --font-serif-accent: var(--font-instrument-serif), serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
 
   --shadow-brutal:
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
     0 14px 30px -18px rgba(35, 36, 39, 0.25);
   --shadow-brutal-sm: 0 8px 20px -12px rgba(35, 36, 39, 0.25);
-
-  --animate-blob: blob 20s ease-in-out infinite alternate;
-
-  @keyframes blob {
-    0% {
-      transform: translate(0, 0) scale(1);
-    }
-    50% {
-      transform: translate(80px, 40px) scale(1.08);
-    }
-    100% {
-      transform: translate(-40px, 100px) scale(0.95);
-    }
-  }
 }
 
 html {
   scroll-behavior: smooth;
-  background: #fff;
+  background: var(--color-canvas);
 }
 
 body {
-  background: #fff;
   color: #232427;
   font-family: var(--font-sans), sans-serif;
-  overflow-x: hidden;
+}
+
+/* Canvas pattern (docs/design/ref-2.html): 44px grid + fixed token glows.
+   Body has no background so the negative z-index layer stays visible. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(35, 36, 39, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(35, 36, 39, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 88% 18%, rgba(227, 74, 50, 0.12), transparent 30%),
+    radial-gradient(circle at 92% 72%, rgba(153, 69, 255, 0.1), transparent 28%),
+    radial-gradient(circle at 66% 86%, rgba(227, 74, 50, 0.1), transparent 26%);
+  background-size:
+    44px 44px,
+    44px 44px,
+    auto,
+    auto,
+    auto;
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
+}
+
+@media (max-width: 640px) {
+  body::before {
+    background-attachment: scroll;
+  }
 }
 
 .font-display {
@@ -65,164 +78,20 @@ body {
   color: #232427;
 }
 
+/* Focus — visible ring on all interactive elements (WCAG 2.4.7). */
+:where(a, button, [role="button"], [role="tab"], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Minimum comfortable touch target (WCAG 2.5.8). */
+.min-touch {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 ::placeholder {
   color: #777980;
-}
-
-/* Reference main shell — white rounded container over the canvas. */
-.main-shell {
-  background: #fff;
-  border-radius: 40px;
-  overflow: hidden;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
-}
-
-.hero-shell {
-  background: #f4f5f5;
-}
-
-.atmo {
-  position: absolute;
-  border-radius: 9999px;
-  pointer-events: none;
-}
-.atmo-a {
-  left: -15rem;
-  top: 28%;
-  width: 520px;
-  height: 520px;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.9),
-    transparent 65%
-  );
-  filter: blur(55px);
-}
-.atmo-b {
-  left: 25%;
-  bottom: -18rem;
-  width: 560px;
-  height: 560px;
-  background: radial-gradient(
-    circle,
-    rgba(227, 74, 50, 0.12),
-    transparent 68%
-  );
-  filter: blur(55px);
-}
-.bloom {
-  position: absolute;
-  right: -10rem;
-  top: 0;
-  width: 720px;
-  height: 720px;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle,
-    rgba(227, 74, 50, 0.12),
-    transparent 62%
-  );
-  filter: blur(48px);
-  pointer-events: none;
-}
-
-@media (max-width: 640px) {
-  .main-shell {
-    border-radius: 28px;
-  }
-  .bloom {
-    width: 420px;
-    height: 420px;
-    right: -12rem;
-  }
-  .atmo-a,
-  .atmo-b {
-    width: 340px;
-    height: 340px;
-  }
-}
-
-/* fixed background layers — reference atmo: red bloom + white glow, no dot grid */
-.bg-stars {
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      circle at 85% 100%,
-      rgba(227, 74, 50, 0.07),
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 10% 30%,
-      rgba(255, 255, 255, 0.9),
-      transparent 55%
-    );
-}
-
-.bg-grid {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse 80% 55% at 50% 0%,
-    rgba(255, 255, 255, 0.9),
-    transparent 70%
-  );
-}
-
-/* gradient hairline on top of cards */
-.shine-border {
-  position: relative;
-}
-.shine-border::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e34a32, #9945ff, #e34a32, transparent);
-  opacity: 0.5;
-}
-
-.glow-spot {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle,
-    rgba(227, 74, 50, 0.1) 0%,
-    rgba(255, 255, 255, 0.5) 40%,
-    transparent 70%
-  );
-  filter: blur(60px);
-  pointer-events: none;
-}
-
-.glow-top-left {
-  top: -220px;
-  left: -220px;
-}
-
-.glow-bottom-right {
-  right: -220px;
-  bottom: -200px;
-}
-
-.glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.terminal-line {
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  line-height: 1.8;
 }
 
 /* Surface system — single source of truth for cards/buttons/chips/inputs.
@@ -297,7 +166,7 @@ body {
     background: rgba(35, 36, 39, 0.04);
     padding: 0.125rem 0.625rem;
     font-family: var(--font-mono), monospace;
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.18em;
   }
@@ -307,10 +176,14 @@ body {
     border: 1px solid rgba(35, 36, 39, 0.1);
     background: #f4f5f5;
     color: var(--color-ink);
-    outline: none;
   }
-  .input-brutal:focus {
-    border-color: rgba(35, 36, 39, 0.25);
+  .input-brutal:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+    background: #fff;
+  }
+  .input-brutal[aria-invalid="true"] {
+    border-color: var(--color-accent);
     background: #fff;
   }
   .input-brutal::placeholder {
@@ -318,15 +191,8 @@ body {
   }
 }
 
-@media (max-width: 767px) {
-  .glow-spot {
-    width: 400px;
-    height: 400px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .glow-spot {
-    animation: none;
+  html {
+    scroll-behavior: auto;
   }
 }

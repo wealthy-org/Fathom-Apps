@@ -47,7 +47,7 @@ export function PrivacyModel() {
       </div>
 
       <div className="border-t-2 border-ink/10 pt-5">
-        <h4 className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+        <h4 className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
           Required
         </h4>
         <p className="mt-2 font-display text-base">Wallet Address</p>
@@ -59,7 +59,7 @@ export function PrivacyModel() {
       </div>
 
       <div className="border-t-2 border-ink/10 pt-5">
-        <h4 className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+        <h4 className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
           Optional
         </h4>
         <p className="mt-2 font-display text-base">Alias</p>
@@ -71,7 +71,7 @@ export function PrivacyModel() {
       </div>
 
       <div className="border-t-2 border-ink/10 pt-5">
-        <h4 className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+        <h4 className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
           Not required
         </h4>
         <ul className="mt-2 flex flex-wrap gap-2">
@@ -91,7 +91,7 @@ export function PrivacyModel() {
       </div>
 
       <div className="border-t-2 border-ink/10 pt-5">
-        <h4 className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+        <h4 className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
           Fathom evaluates
         </h4>
         <p className="mt-2 font-display text-base text-accent-ink">
@@ -102,7 +102,7 @@ export function PrivacyModel() {
             <li key={item}>· {item}</li>
           ))}
         </ul>
-        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
           Not real-world identity
         </p>
         <ul className="mt-1 space-y-0.5 text-sm text-slate400">

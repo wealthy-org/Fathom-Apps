@@ -217,7 +217,7 @@ function AddressLink({ address }: { address: string }) {
   return (
     <Link
       href={`/wallets/${address}`}
-      className="text-accent-ink hover:underline"
+      className="text-ink hover:text-accent-ink hover:underline"
     >
       {shortAddress(address)}
     </Link>
@@ -306,7 +306,7 @@ function EvidenceValue({
                   href={explorerTransactionUrl(item.txHash)}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-accent-ink hover:underline"
+                  className="text-ink hover:text-accent-ink hover:underline"
                 >
                   {shortAddress(item.txHash)}
                 </a>
@@ -394,9 +394,14 @@ export function evidenceRows(
 
 function StatusChip({ state }: { state: RiskState }) {
   const config = {
-    detected: { mark: "●", text: "Detected", className: "text-accent-ink" },
+    // Accent (red) marks detected states only — clear/unknown stay neutral.
+    detected: {
+      mark: "●",
+      text: "Detected",
+      className: "border-accent-ink/30 bg-accent/10 text-accent-ink",
+    },
     clear: { mark: "✓", text: "Clear", className: "text-slate400" },
-    not_evaluable: { mark: "—", text: "Not evaluable", className: "text-ink/40" },
+    not_evaluable: { mark: "—", text: "Not evaluable", className: "text-faint" },
   } as const;
   const { mark, text, className } = config[state.status];
   return (
@@ -411,8 +416,13 @@ function StatusChip({ state }: { state: RiskState }) {
 
 function SignalCard({ state }: { state: RiskState }) {
   const rows = evidenceRows(state);
+  const detected = state.status === "detected";
   return (
-    <details className="panel-brutal p-5">
+    <details
+      className={`panel-brutal p-5 ${
+        detected ? "border-l-4 border-l-accent-ink bg-accent/5" : ""
+      }`}
+    >
       <summary className="cursor-pointer">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="font-display text-base">
@@ -420,7 +430,7 @@ function SignalCard({ state }: { state: RiskState }) {
           </span>
           <span className="flex flex-wrap items-center gap-2">
             {state.status === "detected" && state.severity && (
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 {state.severity} severity
               </span>
             )}
@@ -454,7 +464,7 @@ function SignalCard({ state }: { state: RiskState }) {
               href={state.evidence_reference}
               target="_blank"
               rel="noreferrer"
-              className="font-mono text-[11px] text-accent-ink hover:underline"
+              className="font-mono text-[11px] text-ink hover:text-accent-ink hover:underline"
             >
               View evidence →
             </a>
@@ -462,7 +472,7 @@ function SignalCard({ state }: { state: RiskState }) {
           {GRAPH_BACKED.has(state.id) && (
             <a
               href="#graph"
-              className="font-mono text-[11px] text-accent-ink hover:underline"
+              className="font-mono text-[11px] text-ink hover:text-accent-ink hover:underline"
             >
               View graph →
             </a>
@@ -470,7 +480,7 @@ function SignalCard({ state }: { state: RiskState }) {
           {COMMUNITY_BACKED.has(state.id) && (
             <a
               href="#community"
-              className="font-mono text-[11px] text-accent-ink hover:underline"
+              className="font-mono text-[11px] text-ink hover:text-accent-ink hover:underline"
             >
               Open community →
             </a>
@@ -490,8 +500,8 @@ export function RiskSignals({ states }: { states: RiskState[] }) {
   ).length;
 
   return (
-    <section id="risk" aria-label="Risk Signals">
-      <h2 className="font-display text-lg">Risk Signals</h2>
+    <section id="risk-signals" aria-label="Risk Signals">
+      <h2 className="font-display text-xl font-semibold">Risk Signals</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         Evidence that may require further inspection.
       </p>

@@ -16,8 +16,8 @@ import { buildSiweMessage } from "@/lib/auth/message";
 import { useSession } from "@/components/use-session";
 
 // ponytail: 1 tombol, 1 klik: connect → (switch) → sign → verify.
-// Tanpa copy "Install" — wallet tak terdeteksi = alert (+ deep-link di mobile).
-// EIP-6963 announce bisa telat: beri 1x jeda 800ms sebelum vonis hilang.
+// Wallet tak terdeteksi = pesan inline (bukan alert). EIP-6963 announce bisa
+// telat: beri 1x jeda 800ms sebelum vonis hilang.
 
 function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -41,22 +41,12 @@ export async function resolvePhantomConnector(
   return wagmiConfig.connectors.find(match);
 }
 
-export function handleMissingWallet() {
-  if (isMobileBrowser()) {
-    if (
-      window.confirm(
-        "Phantom wallet not detected in this browser. Open this site inside Phantom's browser?",
-      )
-    ) {
-      window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(
-        window.location.href,
-      )}`;
-    }
-    return;
-  }
-  window.alert(
-    "Phantom wallet not detected. Install Phantom (phantom.app/download), then try again.",
-  );
+// Returns the visible inline message to show instead of alert/confirm.
+// ponytail: no deep-link action anymore — caller displays the message only.
+export function handleMissingWallet(): string {
+  return isMobileBrowser()
+    ? "Phantom wallet not detected in this browser. Open this site inside Phantom's browser, then try again."
+    : "Phantom wallet not detected. Install Phantom (phantom.app/download), then try again.";
 }
 
 export function ConnectButton({
@@ -119,7 +109,7 @@ export function ConnectButton({
     setFlowError(null);
     const phantom = await resolvePhantom();
     if (!phantom) {
-      handleMissingWallet();
+      setFlowError(handleMissingWallet());
       return;
     }
     try {
@@ -201,26 +191,36 @@ export function ConnectButton({
   }
 
   const busy = isConnecting || isSwitching || isSigning;
+  const inlineError = flowError ?? connectError?.message ?? switchError?.message;
 
   return (
-    <button
-      type="button"
-      disabled={busy}
-      title={flowError ?? connectError?.message ?? switchError?.message}
-      onClick={() => void handlePrimary()}
-      className={base}
-    >
-      <span>
-        {busy
-          ? isSigning
-            ? "Signing…"
-            : isSwitching
-              ? "Switching…"
-              : "Connecting…"
-          : flowError
-            ? "Try again"
-            : connectLabel}
-      </span>
-    </button>
+    <span className="inline-flex flex-col items-start">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void handlePrimary()}
+        className={base}
+      >
+        <span>
+          {busy
+            ? isSigning
+              ? "Signing…"
+              : isSwitching
+                ? "Switching…"
+                : "Connecting…"
+            : flowError
+              ? "Try again"
+              : connectLabel}
+        </span>
+      </button>
+      {inlineError && (
+        <span
+          role="alert"
+          className="max-w-56 text-left text-[11px] leading-snug text-red-600"
+        >
+          {inlineError}
+        </span>
+      )}
+    </span>
   );
 }

@@ -50,3 +50,8 @@ contracts/broadcast/
 docs
 graphify-out
 AGENTS.md
+.claude
+.codex
+.impeccable
+pnpm-lock.yaml
+pnpm-workspace.yaml

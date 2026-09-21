@@ -38,7 +38,7 @@ function Arrow({ className = "" }: { className?: string }) {
 
 function Kick({ children }: { children: string }) {
   return (
-    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-ink">
+    <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent-ink">
       {children}
     </span>
   );
@@ -135,6 +135,14 @@ const FAQ: Array<[string, string]> = [
 
 export default function Home() {
   useLayoutEffect(() => {
+    // Gate yang sama dengan components/loading-stages.tsx: reduced motion =
+    // konten tampil penuh, tanpa animasi GSAP / ScrollTrigger.
+    const reduced =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) return;
+
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
@@ -190,14 +198,15 @@ export default function Home() {
         }
       />
 
-      <main className="relative z-10">
+      <div className="mx-auto w-full max-w-[1440px] px-5 lg:px-8">
+        <main id="main-content" className="relative z-10">
         {/* HERO */}
         <section className="px-6 pb-20 pt-14 sm:pt-20 lg:px-10 lg:py-28 xl:px-12">
           <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <div>
               <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 shadow-sm backdrop-blur-xl">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent motion-reduce:animate-none" />
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
                   Proof of Reputation
                 </span>
               </div>
@@ -227,10 +236,10 @@ export default function Home() {
           <div className="card panel-brutal p-7 sm:p-8">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-sm text-ink">0xa6d9…ac19</span>
-                <span className="chip-mono text-slate400">Example</span>
+                <span className="chip-mono text-slate400">Illustrative</span>
               </div>
               <div className="mt-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                   Fathom Score
                 </div>
                 <div className="mt-1 font-display text-5xl font-semibold tabular-nums">
@@ -262,8 +271,9 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
-                Proof of Reputation
+              <p className="mt-6 font-mono text-[11px] uppercase leading-5 tracking-[0.18em] text-slate400">
+                Sample values — a real score traces to evidence on the
+                profile.
               </p>
             </div>
           </div>
@@ -311,7 +321,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="card panel-brutal p-7 sm:p-8">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+                <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                   Wallet
                 </div>
                 <ul className="mt-4 space-y-3">
@@ -356,7 +366,7 @@ export default function Home() {
               <ol className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {HOW_STEPS.map(([title, body, note], i) => (
                   <li key={title} className="card panel-brutal flex flex-col p-7">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-ink">
+                    <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
                       {title}
                     </div>
                     <p className="mt-3 font-display text-xl font-medium">
@@ -415,7 +425,7 @@ export default function Home() {
         {/* CTA */}
         <section className="relative z-10 px-5 pb-28 sm:px-6 lg:px-8">
           <div className="card mx-auto max-w-5xl px-6 py-16 text-center sm:px-10 sm:py-20">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-ink">
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent-ink">
               Start here
             </p>
             <h2 className="mx-auto mt-4 max-w-2xl font-display text-4xl font-medium tracking-tight sm:text-6xl">
@@ -442,7 +452,7 @@ export default function Home() {
                 </p>
               </div>
               <div>
-                <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
+                <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                   Product
                 </div>
                 <ul className="mt-4 space-y-2">
@@ -458,7 +468,7 @@ export default function Home() {
                     <li key={label}>
                       <a
                         href={href}
-                        className="text-sm text-ink/70 transition hover:text-ink"
+                        className="flex min-h-11 items-center text-sm text-ink/70 transition hover:text-ink"
                       >
                         {label}
                       </a>
@@ -467,7 +477,7 @@ export default function Home() {
                 </ul>
               </div>
               <div>
-                <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
+                <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                   Resources
                 </div>
                 <ul className="mt-4 space-y-2">
@@ -482,7 +492,7 @@ export default function Home() {
                     <li key={label}>
                       <a
                         href={href}
-                        className="text-sm text-ink/70 transition hover:text-ink"
+                        className="flex min-h-11 items-center text-sm text-ink/70 transition hover:text-ink"
                       >
                         {label}
                       </a>
@@ -491,7 +501,7 @@ export default function Home() {
                 </ul>
               </div>
               <div>
-                <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate400">
+                <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                   Status
                 </div>
                 <p className="mt-4 flex items-center gap-2 text-sm font-medium text-ink">
@@ -516,6 +526,7 @@ export default function Home() {
             </div>
           </div>
         </footer>
+      </div>
     </div>
   );
 }

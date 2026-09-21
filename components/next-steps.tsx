@@ -64,7 +64,7 @@ export function NextSteps({
       <h2 className="font-display text-lg">What&apos;s next?</h2>
       <div className="panel-brutal mt-5 grid gap-6 p-6">
         <div className="min-w-0">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
             Check your own wallet
           </div>
           <div className="mt-2">
@@ -72,7 +72,7 @@ export function NextSteps({
           </div>
         </div>
         <div className="min-w-0">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
             Share reputation
           </div>
           <div className="mt-2">
@@ -84,7 +84,7 @@ export function NextSteps({
           </div>
         </div>
         <div className="min-w-0">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
             Check another wallet
           </div>
           <div className="mt-2">

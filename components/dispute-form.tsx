@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useSignMessage } from "wagmi";
 import { useSession } from "@/components/use-session";
 import { buildDisputeMessage } from "@/lib/disputes/payload";
@@ -17,6 +17,9 @@ export function DisputeForm({ target }: { target: string }) {
   const [evidence, setEvidence] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const reasonId = useId();
+  const evidenceId = useId();
+  const errorId = useId();
 
   const reporter = session?.walletAddress ?? null;
   if (!session?.authenticated || !reporter || reporter === target) return null;
@@ -65,32 +68,53 @@ export function DisputeForm({ target }: { target: string }) {
         A dispute is a signed report, not proof of wrongdoing. It does not
         change reputation or risk here.
       </p>
-      <div className="mt-4 grid gap-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
+        }}
+        className="mt-4 grid gap-3"
+      >
+        <label htmlFor={reasonId} className="sr-only">
+          Reason (short summary)
+        </label>
         <input
+          id={reasonId}
           value={reason}
           maxLength={THRESHOLDS.dispute.maxReasonLength}
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reason (short summary)"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className="input-brutal px-3 py-2 text-sm"
         />
+        <label htmlFor={evidenceId} className="sr-only">
+          Evidence (links, tx hashes, context)
+        </label>
         <textarea
+          id={evidenceId}
           value={evidence}
           maxLength={THRESHOLDS.dispute.maxEvidenceLength}
           onChange={(e) => setEvidence(e.target.value)}
           placeholder="Evidence (links, tx hashes, context)"
           rows={3}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className="input-brutal px-3 py-2 text-sm"
         />
         <button
-          type="button"
+          type="submit"
           disabled={isPending || reason.trim() === "" || evidence.trim() === ""}
-          onClick={() => void submit()}
           className="btn-brutal px-4 py-2 text-xs"
         >
           {isPending ? "Signing…" : "Sign & report"}
         </button>
-      </div>
-      {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+      </form>
+      {error && (
+        <p id={errorId} role="alert" className="mt-3 text-xs text-red-600">
+          {error}
+        </p>
+      )}
       {done && (
         <p className="mt-3 text-xs text-accent-ink">
           Dispute recorded as open. Refresh to see it in the list below.

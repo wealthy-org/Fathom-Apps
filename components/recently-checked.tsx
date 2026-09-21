@@ -38,7 +38,7 @@ export function RecentlyChecked() {
   return (
     <div className="mt-10">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
           Recently checked
         </div>
         {items.length > 0 && (

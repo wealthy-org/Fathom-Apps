@@ -114,11 +114,11 @@ export function ReputationDimensions({
 
   return (
     <section aria-label="Reputation Dimensions">
-      <h2 className="font-display text-lg">Reputation Dimensions</h2>
+      <h2 className="font-display text-xl font-semibold">Reputation Dimensions</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         Context behind the global Fathom Score — not a trust decision.
       </p>
-      <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+      <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
         Fathom Score → Dimensions → Evidence
       </p>
 
@@ -126,18 +126,16 @@ export function ReputationDimensions({
         {rows.map(({ id, dimension, showBar, pct, refCount, status, max }) => {
           if (!showBar || !dimension) {
             return (
-              <div key={id}>
-                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[200px_1fr_auto] sm:items-center sm:gap-4">
-                  <div className="min-w-0">
-                    <div className="font-display text-base">{LABELS[id]}</div>
-                    <div className="mt-0.5 text-xs text-slate400">{NOTES[id]}</div>
-                  </div>
-                  <div className="min-w-0 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-                    {status}
-                  </div>
-                  <div className="shrink-0 font-mono text-sm text-ink tabular-nums">
-                    {status}
-                  </div>
+              <div
+                key={id}
+                className="flex flex-col gap-2 sm:grid sm:grid-cols-[200px_1fr_auto] sm:items-center sm:gap-4"
+              >
+                <div className="min-w-0">
+                  <div className="font-display text-base">{LABELS[id]}</div>
+                  <div className="mt-0.5 text-xs text-slate400">{NOTES[id]}</div>
+                </div>
+                <div className="min-w-0 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
+                  {status}
                 </div>
               </div>
             );
@@ -172,7 +170,7 @@ export function ReputationDimensions({
               <div className="mt-3 border-t-2 border-ink/10 pt-3 sm:ml-[216px]">
                 <dl className="space-y-2 text-sm">
                   <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
-                    <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">Result</dt>
+                    <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">Result</dt>
                     <dd className="font-mono text-ink tabular-nums">
                       {isRisk
                         ? `${dimension.contribution} (penalty of max ${max})`
@@ -180,18 +178,18 @@ export function ReputationDimensions({
                     </dd>
                   </div>
                   <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
-                    <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">Input</dt>
+                    <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">Input</dt>
                     <dd className="text-slate400">{INPUTS[id]}</dd>
                   </div>
                   <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
-                    <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">Calculation</dt>
+                    <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">Calculation</dt>
                     <dd className="text-slate400">
                       ScoreStrategyV1 over the available evidence. Subcomponent
                       splits are not exposed by the engine — inspect the evidence.
                     </dd>
                   </div>
                   <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
-                    <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">Weight</dt>
+                    <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">Weight</dt>
                     <dd className="text-slate400">
                       {isRisk
                         ? `Configured max penalty ${max} — controlled by ScoreStrategy/config, not this UI.`

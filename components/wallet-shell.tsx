@@ -26,10 +26,15 @@ export function WalletShell({ children }: { children: React.ReactNode }) {
         }
       />
 
-      <main className="relative z-10 mx-auto max-w-5xl px-5 pb-24 pt-10 sm:px-6 lg:px-8">
-        {showSearch && <SearchWalletForm hint={false} size="md" />}
-        <div className="mt-14">{children}</div>
-      </main>
+      <div className="mx-auto w-full max-w-[1440px] px-5 lg:px-8">
+        <main
+          id="main-content"
+          className="relative z-10 mx-auto max-w-5xl pb-24 pt-10"
+        >
+          {showSearch && <SearchWalletForm hint={false} size="md" />}
+          <div className="mt-14">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

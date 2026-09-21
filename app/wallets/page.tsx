@@ -13,7 +13,7 @@ export default function WalletsPage() {
   return (
     <WalletShell>
       <div className="mx-auto max-w-2xl text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent-ink">
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent-ink">
           Check a wallet
         </p>
         <h1 className="mt-4 font-display text-4xl font-medium tracking-tight sm:text-5xl">

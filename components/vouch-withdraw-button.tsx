@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   useAccount,
@@ -38,14 +38,15 @@ export function VouchWithdrawButton({
     query: { enabled: txHash !== null },
   });
 
+  useEffect(() => {
+    if (isSuccess) router.refresh();
+  }, [isSuccess, router]);
+
   if (REGISTRY === "" || !isConnected || !address) return null;
   // Only the voucher can withdraw its own stake — connected wallet must match
   // the vouch's voucher address (never overridden by client input).
   const voucher = address.toLowerCase();
   if (voucher !== vouchVoucher) return null;
-  if (isSuccess) {
-    router.refresh();
-  }
 
   async function withdraw() {
     setError(null);
@@ -77,7 +78,7 @@ export function VouchWithdrawButton({
       >
         {isPending ? "Withdrawing…" : isSuccess ? "Withdrawn" : "Withdraw"}
       </button>
-      <span className="font-mono text-[10px] text-slate400">
+      <span className="font-mono text-[11px] text-slate400">
         vouch by {shortAddress(voucher)} — withdraw returns your stake after the
         registry cooldown
       </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSignMessage } from "wagmi";
 import { useSession } from "@/components/use-session";
@@ -23,6 +23,10 @@ export function AttestationForm({ subject }: { subject: string }) {
   const [duration, setDuration] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const roleId = useId();
+  const relationshipId = useId();
+  const durationId = useId();
+  const errorId = useId();
 
   const attester = session?.walletAddress ?? null;
   if (isLoading) return null;
@@ -103,8 +107,18 @@ export function AttestationForm({ subject }: { subject: string }) {
         Attestations are pseudonymous supporting evidence. Signing proves you
         made this claim; it does not create reputation.
       </p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
+        }}
+        className="mt-4 grid gap-3 sm:grid-cols-3"
+      >
+        <label htmlFor={roleId} className="sr-only">
+          Attestation role
+        </label>
         <select
+          id={roleId}
           value={role}
           onChange={(e) => setRole(e.target.value)}
           className="input-brutal px-3 py-2 text-sm"
@@ -115,29 +129,44 @@ export function AttestationForm({ subject }: { subject: string }) {
             </option>
           ))}
         </select>
+        <label htmlFor={relationshipId} className="sr-only">
+          Relationship
+        </label>
         <input
+          id={relationshipId}
           value={relationship}
           maxLength={THRESHOLDS.attestation.maxRelationshipLength}
           onChange={(e) => setRelationship(e.target.value)}
           placeholder="Relationship (e.g. Worked Together)"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className="input-brutal px-3 py-2 text-sm sm:col-span-2"
         />
+        <label htmlFor={durationId} className="sr-only">
+          Duration in months (optional)
+        </label>
         <input
+          id={durationId}
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
           placeholder="Duration in months (optional)"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className="input-brutal px-3 py-2 text-sm"
         />
         <button
-          type="button"
+          type="submit"
           disabled={isPending || relationship.trim() === ""}
-          onClick={() => void submit()}
           className="btn-brutal px-4 py-2 text-xs sm:col-span-2"
         >
           {isPending ? "Signing…" : "Sign & attest"}
         </button>
-      </div>
-      {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+      </form>
+      {error && (
+        <p id={errorId} role="alert" className="mt-3 text-xs text-red-600">
+          {error}
+        </p>
+      )}
       {done && (
         <p className="mt-3 text-xs text-accent-ink">
           Attestation recorded — it now appears in the list below.

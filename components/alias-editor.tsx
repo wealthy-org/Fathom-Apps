@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useSession } from "@/components/use-session";
 
 // ponytail: edit alias muncul hanya kalau sesi SIWE = address ini.
@@ -21,6 +21,8 @@ export function AliasEditor({
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const inputId = useId();
+  const errorId = useId();
 
   const isOwner = session?.walletAddress === address;
   if (!isOwner) return null;
@@ -68,18 +70,29 @@ export function AliasEditor({
   }
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save(draft);
+      }}
+      className="mt-3 flex flex-wrap items-center gap-2"
+    >
+      <label htmlFor={inputId} className="sr-only">
+        Alias (optional)
+      </label>
       <input
+        id={inputId}
         value={draft}
         maxLength={MAX_ALIAS_LENGTH}
         onChange={(e) => setDraft(e.target.value)}
         placeholder="Alias (optional)"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
         className="input-brutal px-4 py-2 text-sm"
       />
       <button
-        type="button"
+        type="submit"
         disabled={busy}
-        onClick={() => void save(draft)}
         className="btn-brutal px-4 py-2 text-xs"
       >
         {busy ? "Saving…" : "Save"}
@@ -105,7 +118,11 @@ export function AliasEditor({
       >
         Cancel
       </button>
-      {error && <span className="w-full text-xs text-red-600">{error}</span>}
-    </div>
+      {error && (
+        <span id={errorId} role="alert" className="w-full text-xs text-red-600">
+          {error}
+        </span>
+      )}
+    </form>
   );
 }

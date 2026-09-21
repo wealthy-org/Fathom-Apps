@@ -35,7 +35,7 @@ export function ScoringPhilosophy() {
 
       <div className="panel-brutal mt-5 space-y-5 p-6">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
             How a score is derived
           </div>
           <ol className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-ink">
@@ -59,7 +59,7 @@ export function ScoringPhilosophy() {
         </div>
 
         <div className="border-t-2 border-ink/10 pt-4">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate400">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
             Evidence weight hierarchy
           </div>
           <dl className="mt-2 space-y-1.5 text-sm">

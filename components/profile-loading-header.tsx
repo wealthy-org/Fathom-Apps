@@ -15,7 +15,7 @@ export function ProfileLoadingHeader() {
 
   return (
     <div>
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate400">
+      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
         Wallet profile
       </p>
       <h1 className="mt-3 font-display text-3xl font-medium sm:text-4xl">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { recordRecentSearch } from "@/lib/wallet/search-history";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
@@ -37,6 +37,8 @@ export function SearchWalletForm({
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const inputId = useId();
+  const errorId = useId();
 
   function submit() {
     if (isPending) return;
@@ -69,7 +71,11 @@ export function SearchWalletForm({
       className="w-full"
     >
       <div className="flex flex-col gap-2 sm:flex-row">
+        <label htmlFor={inputId} className="sr-only">
+          Wallet address
+        </label>
         <input
+          id={inputId}
           type="text"
           value={value}
           disabled={isPending}
@@ -80,6 +86,8 @@ export function SearchWalletForm({
           placeholder="0x7A3…91F2"
           spellCheck={false}
           autoComplete="off"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className={`input-brutal min-w-0 flex-1 font-mono ${
             compact ? "h-10 px-4 text-xs" : "h-12 px-5 text-sm"
           }`}
@@ -95,7 +103,11 @@ export function SearchWalletForm({
           {!isPending && <Arrow />}
         </button>
       </div>
-      {error && <p className="mt-2 font-mono text-xs text-red-600">{error}</p>}
+      {error && (
+        <p id={errorId} role="alert" className="mt-2 font-mono text-xs text-red-600">
+          {error}
+        </p>
+      )}
       {hint && (
         <p className="mt-3 text-xs text-slate400">
           No account required. Enter any wallet address to inspect it.
