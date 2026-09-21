@@ -12,7 +12,7 @@ the only mandatory input.
 
 - Next.js 16 (App Router) + TypeScript (strict)
 - Tailwind CSS v4
-- PostgreSQL (Neon) via Drizzle ORM v1 rc
+- PostgreSQL (Supabase) via Drizzle ORM v1 rc
 - wagmi + viem (injected wallets)
 - SIWE + iron-session
 - Zod for input validation
@@ -32,7 +32,7 @@ Open http://localhost:3000.
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string (Neon). |
+| `DATABASE_URL` | PostgreSQL connection string (Supabase Transaction Pooler). |
 | `SESSION_SECRET` | Random string ≥ 32 chars for signed session cookies. |
 | `NEXT_PUBLIC_ROBINHOOD_CHAIN_ID` | Chain id (`46630` testnet, `4663` mainnet). |
 | `NEXT_PUBLIC_ROBINHOOD_RPC_URL` | Chain RPC endpoint. |

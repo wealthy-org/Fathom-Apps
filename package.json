@@ -12,7 +12,6 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
     "@tanstack/react-query": "^5.103.1",
     "d3": "^7.9.0",
     "dotenv": "^17.4.2",
@@ -20,6 +19,7 @@
     "gsap": "^3.15.0",
     "iron-session": "^9.0.1",
     "next": "16.3.5",
+    "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "siwe": "^3.0.0",

@@ -118,28 +118,29 @@ export async function writeProofs(
   markers: ProofMarkers,
   attestationIdFor: (proof: Proof) => number | null,
 ): Promise<void> {
-  // ponytail: delete+insert non-atomik (neon-http tidak dukung tx), sama
-  // seperti wallet_relationships. Snapshot utuh diganti sekaligus; kegagalan
-  // di tengah berarti baca berikutnya menganggap tidak ada snapshot (null)
+  // Snapshot utuh diganti atomik dalam satu transaksi; kegagalan rollback
+  // penuh sehingga baca berikutnya menganggap tidak ada snapshot (null)
   // lalu regenerasi — tidak pernah menyajikan setengah snapshot sebagai current.
-  await db.delete(proofs).where(eq(proofs.walletAddress, address));
-  if (fresh.length === 0) return;
-  await db.insert(proofs).values(
-    fresh.map((proof) => ({
-      walletAddress: address,
-      proofType: proof.type,
-      source: proof.source,
-      value: proof.value,
-      // numeric insert butuh string; baca kembali via Number() di toProof.
-      confidence: proof.confidence.toString(),
-      verificationMethod: proof.verification_method,
-      evidenceReference: proof.evidence_reference,
-      evidenceReferences: proof.evidence_references ?? null,
-      attestationId: attestationIdFor(proof),
-      statsFetchedAt: markers.statsFetchedAt,
-      graphFetchedAt: markers.graphFetchedAt,
-      attestationsStamp: markers.attestationsStamp,
-      protocolsStamp: markers.protocolsStamp,
-    })),
-  );
+  await db.transaction(async (tx) => {
+    await tx.delete(proofs).where(eq(proofs.walletAddress, address));
+    if (fresh.length === 0) return;
+    await tx.insert(proofs).values(
+      fresh.map((proof) => ({
+        walletAddress: address,
+        proofType: proof.type,
+        source: proof.source,
+        value: proof.value,
+        // numeric insert butuh string; baca kembali via Number() di toProof.
+        confidence: proof.confidence.toString(),
+        verificationMethod: proof.verification_method,
+        evidenceReference: proof.evidence_reference,
+        evidenceReferences: proof.evidence_references ?? null,
+        attestationId: attestationIdFor(proof),
+        statsFetchedAt: markers.statsFetchedAt,
+        graphFetchedAt: markers.graphFetchedAt,
+        attestationsStamp: markers.attestationsStamp,
+        protocolsStamp: markers.protocolsStamp,
+      })),
+    );
+  });
 }

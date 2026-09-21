@@ -511,51 +511,50 @@ class ExplorerTrustGraphProvider implements TrustGraphProvider {
     await attachProtocols(summary.relationships);
     await attachSocialEdges(summary, normalized);
 
-    // counterparties.subjectAddress FK + wallet_relationships FK → subject harus ada.
-    await db
-      .insert(counterparties)
-      .values({ address: normalized, isContract: false, source: SOURCE })
-      .onConflictDoNothing();
-
-    for (const rel of summary.relationships) {
-      await db
+    // Refresh cache turunan atomik dalam satu transaksi.
+    await db.transaction(async (tx) => {
+      // counterparties.subjectAddress FK + wallet_relationships FK → subject harus ada.
+      await tx
         .insert(counterparties)
-        .values({ address: rel.counterparty, isContract: rel.isContract, source: SOURCE })
-        .onConflictDoUpdate({
-          target: counterparties.address,
-          set: { isContract: rel.isContract, updatedAt: new Date() },
-        });
-    }
+        .values({ address: normalized, isContract: false, source: SOURCE })
+        .onConflictDoNothing();
 
-    // Ganti set relasi subject supaya tidak ada baris basi dari walk sebelumnya.
-    // ponytail: delete+insert non-atomik (neon-http tidak dukung tx). Ini cache
-    // turunan; kegagalan di tengah sembuh sendiri saat fetch berikutnya.
-    await db
-      .delete(walletRelationships)
-      .where(eq(walletRelationships.subjectAddress, normalized));
+      for (const rel of summary.relationships) {
+        await tx
+          .insert(counterparties)
+          .values({ address: rel.counterparty, isContract: rel.isContract, source: SOURCE })
+          .onConflictDoUpdate({
+            target: counterparties.address,
+            set: { isContract: rel.isContract, updatedAt: new Date() },
+          });
+      }
 
-    if (summary.relationships.length > 0) {
-      await db.insert(walletRelationships).values(
-        summary.relationships.map((rel) => ({
-          subjectAddress: normalized,
-          counterpartyAddress: rel.counterparty,
-          interactionCount: rel.interactionCount,
-          valueSent: rel.valueSent,
-          valueReceived: rel.valueReceived,
-          firstInteractionAt: rel.firstInteractionAt,
-          lastInteractionAt: rel.lastInteractionAt,
-          source: SOURCE,
-        })),
-      );
-    }
+      // Ganti set relasi subject supaya tidak ada baris basi dari walk sebelumnya.
+      await tx
+        .delete(walletRelationships)
+        .where(eq(walletRelationships.subjectAddress, normalized));
 
-    // Simpan hash transaksi yang menyentuh subject supaya evidence_reference
-    // proof bisa menunjuk ke halaman tx. Filter sama dengan derive. Hash null
-    // (tidak tersedia) dilewati — jangan menyimpan baris tanpa bukti.
-    // ponytail: delete+insert non-atomik, cache turunan — sembuh saat fetch ulang.
-    await db
-      .delete(walletTransactions)
-      .where(eq(walletTransactions.subjectAddress, normalized));
+      if (summary.relationships.length > 0) {
+        await tx.insert(walletRelationships).values(
+          summary.relationships.map((rel) => ({
+            subjectAddress: normalized,
+            counterpartyAddress: rel.counterparty,
+            interactionCount: rel.interactionCount,
+            valueSent: rel.valueSent,
+            valueReceived: rel.valueReceived,
+            firstInteractionAt: rel.firstInteractionAt,
+            lastInteractionAt: rel.lastInteractionAt,
+            source: SOURCE,
+          })),
+        );
+      }
+
+      // Simpan hash transaksi yang menyentuh subject supaya evidence_reference
+      // proof bisa menunjuk ke halaman tx. Filter sama dengan derive. Hash null
+      // (tidak tersedia) dilewati — jangan menyimpan baris tanpa bukti.
+      await tx
+        .delete(walletTransactions)
+        .where(eq(walletTransactions.subjectAddress, normalized));
 
     const txRows = fetched.transactions
       .filter((tx) => {
@@ -575,22 +574,23 @@ class ExplorerTrustGraphProvider implements TrustGraphProvider {
         source: SOURCE,
       }));
 
-    if (txRows.length > 0) {
-      await db.insert(walletTransactions).values(txRows);
-    }
+      if (txRows.length > 0) {
+        await tx.insert(walletTransactions).values(txRows);
+      }
 
-    await db
-      .insert(trustGraphState)
-      .values({
-        subjectAddress: normalized,
-        complete: summary.complete,
-        source: SOURCE,
-        fetchedAt,
-      })
-      .onConflictDoUpdate({
-        target: trustGraphState.subjectAddress,
-        set: { complete: summary.complete, source: SOURCE, fetchedAt },
-      });
+      await tx
+        .insert(trustGraphState)
+        .values({
+          subjectAddress: normalized,
+          complete: summary.complete,
+          source: SOURCE,
+          fetchedAt,
+        })
+        .onConflictDoUpdate({
+          target: trustGraphState.subjectAddress,
+          set: { complete: summary.complete, source: SOURCE, fetchedAt },
+        });
+    });
 
     return summary;
   }
