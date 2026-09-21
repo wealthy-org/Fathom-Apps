@@ -7,7 +7,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
-import { VOUCH_REGISTRY_WRITE_ABI } from "@/lib/chain/vouch-registry";
+import { VOUCH_REGISTRY_WRITE_ABI } from "@/lib/chain/vouch-abi";
 import { robinhoodTestnet } from "@/lib/wallet/chains";
 
 // ponytail: withdraw hanya untuk vouch yang diberi wallet terhubung

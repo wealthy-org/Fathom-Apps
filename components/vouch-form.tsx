@@ -13,7 +13,7 @@ import { ConnectButton } from "@/components/connect-button";
 import {
   ERC20_ABI,
   VOUCH_REGISTRY_WRITE_ABI,
-} from "@/lib/chain/vouch-registry";
+} from "@/lib/chain/vouch-abi";
 import { robinhoodTestnet } from "@/lib/wallet/chains";
 
 // ponytail: alur vouch on-chain. Target = profil yang sedang dilihat (readonly);
