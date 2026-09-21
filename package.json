@@ -9,7 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed:risk": "tsx --env-file=.env lib/db/seed/risk-registries.seed.ts",
+    "chain:index": "tsx --env-file=.env scripts/index-registries.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.103.1",
