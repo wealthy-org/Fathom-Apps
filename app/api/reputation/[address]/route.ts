@@ -18,10 +18,9 @@ function errorResponse(code: string, message: string, status: number) {
  * Membaca dari lapisan evidence/reputation yang sama dengan produk
  * (`getWalletProfile`) — tidak ada kalkulasi reputasi kedua (Spec 11 §Boundary).
  *
- * Hanya field yang benar-benar didukung yang diekspos. `score`, `tier`, dan
- * `riskLevel` agregat sengaja TIDAK dikirim: rumusnya belum dikunci. `vouches`
- * juga di-omit karena vouch belum diimplementasikan — mengirim 0 akan mengklaim
- * "tidak ada". Risk dilaporkan sebagai `riskSignals` (evidence, bukan label).
+ * Hanya field yang benar-benar didukung yang diekspos. `vouches` null saat
+ * index state unknown (no-index) — array kosong berarti confirmed-zero, bukan
+ * "belum di-index". Risk dilaporkan sebagai `riskSignals` (evidence, bukan label).
  */
 export async function GET(
   _req: Request,
@@ -53,7 +52,7 @@ export async function GET(
         riskSignals: profile.riskSignals,
         proofs: profile.proofs,
         claim: profile.claim,
-        vouches: profile.vouches,
+        vouches: profile.vouchIndex === null ? null : profile.vouches,
         dimensions: profile.dimensions,
         score: profile.reputation.totalScore,
         tier: profile.reputation.tier,

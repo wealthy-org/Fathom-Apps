@@ -192,7 +192,8 @@ const days = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
   );
 }
 
-// 8. Abnormal: 10 tx dalam satu jam → burst detected.
+// 8. Abnormal: BLOCKED_BY_PRODUCT_RULE — always not_evaluable until Spec 05
+//    defines the detection rule, even with transaction rows present.
 {
   const burstTxs = Array.from({ length: 10 }, (_, i) => ({
     timestamp: new Date(NOW.getTime() - i * 60_000),
@@ -208,7 +209,7 @@ const days = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
   );
   assert.equal(
     r.states.find((s) => s.id === "abnormal_transaction_pattern")?.status,
-    "detected",
+    "not_evaluable",
   );
 }
 

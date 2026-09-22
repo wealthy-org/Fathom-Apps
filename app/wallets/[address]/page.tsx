@@ -221,7 +221,7 @@ function formatProofValue(proof: Proof): string {
   switch (proof.type) {
     case "wallet_age": {
       const { ageDays } = proof.value as { ageDays: number };
-      return `${ageDays} days since first transaction`;
+      return `${ageDays} days since earliest indexed transaction`;
     }
     case "transaction_history": {
       const { txCount } = proof.value as { txCount: number };

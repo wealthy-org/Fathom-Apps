@@ -68,17 +68,8 @@ export const THRESHOLDS = {
     // (0.5 = 50%) untuk memicu sinyal.
     concentrationTopShare: 0.5,
 
-    // abnormal_transaction_pattern: jendela geser (ms) untuk burst.
-    abnormalWindowMs: 3_600_000,
-    // abnormal_transaction_pattern: minimal tx dalam satu jendela = burst.
-    abnormalMaxPerWindow: 10,
-    // abnormal_transaction_pattern: nilai menyimpang bila >= mean + N * stddev
-    // (dihitung atas tx bernilai > 0 dalam histori subject).
-    abnormalValueStdDevs: 3,
-    // abnormal_transaction_pattern: share tx ke kontrak di atas ini = temuan.
-    abnormalContractShare: 0.8,
-    // abnormal_transaction_pattern: minimal tx bertimestamp sebelum pola dinilai.
-    abnormalMinTx: 5,
+    // abnormal_transaction_pattern: BLOCKED_BY_PRODUCT_RULE (Spec 05).
+    // No detection rule defined — no abnormal* thresholds are guessed.
 
     // suspicious_vouch_clustering: minimal pasangan resiprokal (A↔B aktif)
     // sebelum cluster dianggap muncul.
