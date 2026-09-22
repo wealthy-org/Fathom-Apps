@@ -52,5 +52,14 @@ export async function GET(request: Request) {
     })),
   ]);
 
-  return NextResponse.json({ ok: true, vouch, attestation, dispute });
+  return NextResponse.json(
+    JSON.parse(
+      JSON.stringify(
+        { ok: true, vouch, attestation, dispute },
+        // ponytail: ringkasan indexer membawa bigint (fromBlock/toBlock) —
+        // NextResponse.json melempar 500 tanpa replacer ini.
+        (_, value) => (typeof value === "bigint" ? value.toString() : value),
+      ),
+    ),
+  );
 }
