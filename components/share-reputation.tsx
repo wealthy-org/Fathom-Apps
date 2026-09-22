@@ -81,6 +81,14 @@ export function ShareReputation({
       >
         Copy link
       </button>
+      <a
+        href={`${profileUrl(address)}/opengraph-image`}
+        target="_blank"
+        rel="noreferrer"
+        className="btn-brutal-light min-touch inline-flex w-full items-center justify-center px-4 py-2 text-xs sm:w-auto"
+      >
+        View card
+      </a>
       {notice && (
         <span role="status" className="font-mono text-[11px] text-slate400">
           {notice}

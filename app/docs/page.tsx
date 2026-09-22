@@ -72,9 +72,13 @@ export default function DocsPage() {
   return (
     <div className="font-sans text-ink">
       <Navbar
+        // ponytail: menu yang sama dengan home — anchor absolut supaya
+        // tetap mengarah ke section landing saat dibuka dari /docs.
         links={[
-          ["Home", "/"],
-          ["Check a Wallet", "/wallets"],
+          ["About", "/#about"],
+          ["How It Works", "/#how"],
+          ["FAQ", "/#faq"],
+          ["Docs", "/docs"],
         ]}
         actions={
           <Link
@@ -98,7 +102,7 @@ export default function DocsPage() {
           proofs behind the score, not just the number.
         </p>
 
-        <section className="panel-brutal mt-10 p-7">
+        <section id="endpoint" className="panel-brutal mt-10 scroll-mt-28 p-7">
           <h2 className="font-display text-xl font-medium">Endpoint</h2>
           <div className="mt-4">
             <CodeCard
@@ -115,7 +119,7 @@ export default function DocsPage() {
           </p>
         </section>
 
-        <section className="mt-6">
+        <section id="request" className="mt-6 scroll-mt-28">
           <h2 className="mt-2 font-display text-xl font-medium">Request</h2>
           <div className="mt-4">
             <CodeCard
@@ -126,7 +130,7 @@ export default function DocsPage() {
           </div>
         </section>
 
-        <section className="mt-6">
+        <section id="response" className="mt-6 scroll-mt-28">
           <h2 className="mt-2 font-display text-xl font-medium">Response</h2>
           <div className="mt-4">
             <CodeCard
@@ -137,7 +141,7 @@ export default function DocsPage() {
           </div>
         </section>
 
-        <section className="panel-brutal mt-6 p-7">
+        <section id="fields" className="panel-brutal mt-6 scroll-mt-28 p-7">
           <h2 className="font-display text-xl font-medium">Response fields</h2>
           <ul className="mt-4 space-y-3">
             {FIELDS.map(([field, desc]) => (
@@ -152,10 +156,7 @@ export default function DocsPage() {
           </ul>
         </section>
 
-        <section className="mt-6">
-          <h2 className="mt-2 font-display text-xl font-medium">
-            Errors
-          </h2>
+        <section id="errors" className="mt-6 scroll-mt-28">
           <div className="mt-4">
             <CodeCard
               title="error.json"
@@ -178,7 +179,7 @@ export default function DocsPage() {
           </ul>
         </section>
 
-        <section className="panel-brutal mt-6 p-7">
+        <section id="limits" className="panel-brutal mt-6 scroll-mt-28 p-7">
           <h2 className="font-display text-xl font-medium">Limits & notes</h2>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-slate400">
             <li>No API key required. No rate limits are enforced yet — be reasonable.</li>
@@ -196,7 +197,7 @@ export default function DocsPage() {
           </ul>
         </section>
 
-        <section className="panel-brutal mt-6 p-7">
+        <section id="changelog" className="panel-brutal mt-6 scroll-mt-28 p-7">
           <h2 className="font-display text-xl font-medium">Changelog</h2>
           <ul className="mt-4 space-y-3 text-sm leading-7 text-slate400">
             <li>

@@ -46,15 +46,13 @@ body::before {
     linear-gradient(rgba(35, 36, 39, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(35, 36, 39, 0.05) 1px, transparent 1px),
     radial-gradient(circle at 88% 18%, rgba(227, 74, 50, 0.12), transparent 30%),
-    radial-gradient(circle at 92% 72%, rgba(153, 69, 255, 0.1), transparent 28%),
     radial-gradient(circle at 66% 86%, rgba(227, 74, 50, 0.1), transparent 26%);
   background-size:
     44px 44px,
     44px 44px,
     auto,
-    auto,
     auto;
-  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  background-attachment: fixed, fixed, fixed, fixed;
 }
 
 @media (max-width: 640px) {
