@@ -9,7 +9,20 @@ const paramsSchema = z.object({
 });
 
 function errorResponse(code: string, message: string, status: number) {
-  return NextResponse.json({ error: { code, message } }, { status });
+  return NextResponse.json({ error: { code, message } }, { status, headers: CORS_HEADERS });
+}
+
+// ponytail: endpoint publik read-only tanpa kredensial — wildcard aman untuk
+// integrator eksternal (browser app). Preflight di-cache 24 jam.
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Max-Age": "86400",
+} as const;
+
+/** Preflight untuk integrator browser eksternal. */
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
 type RiskLevel = "low" | "medium" | "high" | null;
@@ -92,6 +105,7 @@ export async function GET(
       {
         headers: {
           "Cache-Control": "public, s-maxage=60, stale-while-revalidate=60",
+          ...CORS_HEADERS,
         },
       },
     );

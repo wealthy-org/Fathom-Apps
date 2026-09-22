@@ -5,12 +5,14 @@ import { useLayoutEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SearchWalletForm } from "@/components/search-wallet-form";
+import { CodeCard } from "@/components/code-card";
 import { Logo, Navbar } from "@/components/layout/Navbar";
 
 const NAV_LINKS: Array<[string, string]> = [
   ["About", "#about"],
   ["How It Works", "#how"],
   ["FAQ", "#faq"],
+  ["Docs", "/docs"],
 ];
 
 /** Public example wallet reused by /wallets — footer deep-links to its tabs. */
@@ -422,6 +424,53 @@ export default function Home() {
           </section>
         </main>
 
+        {/* API */}
+        <section id="api" className="px-6 py-20 lg:px-10 lg:py-28 xl:px-12">
+          <div className="mx-auto max-w-7xl">
+            <Head
+              kick="API"
+              title={
+                <>
+                  Reputation evidence,{" "}
+                  <span className="font-serif-accent">
+                    in your own product.
+                  </span>
+                </>
+              }
+              sub="One read-only endpoint. No API key. CORS-open for browser apps."
+            />
+            <div className="mt-14 grid gap-4 lg:grid-cols-2">
+              <div className="card">
+                <CodeCard
+                  title="request.js"
+                  language="js"
+                  code={`const res = await fetch(
+  "https://YOUR-APP/api/reputation/0x71c4…4a3f"
+);
+const profile = await res.json();
+// profile.score, profile.riskLevel, profile.proofs[]`}
+                />
+              </div>
+              <div className="card">
+                <CodeCard
+                  title="response.json"
+                  language="json"
+                  code={`{
+  "score": 332,
+  "tier": { "id": "emerging" },
+  "riskLevel": "medium",
+  "vouchesCount": 2,
+  "completeness": "complete"
+}`}
+                />
+              </div>
+            </div>
+            <div className="card mt-10">
+              <PrimaryLink href="/docs">Read the docs</PrimaryLink>
+            </div>
+          </div>
+        </section>
+
         {/* CTA */}
         <section className="relative z-10 px-5 pb-28 sm:px-6 lg:px-8">
           <div className="card mx-auto max-w-5xl px-6 py-16 text-center sm:px-10 sm:py-20">
@@ -487,6 +536,7 @@ export default function Home() {
                       ["FAQ", "/#faq"],
                       ["Privacy Model", "/#faq-identity"],
                       ["Reputation Card", `/wallets/${EXAMPLE_WALLET}`],
+                      ["Docs", "/docs"],
                     ] as Array<[string, string]>
                   ).map(([label, href]) => (
                     <li key={label}>
