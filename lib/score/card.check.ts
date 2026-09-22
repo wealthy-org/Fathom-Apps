@@ -56,7 +56,7 @@ function unavailableInput(): ScoreInput {
 const complete = computeScore(completeInput, new ScoreStrategyV1(), tierStrategyV1);
 assert.equal(complete.completeness, "complete");
 assert.notEqual(complete.tier, null);
-assert.equal(complete.formulaVersion, "1.0.0-provisional");
+assert.equal(complete.formulaVersion, "1.1.0-provisional");
 assert.ok(complete.totalScore > 0);
 assert.ok(complete.totalScore <= 1000);
 

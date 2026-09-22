@@ -42,8 +42,8 @@ const first = strategy.compute(input);
 assert.deepEqual(strategy.compute(input), first, "same JSON input is deterministic");
 
 const dimension = (id: string) => first.breakdown.dimensions.find((item) => item.id === id);
-assert.equal(dimension("economic_history")?.contribution, 250, "economic max at full age/txCount/volume");
-assert.equal(dimension("counterparty_history")?.contribution, 200, "counterparty max at full inputs");
+assert.equal(dimension("economic_history")?.contribution, 167, "economic at calibrated fixture inputs (age 100 + tx 20 + volume 47)");
+assert.equal(dimension("counterparty_history")?.contribution, 115, "counterparty at calibrated fixture inputs (unique 40 + repeat 25 + longevity 50)");
 assert.equal(dimension("contract_history")?.contribution, 50, "one verified contract proof");
 assert.equal(first.breakdown.riskAdjustment.contribution, 0, "clear risk gives no bonus");
 assert.ok(!Object.is(first.breakdown.riskAdjustment.contribution, -0), "no negative zero penalty");
@@ -76,7 +76,7 @@ assert.equal(highRisk.breakdown.riskAdjustment.evidenceReferences.direct[0]?.ref
 const engine = (candidate: ScoreInput) => computeScore(candidate, new ScoreStrategyV1(), new TierStrategyV1());
 const complete = engine(input);
 assert.equal(complete.completeness, "complete");
-assert.equal(complete.tier?.id, "established", "complete score receives a provisional tier");
+assert.equal(complete.tier?.id, "emerging", "complete score receives a provisional tier");
 
 const partial = engine({ ...input, availability: { ...availability, riskSignals: source("not_indexed") } });
 assert.equal(partial.completeness, "partial");

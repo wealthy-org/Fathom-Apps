@@ -73,8 +73,8 @@ export function ScoringPhilosophy() {
             ))}
           </dl>
           <p className="mt-2 text-xs text-slate400">
-            A product-philosophy view only. Actual weights stay in
-            ScoreStrategy/config — this UI assigns no percentages.
+            An overview only — this section assigns no percentages.
+            Inspect the evidence below to see what drives the score.
           </p>
         </div>
 

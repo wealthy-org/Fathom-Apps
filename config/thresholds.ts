@@ -97,7 +97,7 @@ export const THRESHOLDS = {
     // PROVISIONAL — ScoreStrategyV1 (Spec 10), bukan formula final Fathom.
     // Ganti bobot/kap di sini, bukan di strategi. V1 = compression layer
     // evidence-based; missing data tidak memberi kontribusi positif.
-    formulaVersion: "1.0.0-provisional",
+    formulaVersion: "1.1.0-provisional",
     maxScore: 1000,
     dimensions: {
       economicHistory: {
@@ -105,16 +105,16 @@ export const THRESHOLDS = {
         walletAgeMaxPoints: 100,
         walletAgeFullAtDays: 365,
         txCountMaxPoints: 100,
-        txCountFullAt: 100,
+        txCountFullAt: 500,
         volumeMaxPoints: 50,
-        volumeFullAtWei: "1000000000000000000",
+        volumeFullAtWei: "10000000000000000000",
       },
       counterpartyHistory: {
         maxPoints: 200,
         uniqueMaxPoints: 100,
-        uniqueFullAt: 10,
+        uniqueFullAt: 25,
         repeatMaxPoints: 50,
-        repeatFullAt: 5,
+        repeatFullAt: 10,
         longevityMaxPoints: 50,
         longevityFullAtDays: 365,
       },
@@ -128,7 +128,7 @@ export const THRESHOLDS = {
         vouchMaxPoints: 200,
         vouchCapWei: "1000000000000000000",
         vouchDecayDays: 365,
-        attestationMaxPoints: 100,
+        attestationMaxPoints: 60,
         attestationMaxCounted: 3,
       },
       riskSignals: {

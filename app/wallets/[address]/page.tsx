@@ -69,7 +69,9 @@ function ScoreSection({
             {reputation.tier ? reputation.tier.label : "No tier — partial"}
           </div>
           <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-faint">
-            {reputation.formulaVersion}
+            {reputation.completeness === "complete"
+              ? "Evidence complete"
+              : "Evidence still being indexed"}
           </div>
         </div>
       </div>
@@ -163,14 +165,6 @@ function ReputationHero({ profile }: { profile: WalletProfile }) {
             {tierLabel}
           </div>
           <div className="mt-1 text-xs text-slate400">{tierNote}</div>
-        </div>
-        <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
-            Formula
-          </div>
-          <div className="mt-1 font-mono text-sm text-ink">
-            {reputation.formulaVersion}
-          </div>
         </div>
       </div>
 

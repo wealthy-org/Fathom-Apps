@@ -184,16 +184,16 @@ export function ReputationDimensions({
                   <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
                     <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">Calculation</dt>
                     <dd className="text-slate400">
-                      ScoreStrategyV1 over the available evidence. Subcomponent
-                      splits are not exposed by the engine — inspect the evidence.
+                      Calculated from the available evidence. Subcomponent
+                      splits are not shown here — inspect the evidence.
                     </dd>
                   </div>
                   <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[120px_1fr] sm:gap-3">
                     <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">Weight</dt>
                     <dd className="text-slate400">
                       {isRisk
-                        ? `Configured max penalty ${max} — controlled by ScoreStrategy/config, not this UI.`
-                        : `Configured dimension maximum ${max} — controlled by ScoreStrategy/config, not this UI.`}
+                        ? `Maximum penalty ${max} — set by Fathom, not this view.`
+                        : `Dimension maximum ${max} — set by Fathom, not this view.`}
                     </dd>
                   </div>
                 </dl>

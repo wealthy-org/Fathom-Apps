@@ -97,7 +97,7 @@ export default async function Image({
     return fallbackCard(address, "Reputation data is still being indexed.");
   }
 
-  const { completeness, tier, totalScore, formulaVersion, availability } = reputation;
+  const { completeness, tier, totalScore, availability } = reputation;
   const incomplete = completeness !== "complete";
   const openDisputes = profile.disputes.filter((d) => d.status === "open").length;
   const riskState = availability.riskSignals?.state;
@@ -176,14 +176,6 @@ export default async function Image({
                 {incomplete
                   ? (completeness === "unavailable" ? "Evidence unavailable" : `${completeness} — evidence still being indexed`)
                   : "Complete"}
-              </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: SLATE }}>
-                Formula
-              </div>
-              <div style={{ fontSize: 16, color: INK, fontFamily: "JetBrains Mono, monospace" }}>
-                {formulaVersion}
               </div>
             </div>
           </div>
