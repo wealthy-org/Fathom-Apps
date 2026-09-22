@@ -14,6 +14,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
@@ -331,8 +332,12 @@ export const disputes = pgTable(
   },
   (t) => [
     index("idx_disputes_target").on(t.targetAddress, t.status),
-    // Cegah satu reporter membanjiri target yang sama dengan dispute berulang.
-    unique("disputes_reporter_target").on(t.reporterAddress, t.targetAddress),
+    // Cegah satu reporter membanjiri target yang sama dengan dispute berulang
+    // (hanya baris off-chain: on-chain didedup via disputes_onchain_identity,
+    // dan event registry tidak boleh ditelan baris legacy).
+    uniqueIndex("disputes_reporter_target")
+      .on(t.reporterAddress, t.targetAddress)
+      .where(sql`"disputes"."registry_id" IS NULL`),
     // Identitas event kanonik (chain_id + tx_hash + log_index) — indexer idempoten.
     unique("disputes_onchain_identity").on(
       t.registryId,
@@ -415,12 +420,14 @@ export const attestations = pgTable(
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
   (t) => [
-    // Satu attester hanya satu attestation per subject+role — cegah spam duplikat.
-    unique("attestations_identity").on(
-      t.attesterAddress,
-      t.subjectAddress,
-      t.role,
-    ),
+    // Satu attester hanya satu attestation OFF-CHAIN per subject+role — cegah
+    // spam duplikat form. Partial index (registry_id IS NULL): baris on-chain
+    // boleh berbagi triple yang sama; dedup on-chain via
+    // attestations_onchain_identity. Tanpa partial, baris legacy SIWE menelan
+    // event on-chain via onConflictDoNothing di indexer.
+    uniqueIndex("attestations_identity")
+      .on(t.attesterAddress, t.subjectAddress, t.role)
+      .where(sql`${t.registryId} IS NULL`),
     // Identitas event kanonik (chain_id + tx_hash + log_index) — indexer idempoten.
     unique("attestations_onchain_identity").on(
       t.registryId,

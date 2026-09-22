@@ -24,3 +24,12 @@ export const ERC20_ABI = [
   parseAbiItem("function approve(address spender, uint256 amount) returns (bool)"),
   parseAbiItem("function allowance(address owner, address spender) view returns (uint256)"),
 ] as const;
+
+export const ATTESTATION_REGISTRY_WRITE_ABI = [
+  parseAbiItem("function attest(address subject, string role, string relationship, uint32 durationMonths) returns (uint256)"),
+  parseAbiItem("function revoke(uint256 attestationId)"),
+] as const;
+
+export const DISPUTE_REGISTRY_WRITE_ABI = [
+  parseAbiItem("function openDispute(address target, bytes32 reasonHash, bytes32 evidenceRef) returns (uint256)"),
+] as const;

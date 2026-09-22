@@ -1,36 +1,107 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { useSignMessage } from "wagmi";
-import { useSession } from "@/components/use-session";
+import {
+  useAccount,
+  useBalance,
+  useChainId,
+  usePublicClient,
+  useSwitchChain,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 import { ConnectButton } from "@/components/connect-button";
 import { ATTESTATION_ROLES } from "@/lib/attestations/roles";
-import { buildAttestationMessage } from "@/lib/attestations/payload";
+import { ATTESTATION_REGISTRY_WRITE_ABI } from "@/lib/chain/vouch-abi";
+import { explorerTransactionUrl } from "@/lib/chain/blockscout";
+import { robinhoodTestnet } from "@/lib/wallet/chains";
 import { THRESHOLDS } from "@/config/thresholds";
 
-// ponytail: form attestation muncul hanya saat sesi SIWE aktif dan bukan profil sendiri.
-// Pengunjung signed-out melihat prompt connect (bukan form). Server membangun ulang
-// payload kanonik dari field + alamat sesi, jadi signature di sini hanya valid
-// untuk isi yang benar-benar dikirim.
+type TxState =
+  | "idle"
+  | "awaiting_signature"
+  | "pending"
+  | "confirmed"
+  | "failed";
+
+const REGISTRY =
+  process.env.NEXT_PUBLIC_FATHOM_ATTESTATION_REGISTRY_ADDRESS ?? "";
 
 export function AttestationForm({ subject }: { subject: string }) {
-  const { session, isLoading } = useSession();
   const router = useRouter();
-  const { signMessageAsync, isPending } = useSignMessage();
+  const { address, isConnected } = useAccount();
   const [role, setRole] = useState<string>(ATTESTATION_ROLES[0]);
   const [relationship, setRelationship] = useState("");
   const [duration, setDuration] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [txState, setTxState] = useState<TxState>("idle");
+  const [txHash, setTxHash] = useState<string | null>(null);
   const roleId = useId();
   const relationshipId = useId();
   const durationId = useId();
   const errorId = useId();
 
-  const attester = session?.walletAddress ?? null;
-  if (isLoading) return null;
-  if (!session?.authenticated || !attester) {
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient({ chainId: robinhoodTestnet.id });
+  const chainId = useChainId();
+  const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const wrongNetwork = chainId !== robinhoodTestnet.id;
+  // ponytail: dompet tanpa saldo testnet gagal di estimasi gas dengan error
+  // generik ("Unexpected error") dari RPC — tahan sebelum write, bukan sesudah.
+  const { data: gasBalance } = useBalance({
+    address,
+    chainId: robinhoodTestnet.id,
+    query: { enabled: isConnected && !wrongNetwork },
+  });
+  const { isSuccess: confirmed, isError: receiptFailed } =
+    useWaitForTransactionReceipt({
+      hash: txHash as `0x${string}` | undefined,
+      chainId: robinhoodTestnet.id,
+      query: { enabled: txHash !== null },
+    });
+
+  // ponytail: server render cabang not-connected; client auto-reconnect flip ke
+  // cabang connected → hydration mismatch. Tahan di cabang server sampai mounted.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
+  // ponytail: setState + router.refresh tidak boleh di fase render (React warn
+  // "Cannot update Router while rendering"). Efek, bukan render. Tanpa setTxState
+  // di sini (lint react-hooks/set-state-in-effect): tampilan confirmed di-derive
+  // dari `confirmed || txState === "confirmed"` di bawah.
+  useEffect(() => {
+    if (confirmed && txState !== "confirmed") {
+      // ponytail: index registry dulu supaya event attestation masuk DB sebelum
+      // refresh — tanpa ini data baru tidak muncul sampai indexer jalan.
+      void fetch("/api/index", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "attestation" }),
+      }).then(
+        () => router.refresh(),
+        () => router.refresh(),
+      );
+    }
+  }, [confirmed, txState, router]);
+
+  if (REGISTRY === "") {
+    return (
+      <div className="panel-brutal mt-4 p-5">
+        <h3 className="font-display text-base">Attest to this wallet</h3>
+        <p className="mt-1 text-xs text-slate400">
+          Attestation registry is not configured. On-chain attestations are
+          unavailable until NEXT_PUBLIC_FATHOM_ATTESTATION_REGISTRY_ADDRESS is
+          set.
+        </p>
+      </div>
+    );
+  }
+
+  if (!mounted || !isConnected || !address) {
     return (
       <div className="panel-brutal mt-4 p-5">
         <h3 className="font-display text-base">Attest to this wallet</h3>
@@ -45,67 +116,172 @@ export function AttestationForm({ subject }: { subject: string }) {
       </div>
     );
   }
+
+  const attester = address.toLowerCase();
   if (attester === subject) return null;
 
+  // ponytail: tanpa chainId yang di-pin, wallet di jaringan salah mensimulasikan
+  // attest ke alamat tanpa kode → revert mentah "Unexpected error". Tahan di sini.
+  if (wrongNetwork) {
+    return (
+      <div className="panel-brutal mt-4 p-5">
+        <h3 className="font-display text-base">Attest to this wallet</h3>
+        <p className="mt-1 text-xs text-slate400">
+          Your wallet is on the wrong network. Switch to Robinhood Testnet to
+          attest on-chain.
+        </p>
+        <button
+          type="button"
+          disabled={isSwitching}
+          onClick={() => switchChain({ chainId: robinhoodTestnet.id })}
+          className="btn-brutal mt-4 px-4 py-2 text-xs"
+        >
+          {isSwitching ? "Switching…" : "Switch network"}
+        </button>
+      </div>
+    );
+  }
+
+  const busy = txState === "awaiting_signature" || txState === "pending";
+
+  function parseDuration(): number | null {
+    if (duration.trim() === "") return null;
+    const n = Number.parseInt(duration.trim(), 10);
+    if (!Number.isInteger(n) || n < 1) return null;
+    if (n > THRESHOLDS.attestation.maxDurationMonths) return null;
+    return n;
+  }
+
+  // ponytail: petakan custom error kontrak ke pesan aksi, bukan "Unexpected error".
+  // Nama error dibawa viem di message hasil simulasi — regex cukup, tanpa decode manual.
+  function describeAttestError(e: unknown): string {
+    const msg = (e as Error)?.message ?? "";
+    if (/reject|denied|cancel/i.test(msg))
+      return "Cancelled. Click once more to try again.";
+    const hit = msg.match(
+      /(SelfAttestation|ZeroAddress|EmptyRole|EmptyRelationship|InvalidDuration)/,
+    )?.[1];
+    switch (hit) {
+      case "SelfAttestation":
+        return "Rejected by contract (SelfAttestation): cannot attest to your own wallet.";
+      case "ZeroAddress":
+        return "Rejected by contract (ZeroAddress): subject or sender is the zero address.";
+      case "EmptyRole":
+        return "Rejected by contract (EmptyRole): pick a role.";
+      case "EmptyRelationship":
+        return "Rejected by contract (EmptyRelationship): relationship is required.";
+      case "InvalidDuration":
+        return "Rejected by contract (InvalidDuration): duration must be at least 1 month.";
+      default:
+        break;
+    }
+    // Revert tanpa data = bukan validasi kontrak: alamat registry salah/bukan
+    // kontrak di chain ini, atau bytecode deploy beda dari sumber. Tampilkan
+    // alamat yang dipakai supaya salah konfigurasi kelihatan.
+    if (/revert|Unexpected error|returned no data|empty/i.test(msg)) {
+      // ponytail: bandingkan case-insensitive — checksum beda casing bukan
+      // mismatch. Alamat sama tapi tetap revert = bytecode deploy beda/RPC.
+      if (
+        REGISTRY.toLowerCase() ===
+        "0x7da53acee8fb02a82e9ca45e7ac4d6000200ac66"
+      )
+        return "Simulation reverted with no contract reason even though the registry address is correct. The deployed bytecode may differ from the current contract source, or the RPC failed. Check that the address holds contract code on the Robinhood Testnet explorer, then try again.";
+      return `Simulation reverted with no contract reason. Check NEXT_PUBLIC_FATHOM_ATTESTATION_REGISTRY_ADDRESS (used: ${REGISTRY}). Expected registry on Robinhood Testnet: 0x7da53acee8fb02a82e9ca45e7ac4d6000200ac66.`;
+    }
+    return msg || "Transaction failed. Please try again.";
+  }
+
   async function submit() {
-    if (!attester) return;
+    if (!address) return;
     setError(null);
-    setDone(false);
-    try {
-      const durationMonths =
-        duration.trim() === "" ? null : Number.parseInt(duration, 10);
-      if (durationMonths !== null && !Number.isFinite(durationMonths)) {
-        setError("Duration must be a whole number of months.");
-        return;
-      }
-      const issuedAt = new Date().toISOString();
-      const message = buildAttestationMessage({
-        attester,
-        subject,
-        role: role as (typeof ATTESTATION_ROLES)[number],
-        relationship,
-        durationMonths,
-        issuedAt,
-      });
-      const signature = await signMessageAsync({ message });
-      const res = await fetch("/api/attestations", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          subject,
-          role,
-          relationship,
-          durationMonths,
-          issuedAt,
-          signature,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data?.error?.message ?? "Attestation failed.");
-        return;
-      }
-      setDone(true);
-      setRelationship("");
-      setDuration("");
-      // Server component re-fetch: attestation baru langsung tampil di daftar.
-      router.refresh();
-    } catch (e) {
-      const msg = (e as Error)?.message ?? "";
+    setTxHash(null);
+    if (relationship.trim() === "") {
+      setError("Relationship is required.");
+      return;
+    }
+    const durationMonths = parseDuration();
+    if (durationMonths === null) {
+      setError("Duration must be a whole number of months (at least 1).");
+      return;
+    }
+    // ponytail: saldo nol = estimasi gas gagal dengan error RPC generik.
+    // Form tetap tampil; gagal di submit dengan pesan jelas, bukan panel blokir.
+    if (gasBalance !== undefined && gasBalance.value === BigInt(0)) {
       setError(
-        /reject|denied|cancel/i.test(msg)
-          ? "Cancelled. Click once more to try again."
-          : "Attestation failed. Please try again.",
+        "This wallet holds no native tokens, so it cannot pay gas for the on-chain attestation. Top it up, then try again.",
       );
+      return;
+    }
+    const args = [
+      subject as `0x${string}`,
+      role,
+      relationship.trim(),
+      durationMonths,
+    ] as const;
+    try {
+      // Preflight: simulasi dengan parameter IDENTIK (address/function/args/
+      // account/chain) sebelum write — gagal di sini = alasan revert asli,
+      // tanpa membakar gas dan tanpa pesan generik dompet.
+      if (publicClient) {
+        await publicClient.simulateContract({
+          address: REGISTRY as `0x${string}`,
+          abi: ATTESTATION_REGISTRY_WRITE_ABI,
+          functionName: "attest",
+          args: [...args],
+          account: address,
+          chain: robinhoodTestnet,
+        });
+      }
+      setTxState("awaiting_signature");
+      const hash = await writeContractAsync({
+        address: REGISTRY as `0x${string}`,
+        abi: ATTESTATION_REGISTRY_WRITE_ABI,
+        functionName: "attest",
+        args: [...args],
+        chainId: robinhoodTestnet.id,
+      });
+      setTxHash(hash);
+      setTxState("pending");
+    } catch (e) {
+      setTxState("failed");
+      setError(describeAttestError(e));
     }
   }
+
+  if (confirmed || txState === "confirmed") {
+    return (
+      <div className="panel-brutal mt-4 p-5">
+        <h3 className="font-display text-base">Attest to this wallet</h3>
+        <p className="mt-3 text-xs text-accent-ink">
+          Attestation confirmed on-chain. It will appear below once indexed.
+        </p>
+        {txHash && (
+          <a
+            href={explorerTransactionUrl(txHash)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-xs text-accent-ink underline"
+          >
+            View transaction on Robinhood explorer ↗
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  const buttonLabel =
+    txState === "awaiting_signature"
+      ? "Confirm in wallet…"
+      : txState === "pending"
+        ? "Pending…"
+        : "Attest on-chain";
 
   return (
     <div className="panel-brutal mt-4 p-5">
       <h3 className="font-display text-base">Attest to this wallet</h3>
       <p className="mt-1 text-xs text-slate400">
-        Attestations are pseudonymous supporting evidence. Signing proves you
-        made this claim; it does not create reputation.
+        Attestations are pseudonymous supporting evidence recorded on-chain.
+        Your wallet signs the transaction; it does not create reputation.
       </p>
       <form
         onSubmit={(e) => {
@@ -143,33 +319,34 @@ export function AttestationForm({ subject }: { subject: string }) {
           className="input-brutal px-3 py-2 text-sm sm:col-span-2"
         />
         <label htmlFor={durationId} className="sr-only">
-          Duration in months (optional)
+          Duration in months
         </label>
         <input
           id={durationId}
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
-          placeholder="Duration in months (optional)"
+          placeholder="Duration in months (min 1)"
+          inputMode="numeric"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           className="input-brutal px-3 py-2 text-sm"
         />
         <button
           type="submit"
-          disabled={isPending || relationship.trim() === ""}
+          disabled={busy || relationship.trim() === "" || duration.trim() === ""}
           className="btn-brutal px-4 py-2 text-xs sm:col-span-2"
         >
-          {isPending ? "Signing…" : "Sign & attest"}
+          {buttonLabel}
         </button>
       </form>
+      {receiptFailed && !confirmed && (
+        <p role="alert" className="mt-3 text-xs text-red-600">
+          Transaction reverted on-chain. Check the explorer for details.
+        </p>
+      )}
       {error && (
         <p id={errorId} role="alert" className="mt-3 text-xs text-red-600">
           {error}
-        </p>
-      )}
-      {done && (
-        <p className="mt-3 text-xs text-accent-ink">
-          Attestation recorded — it now appears in the list below.
         </p>
       )}
     </div>

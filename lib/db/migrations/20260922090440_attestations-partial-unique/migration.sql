@@ -1,0 +1,2 @@
+ALTER TABLE "attestations" DROP CONSTRAINT "attestations_identity";--> statement-breakpoint
+CREATE UNIQUE INDEX "attestations_identity" ON "attestations" ("attester_address","subject_address","role") WHERE "registry_id" IS NULL;

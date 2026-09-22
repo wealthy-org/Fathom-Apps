@@ -7,6 +7,10 @@ import { robinhoodTestnet } from "@/lib/wallet/chains";
 export const wagmiConfig = createConfig({
   chains: [robinhoodTestnet],
   connectors: [injected()],
+  // ponytail: ssr:true = Hydrate internal wagmi menunda onMount (reconnect)
+  // ke useEffect. Tanpa ini onMount jalan saat render dan memicu
+  // "Cannot update ConnectButton while rendering Hydrate".
+  ssr: true,
   transports: {
     [robinhoodTestnet.id]: http(),
   },

@@ -1,0 +1,2 @@
+ALTER TABLE "disputes" DROP CONSTRAINT "disputes_reporter_target";--> statement-breakpoint
+CREATE UNIQUE INDEX "disputes_reporter_target" ON "disputes" ("reporter_address","target_address") WHERE "disputes"."registry_id" IS NULL;

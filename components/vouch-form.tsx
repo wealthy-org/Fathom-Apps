@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { parseEther } from "viem";
 import {
@@ -14,6 +14,7 @@ import {
   ERC20_ABI,
   VOUCH_REGISTRY_WRITE_ABI,
 } from "@/lib/chain/vouch-abi";
+import { explorerTransactionUrl } from "@/lib/chain/blockscout";
 import { robinhoodTestnet } from "@/lib/wallet/chains";
 
 // ponytail: alur vouch on-chain. Target = profil yang sedang dilihat (readonly);
@@ -70,6 +71,35 @@ export function VouchForm({ target }: { target: string }) {
       query: { enabled: txHash !== null },
     });
 
+  // ponytail: wagmi useAccount/useBalance baca dari wallet (client-only) —
+  // server render DIRENDER sebagai not-connected supaya HTML cocok (anti
+  // hydration mismatch), lalu gate di bawah menahan render sampai mounted.
+  // Confirm juga dipindah ke useEffect: setState + router.refresh() di fase
+  // render = React error "Cannot update component while rendering".
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
+  useEffect(() => {
+    if (confirmed && txState !== "confirmed") {
+      // ponytail: tanpa setTxState di sini (lint react-hooks/set-state-in-effect):
+      // tampilan confirmed di-derive dari `confirmed || txState === "confirmed"`.
+      // index registry dulu supaya event vouch masuk DB sebelum
+      // refresh — tanpa ini data baru tidak muncul sampai indexer jalan.
+      void fetch("/api/index", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "vouch" }),
+      }).then(
+        () => router.refresh(),
+        () => router.refresh(),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmed]);
+
   if (REGISTRY === "") {
     return (
       <div className="panel-brutal mt-4 p-5">
@@ -82,7 +112,7 @@ export function VouchForm({ target }: { target: string }) {
     );
   }
 
-  if (!isConnected || !address) {
+  if (!mounted || !isConnected || !address) {
     return (
       <div className="panel-brutal mt-4 p-5">
         <h3 className="font-display text-base">Vouch for this wallet</h3>
@@ -170,17 +200,23 @@ export function VouchForm({ target }: { target: string }) {
     }
   }
 
-  if (confirmed) {
-    if (txState !== "confirmed") {
-      setTxState("confirmed");
-      router.refresh();
-    }
+  if (confirmed || txState === "confirmed") {
     return (
       <div className="panel-brutal mt-4 p-5">
         <h3 className="font-display text-base">Vouch for this wallet</h3>
         <p className="mt-3 text-xs text-accent-ink">
           Vouch confirmed on-chain. It will appear below once indexed.
         </p>
+        {txHash && (
+          <a
+            href={explorerTransactionUrl(txHash)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-xs font-medium text-accent-ink underline underline-offset-2"
+          >
+            View transaction on Robinhood explorer ↗
+          </a>
+        )}
       </div>
     );
   }
