@@ -3,14 +3,12 @@ import {
   bigserial,
   boolean,
   char,
-  check,
   index,
   integer,
   jsonb,
   numeric,
   pgTable,
   primaryKey,
-  smallint,
   text,
   timestamp,
   unique,
@@ -274,28 +272,6 @@ export const vouches = pgTable(
   ],
 );
 
-export const reviews = pgTable(
-  "reviews",
-  {
-    id: bigserial("id", { mode: "number" }).primaryKey(),
-    fromAddress: char("from_address", { length: 42 })
-      .notNull()
-      .references(() => wallets.address),
-    toAddress: char("to_address", { length: 42 })
-      .notNull()
-      .references(() => wallets.address),
-    rating: smallint("rating").notNull(),
-    comment: text("comment"),
-    createdAt: timestamptz("created_at").notNull().defaultNow(),
-  },
-  (t) => [
-    // Satu wallet hanya satu review per target — cegah spam rating
-    unique("reviews_pair").on(t.fromAddress, t.toAddress),
-    check("reviews_rating_range", sql`${t.rating} BETWEEN 1 AND 5`),
-    index("idx_reviews_to").on(t.toAddress),
-  ],
-);
-
 export const disputes = pgTable(
   "disputes",
   {
@@ -346,49 +322,6 @@ export const disputes = pgTable(
       t.logIndex,
     ),
   ],
-);
-
-export const disputeReports = pgTable(
-  "dispute_reports",
-  {
-    disputeId: bigint("dispute_id", { mode: "number" })
-      .notNull()
-      .references(() => disputes.id),
-    reporterAddress: char("reporter_address", { length: 42 })
-      .notNull()
-      .references(() => wallets.address),
-    reason: text("reason"),
-    createdAt: timestamptz("created_at").notNull().defaultNow(),
-  },
-  (t) => [primaryKey({ columns: [t.disputeId, t.reporterAddress] })],
-);
-
-export const roleBadges = pgTable(
-  "role_badges",
-  {
-    id: bigserial("id", { mode: "number" }).primaryKey(),
-    address: char("address", { length: 42 })
-      .notNull()
-      .references(() => wallets.address),
-    role: varchar("role", { length: 32 }).notNull(),
-    status: varchar("status", { length: 16 }).notNull().default("unverified"),
-    createdAt: timestamptz("created_at").notNull().defaultNow(),
-  },
-  (t) => [unique("role_badges_address_role").on(t.address, t.role)],
-);
-
-export const badgeAttestations = pgTable(
-  "badge_attestations",
-  {
-    badgeId: bigint("badge_id", { mode: "number" })
-      .notNull()
-      .references(() => roleBadges.id),
-    attesterAddress: char("attester_address", { length: 42 })
-      .notNull()
-      .references(() => wallets.address),
-    createdAt: timestamptz("created_at").notNull().defaultNow(),
-  },
-  (t) => [primaryKey({ columns: [t.badgeId, t.attesterAddress] })],
 );
 
 export const attestations = pgTable(

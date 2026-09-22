@@ -12,6 +12,28 @@ function errorResponse(code: string, message: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
+type RiskLevel = "low" | "medium" | "high" | null;
+
+const SEVERITY_RANK = { low: 1, medium: 2, high: 3 } as const;
+
+/**
+ * Turunan dari `riskSignals` yang sudah ada (bukan kalkulasi kedua):
+ * severity tertinggi yang terdeteksi. null = sumber risk belum usable
+ * (not_indexed/unavailable) — bukan "low" palsu. Tanpa deteksi pada sumber
+ * yang usable = "low", selaras contoh respons Brief §23.
+ */
+function deriveRiskLevel(
+  state: string,
+  severities: Array<"low" | "medium" | "high">,
+): RiskLevel {
+  if (state !== "available" && state !== "empty") return null;
+  let level: Exclude<RiskLevel, null> = "low";
+  for (const severity of severities) {
+    if (SEVERITY_RANK[severity] > SEVERITY_RANK[level]) level = severity;
+  }
+  return level;
+}
+
 /**
  * GET /api/reputation/{address} — Reputation API (Spec 11), publik.
  *
@@ -20,7 +42,8 @@ function errorResponse(code: string, message: string, status: number) {
  *
  * Hanya field yang benar-benar didukung yang diekspos. `vouches` null saat
  * index state unknown (no-index) — array kosong berarti confirmed-zero, bukan
- * "belum di-index". Risk dilaporkan sebagai `riskSignals` (evidence, bukan label).
+ * "belum di-index". Risk dilaporkan sebagai `riskSignals` (evidence, bukan label)
+ * plus turunan `riskLevel` (Brief §23) — null saat sumber risk belum usable.
  */
 export async function GET(
   _req: Request,
@@ -37,6 +60,8 @@ export async function GET(
     // ponytail: vouches membawa stakeAmount bigint — kirim sebagai string
     // desimal via toJsonSafe. Field lain (score/tier/completeness/dimensions/
     // proofs/riskSignals/claim) sudah JSON-safe (number/string/null).
+    // riskLevel + vouchesCount = turunan aditif untuk format respons Brief §23
+    // (backward compatible — tidak ada field lama yang diubah/dihapus).
     return NextResponse.json(
       toJsonSafe({
         address: profile.address,
@@ -50,15 +75,25 @@ export async function GET(
         attestations: profile.attestations.length,
         activeDisputes: profile.disputes.filter((d) => d.status === "open").length,
         riskSignals: profile.riskSignals,
+        riskLevel: deriveRiskLevel(
+          profile.reputation.availability.riskSignals.state,
+          profile.riskSignals.map((s) => s.severity),
+        ),
         proofs: profile.proofs,
         claim: profile.claim,
         vouches: profile.vouchIndex === null ? null : profile.vouches,
+        vouchesCount: profile.vouchIndex === null ? null : profile.vouches.length,
         dimensions: profile.dimensions,
         score: profile.reputation.totalScore,
         tier: profile.reputation.tier,
         formulaVersion: profile.reputation.formulaVersion,
         completeness: profile.reputation.completeness,
       }),
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=60",
+        },
+      },
     );
   } catch {
     return errorResponse("server_error", "Wallet data is temporarily unavailable.", 500);

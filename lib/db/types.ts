@@ -1,15 +1,11 @@
 import type {
   attestations,
-  badgeAttestations,
   counterparties,
   disputes,
-  disputeReports,
   indexerState,
   profileClaims,
   proofs,
   protocols,
-  reviews,
-  roleBadges,
   scoreSnapshots,
   trustGraphState,
   vouches,
@@ -26,11 +22,7 @@ export type WalletRelationship = typeof walletRelationships.$inferSelect;
 export type TrustGraphState = typeof trustGraphState.$inferSelect;
 export type Vouch = typeof vouches.$inferSelect;
 export type WalletMetrics = typeof walletMetrics.$inferSelect;
-export type Review = typeof reviews.$inferSelect;
 export type Dispute = typeof disputes.$inferSelect;
-export type DisputeReport = typeof disputeReports.$inferSelect;
-export type RoleBadge = typeof roleBadges.$inferSelect;
-export type BadgeAttestation = typeof badgeAttestations.$inferSelect;
 export type Attestation = typeof attestations.$inferSelect;
 export type ProofRow = typeof proofs.$inferSelect;
 export type Protocol = typeof protocols.$inferSelect;

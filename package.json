@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed:risk": "tsx --env-file=.env lib/db/seed/risk-registries.seed.ts",
+    "db:seed:protocols": "tsx --env-file=.env scripts/seed-protocols.ts",
     "chain:index": "tsx --env-file=.env scripts/index-registries.ts"
   },
   "dependencies": {
