@@ -66,18 +66,18 @@ export function ShareReputation({
   }
 
   return (
-    <span className="inline-flex flex-wrap items-center gap-2">
+    <span className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
       <button
         type="button"
         onClick={() => void handleShare()}
-        className="btn-brutal-light px-4 py-2 text-xs"
+        className="btn-brutal-light min-touch w-full px-4 py-2 text-xs sm:w-auto"
       >
         Share reputation
       </button>
       <button
         type="button"
         onClick={() => void copyLink()}
-        className="btn-brutal-light px-4 py-2 text-xs"
+        className="btn-brutal-light min-touch w-full px-4 py-2 text-xs sm:w-auto"
       >
         Copy link
       </button>

@@ -1490,8 +1490,8 @@ export default async function WalletProfilePage({
       <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
         Wallet profile
       </p>
-      <div className="mt-3 flex flex-wrap items-center gap-4">
-        <h1 className="font-display text-3xl font-medium sm:text-4xl">
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+        <h1 className="min-w-0 break-all font-display text-2xl font-medium sm:break-normal sm:text-4xl">
           {shortAddress(address)}
         </h1>
         <CopyAddress address={address} />

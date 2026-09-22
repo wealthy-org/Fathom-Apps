@@ -191,7 +191,7 @@ export default function Home() {
         actions={
           <Link
             href="/wallets"
-            className="btn-brutal hidden px-5 py-2.5 text-sm sm:block"
+            className="btn-brutal w-full px-5 py-2.5 text-sm md:w-auto"
           >
             Check a Wallet
           </Link>

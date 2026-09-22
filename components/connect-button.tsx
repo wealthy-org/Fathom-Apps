@@ -175,14 +175,14 @@ export function ConnectButton({
 
   if (signedIn) {
     return (
-      <span className="inline-flex flex-wrap items-center justify-end gap-2">
-        <span className="rounded-full border border-black/10 bg-white px-3 py-2 font-mono text-xs text-ink shadow-sm sm:px-4 sm:text-sm">
+      <span className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+        <span className="w-full truncate rounded-full border border-black/10 bg-white px-3 py-2 text-center font-mono text-xs text-ink shadow-sm md:w-auto sm:px-4 sm:text-sm">
           {shortAddress(address!)}
         </span>
         <button
           type="button"
           onClick={() => void handleDisconnect()}
-          className="btn-brutal-light px-3 py-2 text-xs sm:px-4 sm:text-sm hover:border-red-400/60 hover:text-red-600"
+          className="btn-brutal-light min-touch w-full px-3 py-2 text-xs md:w-auto sm:px-4 sm:text-sm hover:border-red-400/60 hover:text-red-600"
         >
           Disconnect
         </button>
@@ -194,12 +194,12 @@ export function ConnectButton({
   const inlineError = flowError ?? connectError?.message ?? switchError?.message;
 
   return (
-    <span className="inline-flex flex-col items-start">
+    <span className="flex w-full flex-col md:w-auto md:items-start">
       <button
         type="button"
         disabled={busy}
         onClick={() => void handlePrimary()}
-        className={base}
+        className={`${base} min-touch w-full justify-center md:w-auto`}
       >
         <span>
           {busy

@@ -70,7 +70,7 @@ export function SearchWalletForm({
       }}
       className="w-full"
     >
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row sm:gap-2">
         <label htmlFor={inputId} className="sr-only">
           Wallet address
         </label>
@@ -83,20 +83,24 @@ export function SearchWalletForm({
             setValue(e.target.value);
             setError(null);
           }}
-          placeholder="0x7A3…91F2"
+          placeholder="0x..."
           spellCheck={false}
           autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          inputMode="text"
+          enterKeyHint="search"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={`input-brutal min-w-0 flex-1 font-mono ${
-            compact ? "h-10 px-4 text-xs" : "h-12 px-5 text-sm"
+          className={`input-brutal min-touch min-w-0 flex-1 font-mono ${
+            compact ? "h-11 px-4 text-base sm:text-xs" : "h-12 px-5 text-base sm:text-sm"
           }`}
         />
         <button
           type="submit"
           disabled={isPending}
-          className={`btn-brutal shrink-0 ${
-            compact ? "h-10 px-4 text-xs" : "h-12 px-6 text-sm"
+          className={`btn-brutal group min-touch w-full shrink-0 sm:w-auto ${
+            compact ? "h-11 px-4 text-sm sm:text-xs" : "h-12 px-6 text-sm"
           }`}
         >
           {isPending ? "Searching…" : compact ? "Search" : "Search a Wallet"}

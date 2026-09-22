@@ -15,16 +15,16 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export function Logo() {
   return (
-    <Link href="/" className="flex shrink-0 items-center gap-2.5">
+    <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-2.5">
       {/* ponytail: mark is light-on-dark art; invert for the white pill */}
       <Image
         src="/logo-no-bg.png"
         alt="Fathom"
         width={40}
         height={40}
-        className="h-10 w-10 invert"
+        className="h-8 w-8 shrink-0 invert sm:h-10 sm:w-10"
       />
-      <span className="font-display text-lg font-semibold tracking-tight">
+      <span className="truncate font-display text-base font-semibold tracking-tight sm:text-lg">
         Fathom
       </span>
     </Link>
@@ -92,7 +92,7 @@ export function Navbar({
       ref={navRef}
       className="sticky top-3 z-50 mx-4 mt-3 sm:mx-8 sm:mt-5 lg:mx-12"
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 rounded-full border border-black/5 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-1.5 rounded-full border border-black/5 bg-white/80 px-3 py-3 shadow-sm backdrop-blur-xl sm:gap-2 sm:px-4">
         <Logo />
         {links.length > 0 && (
           <div className="hidden items-center gap-5 text-sm text-slate400 md:flex">
@@ -107,15 +107,17 @@ export function Navbar({
             ))}
           </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 md:flex">
           {actions}
+        </div>
+        <div className="flex items-center md:hidden">
           <button
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             onClick={() => setMenuOpen((v) => !v)}
-            className="min-touch inline-flex items-center justify-center rounded-full p-2 text-ink md:hidden"
+            className="min-touch inline-flex items-center justify-center rounded-full p-2 text-ink"
           >
             <MenuIcon open={menuOpen} />
           </button>
@@ -126,6 +128,11 @@ export function Navbar({
           id="mobile-menu"
           className="mt-2 rounded-3xl border border-black/5 bg-white/95 p-4 shadow-xl backdrop-blur-xl md:hidden"
         >
+          {actions && (
+            <div className="mb-3 grid gap-2 border-b border-black/5 pb-3">
+              {actions}
+            </div>
+          )}
           <div className="grid gap-1 text-sm">
             {links.map(([t, href]) => (
               <a
@@ -137,13 +144,6 @@ export function Navbar({
                 {t}
               </a>
             ))}
-            <Link
-              href="/wallets"
-              onClick={() => setMenuOpen(false)}
-              className="btn-brutal mt-2 flex min-touch items-center justify-center px-4 py-3 text-sm"
-            >
-              Check a Wallet
-            </Link>
           </div>
         </div>
       )}
