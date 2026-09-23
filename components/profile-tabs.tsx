@@ -8,6 +8,8 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { trackEvent } from "@/lib/analytics/track";
 
 export type ProfileTabId =
   | "overview"
@@ -74,6 +76,10 @@ export function ProfileTabs({
 
   const select = useCallback((id: ProfileTabId) => {
     setActive(id);
+    // Phase 0 instrumentation — user opened evidence beyond score alone.
+    if (id === "evidence" || id === "graph" || id === "risk") {
+      trackEvent(ANALYTICS_EVENTS.evidenceExpanded, { tab: id });
+    }
     if (tabIdFromHash(window.location.hash) !== id) {
       ownHashNav.current = true;
       window.location.hash = id;

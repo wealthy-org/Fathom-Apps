@@ -12,6 +12,8 @@ import {
 } from "wagmi";
 import { robinhoodTestnet } from "@/lib/wallet/chains";
 import { buildSiweMessage } from "@/lib/auth/message";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { trackEvent } from "@/lib/analytics/track";
 import { useSession } from "@/components/use-session";
 import {
   handleMissingWallet,
@@ -177,6 +179,10 @@ export function ClaimFlow({
       }
       await refresh();
       setPhase("done");
+      // Phase 0 instrumentation — claim flow reached done.
+      trackEvent(ANALYTICS_EVENTS.profileClaimed, {
+        address: profileAddress.toLowerCase(),
+      });
       router.refresh();
     } catch (e) {
       const msg = (e as Error)?.message ?? "";

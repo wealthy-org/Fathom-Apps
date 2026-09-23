@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { profileUrl } from "@/lib/wallet/profile-url";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { trackEvent } from "@/lib/analytics/track";
 import type { Address } from "@/lib/score/types";
 
 /**
@@ -37,6 +39,11 @@ export function ShareReputation({
     try {
       await navigator.clipboard.writeText(url());
       setNotice("Profile link copied.");
+      // Phase 0 instrumentation — copy counts as share.
+      trackEvent(ANALYTICS_EVENTS.reputationCardShared, {
+        address: address.toLowerCase(),
+        method: "copy",
+      });
       // ponytail: auto-hilang seperti "Copied" — notice bukan isi permanen.
       window.setTimeout(() => setNotice(null), 2000);
     } catch {
@@ -57,6 +64,11 @@ export function ShareReputation({
     ) {
       try {
         await navigator.share(data);
+        // Phase 0 instrumentation — native share succeeded.
+        trackEvent(ANALYTICS_EVENTS.reputationCardShared, {
+          address: address.toLowerCase(),
+          method: "share",
+        });
       } catch {
         // User dismissed the sheet — not an error worth surfacing.
       }

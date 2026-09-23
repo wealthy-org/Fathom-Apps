@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.103.1",
+    "@vercel/analytics": "^2.0.1",
     "d3": "^7.9.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^1.0.0-rc.4",

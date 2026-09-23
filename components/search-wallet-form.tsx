@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { recordRecentSearch } from "@/lib/wallet/search-history";
+import { normalizeAddress } from "@/lib/chain/address";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { trackEvent } from "@/lib/analytics/track";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
@@ -54,6 +57,15 @@ export function SearchWalletForm({
     setError(null);
     // History records validated checks only — invalid input never reaches here.
     recordRecentSearch(trimmed);
+    // Phase 0 instrumentation — analytics must never break search flow.
+    // own_wallet_checked fires from OwnWalletTracker inside WagmiProvider
+    // (SearchWalletForm also renders on landing, outside any provider).
+    try {
+      const normalized = normalizeAddress(trimmed);
+      trackEvent(ANALYTICS_EVENTS.walletSearched, { address: normalized });
+    } catch {
+      // Invalid address already rejected above; analytics stays silent.
+    }
     // ponytail: transition pending disables the form — no duplicate submit.
     startTransition(() => {
       router.push(`/wallets/${trimmed.toLowerCase()}`);

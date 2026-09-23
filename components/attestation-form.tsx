@@ -16,6 +16,8 @@ import { ATTESTATION_ROLES } from "@/lib/attestations/roles";
 import { ATTESTATION_REGISTRY_WRITE_ABI } from "@/lib/chain/vouch-abi";
 import { explorerTransactionUrl } from "@/lib/chain/blockscout";
 import { robinhoodTestnet } from "@/lib/wallet/chains";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { trackEvent } from "@/lib/analytics/track";
 import { THRESHOLDS } from "@/config/thresholds";
 
 type TxState =
@@ -75,6 +77,11 @@ export function AttestationForm({ subject }: { subject: string }) {
   // dari `confirmed || txState === "confirmed"` di bawah.
   useEffect(() => {
     if (confirmed && txState !== "confirmed") {
+      // Phase 0 instrumentation — attestation confirmed on-chain.
+      trackEvent(ANALYTICS_EVENTS.attestationCreated, {
+        address: subject.toLowerCase(),
+        role,
+      });
       // ponytail: index registry dulu supaya event attestation masuk DB sebelum
       // refresh — tanpa ini data baru tidak muncul sampai indexer jalan.
       void fetch("/api/index", {
@@ -86,7 +93,7 @@ export function AttestationForm({ subject }: { subject: string }) {
         () => router.refresh(),
       );
     }
-  }, [confirmed, txState, router]);
+  }, [confirmed, txState, router, subject, role]);
 
   if (REGISTRY === "") {
     return (

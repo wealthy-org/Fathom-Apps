@@ -14,6 +14,7 @@ import { ShareReputation } from "@/components/share-reputation";
 import { NextSteps } from "@/components/next-steps";
 import { AliasEditor } from "@/components/alias-editor";
 import { ClaimFlow } from "@/components/claim-flow";
+import { OwnWalletTracker } from "@/components/own-wallet-tracker";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { AttestationForm } from "@/components/attestation-form";
 import { DisputeForm } from "@/components/dispute-form";
@@ -1481,6 +1482,7 @@ export default async function WalletProfilePage({
 
   return (
     <>
+      <OwnWalletTracker profileAddress={address} />
       <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
         Wallet profile
       </p>

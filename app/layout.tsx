@@ -6,6 +6,7 @@ import {
   Instrument_Serif,
 } from "next/font/google";
 import { Providers } from "@/app/providers";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const sans = Inter({
@@ -53,6 +54,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
