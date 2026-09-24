@@ -23,8 +23,8 @@ import { SignInButton } from "@/components/sign-in-modal";
  */
 export const DEFAULT_NAV_LINKS: Array<[string, string]> = [
   ["Activity", "/activity"],
-  ["About", "/#about"],
-  ["How It Works", "/#how"],
+  ["Why Fathom", "/#why"],
+  ["How It Works", "/#explain"],
   ["FAQ", "/#faq"],
   ["Docs", "/docs"],
 ];
@@ -41,7 +41,7 @@ export function Logo({ wordmark = true }: { wordmark?: boolean }) {
         className="h-8 w-8 shrink-0 invert sm:h-10 sm:w-10"
       />
       {wordmark && (
-        <span className="truncate font-display text-base font-semibold tracking-tight sm:text-lg">
+        <span className="truncate font-display text-base font-semibold tracking-tight sm:text-lg font-mono">
           Fathom
         </span>
       )}
@@ -112,7 +112,7 @@ export function Navbar({
     <WagmiProvider config={wagmiConfig}>
       <nav
         ref={navRef}
-        className="sticky top-3 z-50 mx-4 mt-3 sm:mx-8 sm:mt-5 lg:mx-12"
+        className="sticky top-3 z-50 mx-4 mt-3 sm:mx-8 sm:mt-5 lg:mx-12 font-mono"
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-1.5 rounded-full border border-black/5 bg-white/80 px-3 py-3 shadow-sm backdrop-blur-xl sm:gap-2 sm:px-4">
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
@@ -142,7 +142,7 @@ export function Navbar({
                 aria-expanded={menuOpen}
                 aria-controls="mobile-menu"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="min-touch inline-flex items-center justify-center rounded-full p-2 text-ink"
+                className="min-touch inline-flex items-center justify-center rounded-full p-2 text-ink font-mono"
               >
                 <MenuIcon open={menuOpen} />
               </button>

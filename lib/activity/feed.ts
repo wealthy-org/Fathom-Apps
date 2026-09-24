@@ -1,10 +1,11 @@
-import { desc, eq, inArray, lt } from "drizzle-orm";
+import { desc, eq, gt, inArray, lt } from "drizzle-orm";
 import { THRESHOLDS } from "@/config/thresholds";
 import { db } from "@/lib/db/client";
 import {
   attestations,
   disputes,
   profileClaims,
+  riskDetections,
   scoreSnapshots,
   vouches,
 } from "@/lib/db/schema";
@@ -17,11 +18,16 @@ import {
  *   Source is disputes.status = "open" — never votes/reactions.
  * - established: attestations/vouches whose actor sits in tier
  *   "Established" (latest score snapshot >= boundary).
- * - signal (v1): all kinds, display-order boost for established actors
- *   (+2) and open-dispute involvement (+1), time tiebreak.
+ * - signal (v2): all kinds, display-order boosts — established actors
+ *   (+2), open-dispute involvement (+1), first dispute filed against a
+ *   "clean" wallet (no stored risk detection, +3, PROVISIONAL) and
+ *   breaking-news (address with a fresh risk_detections row, +4,
+ *   PROVISIONAL). Time tiebreak.
  *
  * DISPLAY ORDER ONLY. Nothing here feeds lib/score or any scoring
  * file. Tab weights below are UI sort keys, not reputation inputs.
+ * risk_detections is written by lib/score/score-refresh.ts, never read
+ * by scoring; an empty table degrades to no boost.
  */
 
 export const FEED_TABS = ["signal", "latest", "established", "disputed"] as const;
@@ -91,9 +97,16 @@ const ESTABLISHED_MIN_SCORE = establishedBoundary.minScore;
  */
 const TAB_SCAN_MULTIPLIER = 5;
 
-/** Display-order boosts for the signal tab. UI sort keys, not scoring. */
+/**
+ * Display-order boosts for the signal tab. UI sort keys, not scoring.
+ * Boosts 3-4 are PROVISIONAL (Spec 04 section 2.2, Fase 13 tuning):
+ * change values in THRESHOLDS.activity, not here.
+ */
 const SIGNAL_ESTABLISHED_BOOST = 2;
 const SIGNAL_DISPUTED_BOOST = 1;
+const SIGNAL_DISPUTE_FIRST_CLEAN_BOOST =
+  THRESHOLDS.activity.signalDisputeFirstCleanBoost;
+const SIGNAL_RISK_NEWS_BOOST = THRESHOLDS.activity.signalRiskNewsBoost;
 
 function toIso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
@@ -169,6 +182,35 @@ async function getEstablishedActors(addresses: string[]): Promise<Set<string>> {
     if (row.totalScore >= ESTABLISHED_MIN_SCORE) out.add(row.address);
   }
   return out;
+}
+
+/**
+ * Addresses with ANY stored risk detection. "Clean wallet" source for
+ * the dispute-first boost — absence here means never detected. Table is
+ * display-only (written by score-refresh); scoring never reads it.
+ */
+async function getRiskDetectedAddresses(): Promise<Set<string>> {
+  const rows = await db
+    .selectDistinct({ address: riskDetections.walletAddress })
+    .from(riskDetections);
+  return new Set(rows.map((row) => row.address));
+}
+
+/**
+ * Addresses with a FRESH risk detection (breaking news, Spec 04
+ * section 2.3 item 3). Window + limit are display bounds from
+ * THRESHOLDS.activity. Empty table degrades to no boost.
+ */
+async function getFreshRiskNewsAddresses(): Promise<Set<string>> {
+  const cutoff = new Date(
+    Date.now() - THRESHOLDS.activity.riskNewsWindowHours * 60 * 60 * 1000,
+  );
+  const rows = await db
+    .selectDistinct({ address: riskDetections.walletAddress })
+    .from(riskDetections)
+    .where(gt(riskDetections.detectedAt, cutoff))
+    .limit(THRESHOLDS.activity.riskNewsLimit);
+  return new Set(rows.map((row) => row.address));
 }
 
 async function queryCandidates(input: {
@@ -306,13 +348,19 @@ export async function getActivityFeed(input: {
   limit: number;
   cursor?: string;
   tab?: FeedTab;
+  /** Lowercase address — only items touching this wallet are returned. */
+  wallet?: string;
 }): Promise<FeedPage> {
-  const { limit, tab = "latest" } = input;
+  const { limit, tab = "latest", wallet } = input;
   const before = input.cursor ? new Date(input.cursor) : null;
+
+  const byWallet = (item: FeedItem) =>
+    wallet === undefined || involvedAddresses(item).includes(wallet);
 
   if (tab === "latest") {
     // Per-table limit equals page limit: exact, no over-fetch needed.
-    return paginate(await queryCandidates({ limit, before, kinds: "all" }), limit);
+    const items = await queryCandidates({ limit, before, kinds: "all" });
+    return paginate(items.filter(byWallet), limit);
   }
 
   if (tab === "disputed") {
@@ -320,8 +368,10 @@ export async function getActivityFeed(input: {
       queryCandidates({ limit: limit * TAB_SCAN_MULTIPLIER, before, kinds: "all" }),
       getOpenDisputeAddresses(),
     ]);
-    const filtered = candidates.filter((item) =>
-      involvedAddresses(item).some((address) => open.has(address)),
+    const filtered = candidates.filter(
+      (item) =>
+        byWallet(item) &&
+        involvedAddresses(item).some((address) => open.has(address)),
     );
     return paginate(filtered, limit);
   }
@@ -335,16 +385,19 @@ export async function getActivityFeed(input: {
     const established = await getEstablishedActors(
       candidates.map((item) => primaryActor(item)),
     );
-    const filtered = candidates.filter((item) =>
-      established.has(primaryActor(item)),
+    const filtered = candidates.filter(
+      (item) =>
+        byWallet(item) && established.has(primaryActor(item)),
     );
     return paginate(filtered, limit);
   }
 
-  // tab === "signal": display-order boost, then time.
-  const [prescan, open] = await Promise.all([
+  // tab === "signal": display-order boosts, then time (Spec 04 section 2.2).
+  const [prescan, open, detectedAddresses, newsAddresses] = await Promise.all([
     queryCandidates({ limit: limit * TAB_SCAN_MULTIPLIER, before, kinds: "all" }),
     getOpenDisputeAddresses(),
+    getRiskDetectedAddresses(),
+    getFreshRiskNewsAddresses(),
   ]);
   const established = await getEstablishedActors(
     prescan.map((item) => primaryActor(item)),
@@ -358,6 +411,18 @@ export async function getActivityFeed(input: {
       if (involvedAddresses(item).some((address) => open.has(address))) {
         rank += SIGNAL_DISPUTED_BOOST;
       }
+      // First report against a clean wallet: dispute whose target has
+      // no stored risk detection (PROVISIONAL display boost).
+      if (
+        item.kind === "dispute" &&
+        !detectedAddresses.has(item.target)
+      ) {
+        rank += SIGNAL_DISPUTE_FIRST_CLEAN_BOOST;
+      }
+      // Breaking news: item touches an address with a fresh detection.
+      if (involvedAddresses(item).some((address) => newsAddresses.has(address))) {
+        rank += SIGNAL_RISK_NEWS_BOOST;
+      }
       return { item, rank };
     })
     .sort((a, b) =>
@@ -368,5 +433,5 @@ export async function getActivityFeed(input: {
         : b.rank - a.rank,
     )
     .map((entry) => entry.item);
-  return paginate(ranked, limit);
+  return paginate(ranked.filter(byWallet), limit);
 }

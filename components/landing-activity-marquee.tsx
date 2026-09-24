@@ -125,9 +125,17 @@ function SkeletonCard() {
 /**
  * Strip aktivitas live di bawah navbar landing — cuplikan /api/activity
  * sebagai slider horizontal jalan sendiri + polling untuk data baru.
- * Read-only, tanpa posting, tanpa skor.
+ * Read-only, tanpa posting, tanpa skor. `viewAll=false` menyembunyikan
+ * link "View all" (mis. dipakai di halaman /activity sendiri).
+ * `bleed` melebar penuh viewport keluar dari container layout.
  */
-export function LandingActivityMarquee() {
+export function LandingActivityMarquee({
+  viewAll = true,
+  bleed = false,
+}: {
+  viewAll?: boolean;
+  bleed?: boolean;
+}) {
   const [items, setItems] = useState<FeedItem[] | null>(null);
   const [failed, setFailed] = useState(false);
   const seenKeys = useRef<Set<string>>(new Set());
@@ -177,21 +185,22 @@ export function LandingActivityMarquee() {
   return (
     <section
       aria-label="Latest network activity"
-      className="border-y border-ink/10 bg-transparent py-6 text-ink"
+      className={`border-y border-ink/10 bg-transparent pt-6 text-ink ${
+        bleed
+          ? // Tarik strip ke atas menutup padding WalletShell (pt-10 + mt-14
+            // = 96px) — sisa gap hanya py-6 strip sendiri. Sesuaikan bila
+            // padding shell berubah.
+            "relative -mt-24 left-1/2 w-screen -translate-x-1/2"
+          : ""
+      }`}
     >
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-end gap-4 px-5 lg:px-8">
         {/* <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent motion-reduce:animate-none" />
           Live activity
         </p> */}
-        <Link
-          href="/activity"
-          className="text-sm font-medium text-ink/70 transition hover:text-ink"
-        >
-          View all
-        </Link>
       </div>
-      <div className="marquee-paused mt-4 overflow-hidden">
+      <div className={`marquee-paused overflow-hidden ${viewAll ? "mt-4" : ""}`}>
         <div className="animate-marquee flex w-max gap-4 px-5 motion-reduce:animate-none motion-reduce:overflow-x-auto lg:px-8">
           {loop === null ? (
             <>

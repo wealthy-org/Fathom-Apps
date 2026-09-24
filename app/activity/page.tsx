@@ -3,9 +3,12 @@ import Link from "next/link";
 import { z } from "zod";
 import { FEED_TABS, getActivityFeed, isFeedTab } from "@/lib/activity/feed";
 import { getActivitySidebar } from "@/lib/activity/sidebar";
-import { ActivityFeedCard } from "@/components/activity-feed-card";
+import { ADDRESS_RE, normalizeAddress } from "@/lib/chain/address";
+import { shortAddress } from "@/components/activity-feed-card";
+import { ActivityFeedList } from "@/components/activity-feed-list";
 import { ActivitySidebar } from "@/components/activity-sidebar";
 import { ActivityTabs } from "@/components/activity-tabs";
+import { LandingActivityMarquee } from "@/components/landing-activity-marquee";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +21,7 @@ export const metadata: Metadata = {
 const searchParamsSchema = z.object({
   cursor: z.string().datetime().optional(),
   tab: z.enum(FEED_TABS).optional(),
+  wallet: z.string().regex(ADDRESS_RE).optional(),
 });
 
 const TAB_BLURBS: Record<string, string> = {
@@ -39,7 +43,7 @@ const TAB_BLURBS: Record<string, string> = {
 export default async function ActivityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cursor?: string; tab?: string }>;
+  searchParams: Promise<{ cursor?: string; tab?: string; wallet?: string }>;
 }) {
   const raw = await searchParams;
   const parsed = searchParamsSchema.safeParse(raw);
@@ -48,62 +52,69 @@ export default async function ActivityPage({
     parsed.success && parsed.data.tab && isFeedTab(parsed.data.tab)
       ? parsed.data.tab
       : "latest";
-
+  const wallet =
+    parsed.success && parsed.data.wallet
+      ? normalizeAddress(parsed.data.wallet)
+      : undefined;
   const [page, sidebar] = await Promise.all([
-    getActivityFeed({ limit: 20, cursor, tab }),
+    getActivityFeed({ limit: 20, cursor, tab, wallet }),
     getActivitySidebar(),
   ]);
-  const moreHref =
-    tab === "latest"
-      ? `/activity?cursor=${encodeURIComponent(page.nextCursor ?? "")}`
-      : `/activity?tab=${tab}&cursor=${encodeURIComponent(page.nextCursor ?? "")}`;
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
-      <section aria-labelledby="activity-heading" className="min-w-0 flex-1">
-        <h1
-          id="activity-heading"
-          className="font-display text-2xl font-semibold sm:text-3xl"
-        >
-          Activity
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate400">
-          {TAB_BLURBS[tab]}
-        </p>
+    <>
+      <LandingActivityMarquee viewAll={false} bleed />
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <section aria-labelledby="activity-heading" className="min-w-0 flex-1">
+          <h1
+            id="activity-heading"
+            className="font-display text-2xl font-semibold sm:text-3xl"
+          >
+            Activity
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate400">
+            {TAB_BLURBS[tab]}
+          </p>
 
-        <ActivityTabs active={tab} />
+          <ActivityTabs active={tab} wallet={wallet} />
 
-        {page.items.length === 0 ? (
-          <div className="panel-brutal mt-6 p-6 text-sm text-slate400">
-            {tab === "latest"
-              ? "No activity recorded yet. Attestations, disputes, vouches and claims will appear here as they happen."
-              : "Nothing in this view yet. New matching evidence will appear here as it happens."}
-          </div>
-        ) : (
-          <>
-            <ul className="mt-6 space-y-3">
-              {page.items.map((item) => (
-                <ActivityFeedCard
-                  key={`${item.kind}-${item.id}`}
-                  item={item}
-                />
-              ))}
-            </ul>
-            {page.nextCursor !== null && (
-              <div className="mt-6 text-center">
-                <Link
-                  href={moreHref}
-                  className="btn-brutal inline-block px-5 py-2.5 text-sm"
-                >
-                  Load more
-                </Link>
-              </div>
-            )}
-          </>
-        )}
-      </section>
+          {wallet && (
+            <p className="mt-3 text-sm text-slate400">
+              Filtered to wallet{" "}
+              <Link
+                href={`/wallets/${wallet}`}
+                className="font-mono text-accent-ink hover:underline"
+              >
+                {shortAddress(wallet)}
+              </Link>{" "}
+              ·{" "}
+              <Link
+                href={wallet ? `/activity?tab=${tab}` : "/activity"}
+                className="text-accent-ink hover:underline"
+              >
+                Clear filter
+              </Link>
+            </p>
+          )}
 
-      <ActivitySidebar data={sidebar} />
-    </div>
+          {page.items.length === 0 ? (
+            <div className="panel-brutal mt-6 p-6 text-sm text-slate400">
+              {tab === "latest"
+                ? "No activity recorded yet. Attestations, disputes, vouches and claims will appear here as they happen."
+                : "Nothing in this view yet. New matching evidence will appear here as it happens."}
+            </div>
+          ) : (
+            <ActivityFeedList
+              initialItems={page.items}
+              initialCursor={page.nextCursor}
+              tab={tab}
+              wallet={wallet}
+            />
+          )}
+        </section>
+
+        <ActivitySidebar data={sidebar} />
+      </div>
+    </>
   );
 }

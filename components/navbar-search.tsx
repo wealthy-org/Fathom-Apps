@@ -72,10 +72,10 @@ export function NavbarSearch() {
           e.preventDefault();
           submit();
         }}
-        className="group relative hidden w-52 min-w-0 md:block lg:w-64"
+        className="group relative hidden w-52 min-w-0 md:block lg:w-64 font-mono"
         role="search"
       >
-        <label htmlFor={inputId} className="sr-only">
+        <label htmlFor={inputId} className="sr-only font-mono">
           Search a wallet
         </label>
         <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate400 transition group-focus-within:text-ink">
@@ -98,7 +98,7 @@ export function NavbarSearch() {
           enterKeyHint="search"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className="h-10 w-full rounded-full border border-black/15 bg-white pl-10 pr-3 font-mono text-xs text-ink shadow-brutal-sm outline-none transition placeholder:font-sans placeholder:text-slate400 hover:border-black/25 focus:border-ink/50 focus:ring-2 focus:ring-accent/25"
+          className="h-10 w-full rounded-full border border-black/15 bg-white pl-10 pr-3 font-mono text-xs text-ink shadow-brutal-sm outline-none transition placeholder:font-sans placeholder:text-slate400 hover:border-black/25 focus:border-ink/50 focus:ring-2 focus:ring-accent/25 font-mono"
         />
         {error && (
           <p

@@ -233,5 +233,26 @@ export const THRESHOLDS = {
     landingMarqueeLimit: 12,
     // Interval polling data baru (ms).
     landingPollMs: 20000,
+    // Section Live Reputation Events (sumber: PostHog, display-only).
+    // Window agregasi kartu statistik (jam).
+    eventsWindowHours: 24,
+    // Jumlah baris event terbaru yang ditampilkan.
+    eventsLimit: 8,
+    // Interval polling section (ms).
+    eventsPollMs: 30000,
+    // TTL cache server-side sebelum query PostHog ulang (detik).
+    eventsCacheSeconds: 60,
+    // Timeout per request ke PostHog API (ms).
+    eventsUpstreamTimeoutMs: 8000,
+    // PROVISIONAL display-order boosts tab signal (Spec 04 section 2.2,
+    // Fase 13 tuning) — bukan input skor. Dispute pada wallet "clean"
+    // (tanpa deteksi risk tersimpan) naikkan urutan tampil.
+    signalDisputeFirstCleanBoost: 3,
+    // PROVISIONAL: deteksi risk segar (risk_detections) = breaking news.
+    signalRiskNewsBoost: 4,
+    // Window "segar" untuk risk news (jam).
+    riskNewsWindowHours: 24,
+    // Batas deteksi yang diambil per query breaking-news.
+    riskNewsLimit: 50,
   },
 } as const;

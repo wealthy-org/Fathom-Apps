@@ -349,7 +349,7 @@ export function SignInButton() {
 
   if (!mounted || status === "reconnecting") {
     return (
-      <button type="button" disabled className="btn-brutal px-5 py-2.5 text-sm">
+      <button type="button" disabled className="btn-brutal px-5 py-2.5 text-sm font-mono">
         <span>Sign In</span>
       </button>
     );
@@ -363,7 +363,7 @@ export function SignInButton() {
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((v) => !v)}
-          className="inline-flex min-touch items-center gap-2 rounded-full border border-black/10 bg-white py-2 pl-2.5 pr-4 font-mono text-sm text-ink shadow-sm transition hover:border-black/25"
+          className="inline-flex min-touch items-center gap-2 rounded-full border border-black/10 bg-white py-2 pl-2.5 pr-4 font-mono text-sm text-ink shadow-sm transition hover:border-black/25 font-mono"
         >
           <WalletAvatar address={address} />
           {shortAddress(address)}
@@ -424,8 +424,8 @@ function SignInModal({ onClose }: { onClose: () => void }) {
         >
           <CloseIcon />
         </button>
-        <h2 className="font-display text-xl font-semibold">Sign In</h2>
-        <p className="mt-2 text-sm leading-6 text-slate400">
+        <h2 className="font-display text-xl font-semibold font-mono">Sign In</h2>
+        <p className="mt-2 text-sm leading-6 text-slate400 font-mono">
           Connect your wallet to claim your profile and sign attestations.
         </p>
         <div className="mt-5">

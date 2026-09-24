@@ -490,3 +490,61 @@ export const maliciousContracts = pgTable(
     index("idx_malicious_source").on(t.source),
   ],
 );
+
+/**
+ * Riwayat deteksi risk signal per wallet (Spec 04 section 2.3 item 3).
+ * Sumber breaking-news untuk urutan tampilan feed activity — DISPLAY
+ * ORDER ONLY. DITULIS oleh lib/score/score-refresh.ts saat refresh flow
+ * berjalan; TIDAK PERNAH dibaca oleh score-strategy/score-engine —
+ * scoring membaca risk langsung dari assessRisk on-the-fly, bukan dari
+ * tabel ini. unique(wallet, signal_id) menjaga deteksi PERTAMA: refresh
+ * berulang tidak menimpa dan tidak menduplikasi (onConflictDoNothing).
+ */
+export const riskDetections = pgTable(
+  "risk_detections",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    walletAddress: char("wallet_address", { length: 42 })
+      .notNull()
+      .references(() => wallets.address),
+    signalId: varchar("signal_id", { length: 64 }).notNull(),
+    severity: varchar("severity", { length: 16 }).notNull(),
+    evidenceReference: text("evidence_reference"),
+    detectedAt: timestamptz("detected_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("risk_detections_first").on(t.walletAddress, t.signalId),
+    index("idx_risk_detections_recent").on(t.detectedAt),
+  ],
+);
+
+/**
+ * Reaksi non-skoring "Helpful / Not helpful" pada attestation
+ * (Spec 04 section 3.3). Satu suara per wallet per attestation, bisa
+ * diubah (upsert). DISPLAY/SORTING ONLY di dalam satu wallet profile —
+ * field ini TIDAK PERNAH dibaca oleh score-strategy.ts, score-engine,
+ * atau file scoring manapun. Bukan upvote/downvote Ethos: tidak ada
+ * kontribusi skor, tidak ada tulis snapshot, tidak ada output score.
+ */
+export const attestationReactions = pgTable(
+  "attestation_reactions",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    attestationId: bigint("attestation_id", { mode: "number" })
+      .notNull()
+      .references(() => attestations.id, { onDelete: "cascade" }),
+    voterAddress: char("voter_address", { length: 42 })
+      .notNull()
+      .references(() => wallets.address),
+    value: varchar("value", { length: 16 }).notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("attestation_reactions_identity").on(
+      t.attestationId,
+      t.voterAddress,
+    ),
+    index("idx_attestation_reactions_attestation").on(t.attestationId),
+  ],
+);

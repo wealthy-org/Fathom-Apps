@@ -27,9 +27,17 @@ const TABS: Array<{ id: FeedTab; label: string; path: string }> = [
 /**
  * Tab filter bar for /activity (Spec 04 section 3.5).
  * Plain links (?tab=, cursor reset) — zero client JS.
+ * Optional ?wallet= filter is preserved across tab switches.
  * Icons are inline SVG, never emoji.
  */
-export function ActivityTabs({ active }: { active: FeedTab }) {
+export function ActivityTabs({
+  active,
+  wallet,
+}: {
+  active: FeedTab;
+  wallet?: string;
+}) {
+  const walletQuery = wallet ? `&wallet=${wallet}` : "";
   return (
     <nav aria-label="Activity filters" className="mt-5">
       <ul className="flex flex-wrap gap-2" role="list">
@@ -38,7 +46,11 @@ export function ActivityTabs({ active }: { active: FeedTab }) {
           return (
             <li key={tab.id}>
               <Link
-                href={tab.id === "latest" ? "/activity" : `/activity?tab=${tab.id}`}
+                href={
+                  tab.id === "latest"
+                    ? `/activity?${walletQuery ? walletQuery.slice(1) : ""}`
+                    : `/activity?tab=${tab.id}${walletQuery}`
+                }
                 aria-current={selected ? "page" : undefined}
                 className={
                   selected

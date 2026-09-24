@@ -1,6 +1,6 @@
-import { desc, eq, or } from "drizzle-orm";
+import { desc, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { attestations, disputes, profileClaims, vouches, wallets, walletTransactions } from "@/lib/db/schema";
+import { attestationReactions, attestations, disputes, profileClaims, vouches, wallets, walletTransactions } from "@/lib/db/schema";
 import { onchainStats } from "@/lib/chain/onchain-stats";
 import { trustGraph, type TrustGraphSummary } from "@/lib/chain/trust-graph";
 import { explorerTransactionUrl } from "@/lib/chain/blockscout";
@@ -59,6 +59,13 @@ export interface AttestationView {
     blockNumber: number | null;
     logIndex: number | null;
   } | null;
+  /**
+   * Reaksi non-skoring "Helpful / Not helpful" (Spec 04 section 3.3).
+   * Display + sorting dalam profile ini saja — tidak pernah dibaca file
+   * scoring; guard test mengunci batas itu.
+   */
+  helpful: number;
+  notHelpful: number;
   createdAt: string;
 }
 
@@ -205,6 +212,34 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     .from(attestations)
     .where(eq(attestations.subjectAddress, address))
     .orderBy(desc(attestations.createdAt));
+
+  // Reaksi non-skoring per attestation (Spec 04 section 3.3). Agregat
+  // terpisah, display/sorting only — scoring tidak pernah membacanya.
+  const attestationIds = attestationRows.map((row) => row.id);
+  const reactionCounts = new Map<number, { helpful: number; notHelpful: number }>();
+  if (attestationIds.length > 0) {
+    const reactionRows = await db
+      .select({
+        attestationId: attestationReactions.attestationId,
+        value: attestationReactions.value,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(attestationReactions)
+      .where(inArray(attestationReactions.attestationId, attestationIds))
+      .groupBy(attestationReactions.attestationId, attestationReactions.value);
+    for (const row of reactionRows) {
+      const entry = reactionCounts.get(row.attestationId) ?? {
+        helpful: 0,
+        notHelpful: 0,
+      };
+      if (row.value === "not_helpful") {
+        entry.notHelpful += row.count;
+      } else {
+        entry.helpful += row.count;
+      }
+      reactionCounts.set(row.attestationId, entry);
+    }
+  }
 
   // Proof attestation diterbitkan dari baris tersimpan (query yang sama dipakai
   // untuk render Attestations), jadi tidak ada kalkulasi kedua (Spec 07/11).
@@ -451,28 +486,37 @@ export async function getWalletProfile(address: Address): Promise<WalletProfile>
     trustGraph: graph,
     vouchIndex,
     reputation,
-    attestations: attestationRows.map((row) => ({
-      id: row.id,
-      attester: row.attester as Address,
-      role: row.role,
-      relationship: row.relationship,
-      durationMonths: row.durationMonths,
-      message: row.message,
-      signature: row.signature,
-      onchainIdentity:
-        row.registryId !== null &&
-        row.chainId !== null &&
-        row.txHash !== null
-          ? {
-              registryId: row.registryId,
-              chainId: row.chainId,
-              txHash: row.txHash,
-              blockNumber: row.blockNumber,
-              logIndex: row.logIndex,
-            }
-          : null,
-      createdAt: row.createdAt.toISOString(),
-    })),
+    attestations: attestationRows
+      .map((row) => ({
+        id: row.id,
+        attester: row.attester as Address,
+        role: row.role,
+        relationship: row.relationship,
+        durationMonths: row.durationMonths,
+        message: row.message,
+        signature: row.signature,
+        onchainIdentity:
+          row.registryId !== null &&
+          row.chainId !== null &&
+          row.txHash !== null
+            ? {
+                registryId: row.registryId,
+                chainId: row.chainId,
+                txHash: row.txHash,
+                blockNumber: row.blockNumber,
+                logIndex: row.logIndex,
+              }
+            : null,
+        // Default 0/0 = belum ada reaksi (bukan data hilang).
+        ...(reactionCounts.get(row.id) ?? { helpful: 0, notHelpful: 0 }),
+        createdAt: row.createdAt.toISOString(),
+      }))
+      // Sorting display: helpful desc dulu, lalu terbaru (Spec 04 section 3.3).
+      .sort((a, b) =>
+        a.helpful === b.helpful
+          ? b.createdAt.localeCompare(a.createdAt)
+          : b.helpful - a.helpful,
+      ),
     disputes: disputeRows.map((row) => ({
       id: row.id,
       reporter: row.reporter as Address,

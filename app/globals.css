@@ -32,6 +32,9 @@ html {
 body {
   color: #232427;
   font-family: var(--font-sans), sans-serif;
+  /* Full-bleed strip (w-screen) tanpa horizontal scrollbar. `clip`
+     bukan scroll container — sticky navbar tetap bekerja. */
+  overflow-x: clip;
 }
 
 /* Canvas pattern (docs/design/ref-2.html): 44px grid + fixed token glows.
@@ -111,7 +114,8 @@ body::before {
     border-radius: 9999px;
     background: var(--color-coal);
     color: #fff;
-    font-family: var(--font-sans), sans-serif;
+    /* font-family: var(--font-sans), sans-serif; */
+    font-family: var(--font-mono), sans-serif;
     font-weight: 600;
     box-shadow: var(--shadow-brutal-sm);
     transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;

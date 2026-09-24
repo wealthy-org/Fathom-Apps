@@ -664,7 +664,7 @@ function AttestationsSection({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-xl font-semibold">Attestations</h2>
         <Link
-          href="/activity?tab=latest"
+          href={`/activity?tab=latest&wallet=${address}`}
           className="text-sm text-accent-ink hover:underline"
         >
           View in Activity Feed
@@ -759,7 +759,7 @@ function DisputesSection({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-xl font-semibold">Disputes</h2>
         <Link
-          href="/activity?tab=disputed"
+          href={`/activity?tab=disputed&wallet=${address}`}
           className="text-sm text-accent-ink hover:underline"
         >
           View in Activity Feed
@@ -861,7 +861,7 @@ function VouchesSection({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-xl font-semibold">Vouches</h2>
         <Link
-          href="/activity?tab=latest"
+          href={`/activity?tab=latest&wallet=${address}`}
           className="text-sm text-accent-ink hover:underline"
         >
           View in Activity Feed

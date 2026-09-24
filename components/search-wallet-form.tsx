@@ -30,12 +30,19 @@ function Arrow() {
 export function SearchWalletForm({
   hint = true,
   size = "md",
+  defaultValue = "",
+  submitLabel,
+  onDemoSubmit,
 }: {
   hint?: boolean;
   size?: "md" | "sm";
+  defaultValue?: string;
+  submitLabel?: string;
+  /** Landing demo mode: skip navigation, hand the short address to the caller. */
+  onDemoSubmit?: (shortAddress: string) => void;
 }) {
   const router = useRouter();
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(defaultValue);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputId = useId();
@@ -50,6 +57,11 @@ export function SearchWalletForm({
     }
     if (!ADDRESS_RE.test(trimmed)) {
       setError("That doesn't look like a valid 0x address.");
+      return;
+    }
+    if (onDemoSubmit) {
+      setError(null);
+      onDemoSubmit(`${trimmed.slice(0, 6)}…${trimmed.slice(-4)}`);
       return;
     }
     setError(null);
@@ -113,7 +125,9 @@ export function SearchWalletForm({
             compact ? "h-11 px-4 text-sm sm:text-xs" : "h-12 px-6 text-sm"
           }`}
         >
-          {isPending ? "Searching…" : compact ? "Search" : "Search a Wallet"}
+          {isPending
+            ? "Searching…"
+            : (submitLabel ?? (compact ? "Search" : "Search a Wallet"))}
           {!isPending && <Arrow />}
         </button>
       </div>
