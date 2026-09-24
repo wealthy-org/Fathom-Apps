@@ -45,7 +45,7 @@ function CheckMyWalletButton({ viewed }: { viewed: Address }) {
       href={`/wallets/${address.toLowerCase()}`}
       className="btn-brutal-light inline-flex px-4 py-2 text-xs"
     >
-      Check my wallet →
+      Check my wallet
     </Link>
   );
 }

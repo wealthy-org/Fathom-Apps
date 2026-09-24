@@ -54,7 +54,7 @@ export function RecentlyChecked() {
       <p className="mt-2 text-xs text-slate400">
         Your private search history, stored only in this browser.{" "}
         <Link href="/activity" className="underline hover:text-ink">
-          See public activity →
+          See public activity
         </Link>
       </p>
       {items.length === 0 ? (
@@ -95,7 +95,7 @@ export function RecentlyChecked() {
                   </span>
                 </span>
                 <span className="text-xs font-medium text-ink/70">
-                  Open →
+                  Open
                 </span>
               </Link>
             </li>

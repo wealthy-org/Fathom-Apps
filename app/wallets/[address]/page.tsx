@@ -44,6 +44,12 @@ const PROOF_LABELS: Record<ProofType, string> = {
   role_attestation: "Role attestation",
 };
 
+/**
+ * Evidence tab score block: the hero on Overview is the single primary
+ * score presentation, so this stays a one-line recap for context. The
+ * canonical breakdown is ReputationDimensions below, next to the proofs
+ * the score compresses.
+ */
 function ScoreSection({
   reputation,
 }: {
@@ -55,27 +61,12 @@ function ScoreSection({
         Reputation Score
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
-        A provisional compression of the evidence on this profile, not a
-        trust decision.
+        {reputation.totalScore} / {THRESHOLDS.score.maxScore} ·{" "}
+        {reputation.tier ? reputation.tier.label : "No tier — partial"} ·{" "}
+        {reputation.completeness === "complete"
+          ? "Evidence complete"
+          : "Evidence still being indexed"}
       </p>
-      <div className="panel-brutal mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-5 p-8">
-        <div className="font-display text-6xl font-semibold leading-none text-ink tabular-nums sm:text-7xl">
-          {reputation.totalScore}{" "}
-          <span className="text-2xl font-medium text-slate400">
-            / {THRESHOLDS.score.maxScore}
-          </span>
-        </div>
-        <div>
-          <div className="font-display text-2xl text-accent-ink">
-            {reputation.tier ? reputation.tier.label : "No tier — partial"}
-          </div>
-          <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-faint">
-            {reputation.completeness === "complete"
-              ? "Evidence complete"
-              : "Evidence still being indexed"}
-          </div>
-        </div>
-      </div>
       <div className="mt-6">
         <ReputationDimensions reputation={reputation} />
       </div>
@@ -1147,11 +1138,16 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
         </div>
       </section>
 
-      <div className="mt-12">
-        <ReputationDimensions
-          reputation={profile.reputation}
-          evidenceHref="#evidence"
-        />
+      <div className="panel-brutal mt-12 flex flex-wrap items-center justify-between gap-3 p-6">
+        <p className="text-sm text-slate400">
+          Score breakdown by dimension lives with the evidence it compresses.
+        </p>
+        <a
+          href="#evidence"
+          className="btn-brutal-light inline-flex px-4 py-2 text-xs"
+        >
+          View score breakdown
+        </a>
       </div>
 
       <section className="mt-12" aria-labelledby="wallet-history">
@@ -1447,27 +1443,6 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
           </a>
         </section>
       </div>
-
-      <section className="mt-10">
-        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-slate400">
-          Why This Score?
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-slate400">
-          The Fathom Score is a provisional compression of the evidence
-          available for this wallet.
-        </p>
-        <div className="panel-brutal mt-5 p-6">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-            Score → Dimension → Evidence → Proof → Raw source
-          </p>
-          <a
-            href="#evidence"
-            className="btn-brutal-light mt-4 inline-flex px-4 py-2 text-xs"
-          >
-            View score breakdown
-          </a>
-        </div>
-      </section>
 
       <NextSteps
         address={profile.address}

@@ -40,27 +40,16 @@ function Arrow({ className = "" }: { className?: string }) {
   );
 }
 
-function Kick({ children }: { children: string }) {
-  return (
-    <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent-ink">
-      {children}
-    </span>
-  );
-}
-
 function Head({
-  kick,
   title,
   sub,
 }: {
-  kick: string;
   title: React.ReactNode;
   sub?: string;
 }) {
   return (
     <div className="animate-title max-w-2xl">
-      <Kick>{kick}</Kick>
-      <h2 className="mt-4 font-display text-4xl font-medium tracking-tight sm:text-5xl">
+      <h2 className="font-display text-4xl font-medium tracking-tight sm:text-5xl">
         {title}
       </h2>
       {sub && <p className="mt-5 text-base leading-7 text-slate400">{sub}</p>}
@@ -208,12 +197,10 @@ export default function Home() {
         <section className="px-6 pb-20 pt-14 sm:pt-20 lg:px-10 lg:py-28 xl:px-12">
           <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <div>
-              <div className="animate-title mb-7 inline-flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 shadow-sm backdrop-blur-xl">
+              <p className="animate-title mb-7 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent motion-reduce:animate-none" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
-                  Proof of Reputation
-                </span>
-              </div>
+                Live on Robinhood Chain Testnet
+              </p>
               <h1 className="animate-title font-display text-5xl font-medium leading-[0.95] tracking-tighter sm:text-7xl">
                 Proof of Reputation
                 <span className="font-serif-accent block">
@@ -229,10 +216,9 @@ export default function Home() {
             <div className="animate-title mt-6">
               <a
                 href="#how"
-                className="inline-flex items-center gap-2 text-sm font-medium text-ink/70 transition hover:text-ink"
+                className="text-sm font-medium text-ink/70 transition hover:text-ink hover:underline"
               >
                 Explore How It Works
-                <Arrow />
               </a>
             </div>
           </div>
@@ -284,7 +270,7 @@ export default function Home() {
         </section>
 
           {/* ACTIVITY */}
-          <section className="px-6 py-20 lg:px-10 lg:py-28 xl:px-12">
+          <section className="px-6 py-14 lg:px-10 lg:py-20 xl:px-12">
             <div className="mx-auto max-w-7xl">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
                 Network activity
@@ -303,38 +289,16 @@ export default function Home() {
           </section>
 
           {/* ABOUT */}
-          <section id="about" className="px-6 py-20 lg:px-10 lg:py-28 xl:px-12">
+          <section id="about" className="px-6 py-20 lg:px-10 lg:py-24 xl:px-12">
             <div className="mx-auto grid max-w-7xl items-start gap-12 lg:grid-cols-2 lg:gap-16">
               <div>
-                <Head
-                  kick="About Fathom"
-                  title={
-                    <>
-                      A reputation layer for{" "}
-                      <span className="font-serif-accent">
-                        pseudonymous wallets.
-                      </span>
-                    </>
-                  }
-                />
+                <h2 className="animate-title font-display text-3xl font-medium tracking-tight sm:text-5xl">
+                  Don&apos;t trust the profile.
+                  <span className="font-serif-accent block">
+                    Verify the wallet.
+                  </span>
+                </h2>
                 <div className="mt-8 space-y-5 text-base leading-8 text-slate400">
-                  <p>
-                    Fathom is a reputation layer for pseudonymous wallets. It
-                    turns wallet history, economic behavior, relationships,
-                    attestations, and risk signals into verifiable and
-                    explainable reputation evidence.
-                  </p>
-                  <p>
-                    Fathom gives users a way to inspect a wallet before
-                    interacting with it. Search the address. Understand the
-                    history. Inspect the evidence. Make your own decision.
-                  </p>
-                  <p className="font-display text-2xl font-medium leading-snug tracking-tight text-ink">
-                    Don&apos;t trust the profile.
-                    <span className="font-serif-accent block">
-                      Verify the wallet.
-                    </span>
-                  </p>
                   <p>
                     Fathom evaluates{" "}
                     <span className="text-ink">economic identity</span>, not
@@ -372,22 +336,14 @@ export default function Home() {
           </section>
 
           {/* HOW IT WORKS */}
-          <section id="how" className="px-6 py-20 lg:px-10 lg:py-28 xl:px-12">
+          <section id="how" className="px-6 py-16 lg:px-10 lg:py-20 xl:px-12">
             <div className="mx-auto max-w-7xl">
               <Head
-                kick="How it works"
-                title={
-                  <>
-                    From an unknown wallet to{" "}
-                    <span className="font-serif-accent">
-                      your own decision.
-                    </span>
-                  </>
-                }
+                title="From an unknown wallet to your own decision."
                 sub="Four steps. Every claim traces back to evidence you can inspect."
               />
               <ol className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {HOW_STEPS.map(([title, body, note], i) => (
+                {HOW_STEPS.map(([title, body, note]) => (
                   <li key={title} className="card panel-brutal flex flex-col p-7">
                     <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
                       {title}
@@ -398,14 +354,6 @@ export default function Home() {
                     <p className="mt-2 text-sm leading-7 text-slate400">
                       {note}
                     </p>
-                    {i < HOW_STEPS.length - 1 && (
-                      <span
-                        aria-hidden="true"
-                        className="mt-4 hidden text-slate400 lg:block"
-                      >
-                        →
-                      </span>
-                    )}
                   </li>
                 ))}
               </ol>
@@ -416,17 +364,9 @@ export default function Home() {
           </section>
 
           {/* FAQ */}
-          <section id="faq" className="px-6 py-20 lg:px-10 lg:py-28 xl:px-12">
+          <section id="faq" className="px-6 py-20 lg:px-10 lg:py-24 xl:px-12">
             <div className="mx-auto max-w-5xl">
-              <Head
-                kick="FAQ"
-                title={
-                  <>
-                    What you{" "}
-                    <span className="font-serif-accent">need to know.</span>
-                  </>
-                }
-              />
+              <Head title="What you need to know." />
               <div className="mt-14 space-y-3">
                 {FAQ.map(([q, a], i) => (
                   <details
@@ -449,7 +389,6 @@ export default function Home() {
         <section id="api" className="px-6 py-20 lg:px-10 lg:py-28 xl:px-12">
           <div className="mx-auto max-w-7xl">
             <Head
-              kick="API"
               title={
                 <>
                   Reputation evidence,{" "}
@@ -492,29 +431,10 @@ const profile = await res.json();
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="relative z-10 px-5 pb-28 sm:px-6 lg:px-8">
-          <div className="card mx-auto max-w-5xl px-6 py-16 text-center sm:px-10 sm:py-20">
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent-ink">
-              Start here
-            </p>
-            <h2 className="mx-auto mt-4 max-w-2xl font-display text-4xl font-medium tracking-tight sm:text-6xl">
-              Before you trust the wallet,{" "}
-              <span className="font-serif-accent">look at the history.</span>
-            </h2>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate400">
-              Search a wallet and explore the evidence behind its reputation.
-            </p>
-            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <PrimaryLink href="/wallets">Check a Wallet</PrimaryLink>
-            </div>
-          </div>
-        </section>
-
         {/* FOOTER */}
         <footer className="relative z-10 border-t border-ink/10 px-5 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
-            <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
               <div className="max-w-xs">
                 <Logo />
                 <p className="mt-4 text-sm leading-6 text-slate400">
@@ -529,6 +449,7 @@ const profile = await res.json();
                   {(
                     [
                       ["Check a Wallet", "/wallets"],
+                      ["Activity", "/activity"],
                       ["How It Works", "/#how"],
                       ["Trust Graph", `/wallets/${EXAMPLE_WALLET}#graph`],
                       ["Risk", `/wallets/${EXAMPLE_WALLET}#risk`],
@@ -570,21 +491,6 @@ const profile = await res.json();
                     </li>
                   ))}
                 </ul>
-              </div>
-              <div>
-                <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-                  Status
-                </div>
-                <p className="mt-4 flex items-center gap-2 text-sm font-medium text-ink">
-                  <span
-                    aria-hidden="true"
-                    className="inline-block h-2 w-2 rounded-full bg-accent"
-                  />
-                  Testnet
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate400">
-                  Fathom is currently running on Robinhood Chain Testnet.
-                </p>
               </div>
             </div>
             <div className="mt-14 grid gap-6 border-t border-ink/10 pt-8 md:grid-cols-2 md:items-end">

@@ -30,11 +30,19 @@ function formatNative(wei: string): string {
   }
 }
 
-function WalletLink({ address }: { address: string }) {
+function WalletLink({
+  address,
+  strong = false,
+}: {
+  address: string;
+  strong?: boolean;
+}) {
   return (
     <Link
       href={`/wallets/${address}`}
-      className="font-mono text-accent-ink hover:underline"
+      className={`font-mono hover:underline ${
+        strong ? "font-semibold text-ink" : "text-accent-ink"
+      }`}
     >
       {shortAddress(address)}
     </Link>
@@ -65,19 +73,22 @@ export function ActivityFeedCard({ item }: { item: FeedItem }) {
       </div>
 
       {item.kind === "attestation" && (
-        <p className="mt-2 text-sm text-ink">
-          <WalletLink address={item.attester} /> attested{" "}
+        <p className="mt-2 text-sm leading-6 text-ink">
+          <WalletLink address={item.attester} strong /> attested{" "}
           <WalletLink address={item.subject} /> as{" "}
-          <strong className="font-semibold">{item.role}</strong> ·{" "}
-          {item.relationship}
-          {item.durationMonths !== null && `, ${item.durationMonths} months`}
+          <strong className="font-semibold">{item.role}</strong>
+          <span className="text-slate400">
+            {" "}
+            · {item.relationship}
+            {item.durationMonths !== null && `, ${item.durationMonths} months`}
+          </span>
         </p>
       )}
 
       {item.kind === "dispute" && (
-        <p className="mt-2 text-sm text-ink">
-          <WalletLink address={item.reporter} /> opened a dispute against{" "}
-          <WalletLink address={item.target} />
+        <p className="mt-2 text-sm leading-6 text-ink">
+          <WalletLink address={item.reporter} strong /> opened a dispute
+          against <WalletLink address={item.target} />
           {item.reason && (
             <span className="mt-1 block text-slate400">{item.reason}</span>
           )}
@@ -85,15 +96,18 @@ export function ActivityFeedCard({ item }: { item: FeedItem }) {
       )}
 
       {item.kind === "vouch" && (
-        <p className="mt-2 text-sm text-ink">
-          <WalletLink address={item.from} /> vouched for{" "}
-          <WalletLink address={item.to} /> · {formatNative(item.stakeWei)}
+        <p className="mt-2 text-sm leading-6 text-ink">
+          <WalletLink address={item.from} strong /> vouched for{" "}
+          <WalletLink address={item.to} />{" "}
+          <strong className="font-semibold tabular-nums">
+            {formatNative(item.stakeWei)}
+          </strong>
         </p>
       )}
 
       {item.kind === "claim" && (
-        <p className="mt-2 text-sm text-ink">
-          <WalletLink address={item.address} /> was claimed by its owner
+        <p className="mt-2 text-sm leading-6 text-ink">
+          <WalletLink address={item.address} strong /> was claimed by its owner
         </p>
       )}
 
@@ -101,7 +115,20 @@ export function ActivityFeedCard({ item }: { item: FeedItem }) {
         {(item.kind === "attestation" || item.kind === "dispute") && (
           <span>{item.onchain ? "on-chain" : "signed"}</span>
         )}
-        {item.kind === "dispute" && <span>status: {item.status}</span>}
+        {item.kind === "dispute" && (
+          <span>
+            status:{" "}
+            <span
+              className={
+                item.status === "open"
+                  ? "font-medium text-accent-ink"
+                  : undefined
+              }
+            >
+              {item.status}
+            </span>
+          </span>
+        )}
         {item.kind === "vouch" && item.status !== "active" && (
           <span>status: {item.status}</span>
         )}

@@ -203,7 +203,7 @@ export function ReputationDimensions({
                     href={evidenceHref}
                     className="mt-1 inline-block font-mono text-[11px] text-accent-ink hover:underline"
                   >
-                    Why → evidence ({refCount})
+                    Evidence behind this ({refCount})
                   </a>
                 )}
               </div>

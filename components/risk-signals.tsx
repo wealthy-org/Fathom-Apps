@@ -466,7 +466,7 @@ function SignalCard({ state }: { state: RiskState }) {
               rel="noreferrer"
               className="font-mono text-[11px] text-ink hover:text-accent-ink hover:underline"
             >
-              View evidence →
+              View evidence
             </a>
           )}
           {GRAPH_BACKED.has(state.id) && (
@@ -474,7 +474,7 @@ function SignalCard({ state }: { state: RiskState }) {
               href="#graph"
               className="font-mono text-[11px] text-ink hover:text-accent-ink hover:underline"
             >
-              View graph →
+              View graph
             </a>
           )}
           {COMMUNITY_BACKED.has(state.id) && (
@@ -482,7 +482,7 @@ function SignalCard({ state }: { state: RiskState }) {
               href="#community"
               className="font-mono text-[11px] text-ink hover:text-accent-ink hover:underline"
             >
-              Open community →
+              Open community
             </a>
           )}
         </div>

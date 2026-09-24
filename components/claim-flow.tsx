@@ -80,7 +80,7 @@ export function ClaimFlow({
         <span className="whitespace-nowrap">
           Pseudonymous by default ·{" "}
           <Link href="/#faq-identity" className="underline hover:text-ink">
-            Privacy Model →
+            Privacy Model
           </Link>
         </span>
       </p>
@@ -206,7 +206,7 @@ export function ClaimFlow({
         <span className="whitespace-nowrap">
           Pseudonymous by default ·{" "}
           <Link href="/#faq-identity" className="underline hover:text-ink">
-            Privacy Model →
+            Privacy Model
           </Link>
         </span>
       </p>
@@ -257,12 +257,12 @@ export function ClaimFlow({
               </p>
               <p className="mt-2 text-sm text-slate400">
                 Next: support wallets you trust —{" "}
-                <a
-                  href="#community"
-                  className="font-mono text-[11px] text-accent-ink hover:underline"
-                >
-                  Explore community →
-                </a>
+                  <a
+                    href="#community"
+                    className="font-mono text-[11px] text-accent-ink hover:underline"
+                  >
+                    Explore community
+                  </a>
               </p>
               <button
                 type="button"
