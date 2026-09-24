@@ -3,7 +3,6 @@
 import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useAccount } from "wagmi";
-import { SearchWalletForm } from "@/components/search-wallet-form";
 import { ShareReputation } from "@/components/share-reputation";
 import type { Address } from "@/lib/score/types";
 
@@ -81,14 +80,6 @@ export function NextSteps({
               totalScore={totalScore}
               tierLabel={tierLabel}
             />
-          </div>
-        </div>
-        <div className="min-w-0">
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-            Check another wallet
-          </div>
-          <div className="mt-2">
-            <SearchWalletForm hint={false} size="sm" />
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { Navbar } from "@/components/layout/Navbar";
+import { WalletShell } from "@/components/wallet-shell";
 import { CodeCard } from "@/components/code-card";
+import { DocsSidebar } from "@/components/docs-sidebar";
 
 /**
  * Public API documentation for external integrators (Phase 11).
@@ -68,28 +68,15 @@ const ERRORS: Array<[string, string, string]> = [
   ["405", "method_not_allowed", "Only GET (and CORS preflight OPTIONS) are served."],
 ];
 
+/** Field name → stable anchor slug (mis. "walletAgeDays, txCount" → "field-walletagedays-txcount"). */
+function fieldSlug(field: string): string {
+  return `field-${field.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
+
 export default function DocsPage() {
   return (
-    <div className="font-sans text-ink">
-      <Navbar
-        // ponytail: menu yang sama dengan home — anchor absolut supaya
-        // tetap mengarah ke section landing saat dibuka dari /docs.
-        links={[
-          ["About", "/#about"],
-          ["How It Works", "/#how"],
-          ["FAQ", "/#faq"],
-          ["Docs", "/docs"],
-        ]}
-        actions={
-          <Link
-            href="/wallets"
-            className="btn-brutal w-full px-5 py-2.5 text-sm md:w-auto"
-          >
-            Check a Wallet
-          </Link>
-        }
-      />
-      <main id="main-content" className="mx-auto w-full max-w-4xl px-5 pb-28 pt-14 lg:px-8">
+    <WalletShell>
+      <header>
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent-ink">
           Docs
         </p>
@@ -101,8 +88,12 @@ export default function DocsPage() {
           CORS-open for browser apps. Evidence first — the response carries the
           proofs behind the score, not just the number.
         </p>
+      </header>
 
-        <section id="endpoint" className="panel-brutal mt-10 scroll-mt-28 p-7">
+      <div className="mt-10 flex flex-col gap-6 lg:flex-row">
+        <DocsSidebar />
+        <div className="min-w-0 flex-1">
+          <section id="endpoint" className="panel-brutal mt-10 scroll-mt-28 p-7 first:mt-0">
           <h2 className="font-display text-xl font-medium">Endpoint</h2>
           <div className="mt-4">
             <CodeCard
@@ -147,7 +138,8 @@ export default function DocsPage() {
             {FIELDS.map(([field, desc]) => (
               <li
                 key={field}
-                className="border-b border-ink/10 pb-3 last:border-b-0 last:pb-0"
+                id={fieldSlug(field)}
+                className="scroll-mt-28 border-b border-ink/10 pb-3 last:border-b-0 last:pb-0"
               >
                 <span className="font-mono text-sm text-ink">{field}</span>
                 <p className="mt-1 text-sm leading-6 text-slate400">{desc}</p>
@@ -212,7 +204,8 @@ export default function DocsPage() {
             </li>
           </ul>
         </section>
-      </main>
-    </div>
+        </div>
+      </div>
+    </WalletShell>
   );
 }

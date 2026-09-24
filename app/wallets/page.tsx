@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { WalletShell } from "@/components/wallet-shell";
-import { SearchWalletForm } from "@/components/search-wallet-form";
 import { RecentlyChecked } from "@/components/recently-checked";
 
 export const metadata: Metadata = {
@@ -19,9 +18,6 @@ export default function WalletsPage() {
         <h1 className="mt-4 font-display text-4xl font-medium tracking-tight sm:text-5xl">
           Analyze a wallet before interacting with it.
         </h1>
-        <div className="mt-8">
-          <SearchWalletForm />
-        </div>
         <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
           Reputation · Evidence · Relationships · Risk
         </p>

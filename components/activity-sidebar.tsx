@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ActivitySidebarData } from "@/lib/activity/sidebar";
+import { ActivityCtaCard } from "@/components/activity-cta-card";
 
 function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -53,7 +54,8 @@ function Empty({ text }: { text: string }) {
  */
 export function ActivitySidebar({ data }: { data: ActivitySidebarData }) {
   return (
-    <aside className="w-full shrink-0 space-y-3 lg:w-80">
+    <aside className="w-full shrink-0 space-y-3 lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:w-80 lg:self-start lg:overflow-y-auto">
+      <ActivityCtaCard />
       <Panel title="Recently Claimed">
         {data.claims.length === 0 ? (
           <Empty text="No claimed profiles yet." />

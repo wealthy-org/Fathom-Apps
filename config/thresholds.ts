@@ -226,4 +226,12 @@ export const THRESHOLDS = {
     // TBD — skor minimum untuk membuka konten ter-gate (PRD §10.1)
     minScore: 400,
   },
+
+  activity: {
+    // Display-only untuk strip live-activity landing (bukan scoring).
+    // Jumlah item per fetch marquee.
+    landingMarqueeLimit: 12,
+    // Interval polling data baru (ms).
+    landingPollMs: 20000,
+  },
 } as const;

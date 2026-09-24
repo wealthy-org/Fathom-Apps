@@ -3,7 +3,7 @@ import type { FeedItem } from "@/lib/activity/feed";
 
 const WEI_PER_ETH = BigInt(10) ** BigInt(18);
 
-function shortAddress(address: string) {
+export function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
@@ -17,7 +17,7 @@ function formatDate(iso: string): string {
 }
 
 /** Format nilai wei ke native unit untuk tampilan (AGENTS §9: hanya di boundary presentasi). */
-function formatNative(wei: string): string {
+export function formatNative(wei: string): string {
   try {
     const value = BigInt(wei);
     const whole = value / WEI_PER_ETH;

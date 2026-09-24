@@ -49,12 +49,23 @@ export function handleMissingWallet(): string {
     : "Phantom wallet not detected. Install Phantom (phantom.app/download), then try again.";
 }
 
+/** True when an inline connect error means the wallet is missing. */
+export function isMissingWalletError(message: string): boolean {
+  return /not detected/i.test(message);
+}
+
 export function ConnectButton({
   className = "",
   connectLabel = "Connect Wallet",
+  leadingIcon,
+  align = "start",
+  onSuccess,
 }: {
   className?: string;
   connectLabel?: string;
+  leadingIcon?: React.ReactNode;
+  align?: "start" | "center";
+  onSuccess?: () => void;
 }) {
   const { address, isConnected, status } = useAccount();
   const chainId = useChainId();
@@ -156,6 +167,7 @@ export function ConnectButton({
         return;
       }
       await refresh();
+      onSuccess?.();
     } catch (e) {
       console.error("wallet sign-in failed:", e);
       const msg = (e as Error)?.message ?? "";
@@ -192,15 +204,20 @@ export function ConnectButton({
 
   const busy = isConnecting || isSwitching || isSigning;
   const inlineError = flowError ?? connectError?.message ?? switchError?.message;
+  const missingWallet =
+    typeof inlineError === "string" && isMissingWalletError(inlineError);
 
   return (
-    <span className="flex w-full flex-col md:w-auto md:items-start">
+    <span
+      className={`flex w-full flex-col md:w-auto ${align === "center" ? "md:items-center" : "md:items-start"}`}
+    >
       <button
         type="button"
         disabled={busy}
         onClick={() => void handlePrimary()}
         className={`${base} min-touch w-full justify-center md:w-auto`}
       >
+        {leadingIcon}
         <span>
           {busy
             ? isSigning
@@ -216,9 +233,27 @@ export function ConnectButton({
       {inlineError && (
         <span
           role="alert"
-          className="max-w-56 text-left text-[11px] leading-snug text-red-600"
+          className={`text-[11px] leading-snug text-red-600 ${
+            align === "center"
+              ? "mt-2 w-full text-center"
+              : "max-w-56 text-left"
+          }`}
         >
-          {inlineError}
+          {missingWallet ? (
+            <>
+              Phantom wallet not detected.{" "}
+              <a
+                href="https://phantom.app/download"
+                target="_blank"
+                rel="noreferrer"
+                className="underline hover:text-red-700"
+              >
+                Install Phantom
+              </a>
+            </>
+          ) : (
+            inlineError
+          )}
         </span>
       )}
     </span>
