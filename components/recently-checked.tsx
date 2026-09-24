@@ -39,7 +39,7 @@ export function RecentlyChecked() {
     <div className="mt-10">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-          Recently checked
+          On this device
         </div>
         {items.length > 0 && (
           <button
@@ -51,6 +51,12 @@ export function RecentlyChecked() {
           </button>
         )}
       </div>
+      <p className="mt-2 text-xs text-slate400">
+        Your private search history, stored only in this browser.{" "}
+        <Link href="/activity" className="underline hover:text-ink">
+          See public activity →
+        </Link>
+      </p>
       {items.length === 0 ? (
         <div>
           <p className="mt-3 text-sm text-slate400">

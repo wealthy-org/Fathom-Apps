@@ -33,7 +33,42 @@ export function LandingActivitySnippet() {
     };
   }, []);
 
-  if (failed || items?.length === 0) return null;
+  if (failed) {
+    return (
+      <div>
+        <div className="panel-brutal p-6 text-sm text-slate400">
+          Could not load network activity right now.
+        </div>
+        <div className="mt-5">
+          <Link
+            href="/activity"
+            className="inline-flex items-center gap-2 text-sm font-medium text-ink/70 transition hover:text-ink"
+          >
+            Try the activity feed
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (items?.length === 0) {
+    return (
+      <div>
+        <div className="panel-brutal p-6 text-sm text-slate400">
+          No activity recorded yet. Be the first to create activity. Check a
+          wallet, attest, vouch, or open a dispute.
+        </div>
+        <div className="mt-5">
+          <Link
+            href="/wallets"
+            className="btn-brutal inline-block px-5 py-2.5 text-sm"
+          >
+            Check a wallet
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

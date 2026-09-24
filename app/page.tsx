@@ -293,8 +293,8 @@ export default function Home() {
                 Live reputation events.
               </h2>
               <p className="mt-3 max-w-2xl text-base leading-7 text-slate400">
-                Attestations, disputes, vouches, and claims as they happen —
-                no posts, no comments, just on-chain and signed events.
+                Attestations, disputes, vouches, and claims as they happen.
+                No posts, no comments, just on-chain and signed events.
               </p>
               <div className="mt-8">
                 <LandingActivitySnippet />

@@ -68,7 +68,7 @@ export function ActivityFeedCard({ item }: { item: FeedItem }) {
         <p className="mt-2 text-sm text-ink">
           <WalletLink address={item.attester} /> attested{" "}
           <WalletLink address={item.subject} /> as{" "}
-          <strong className="font-semibold">{item.role}</strong> —{" "}
+          <strong className="font-semibold">{item.role}</strong> ·{" "}
           {item.relationship}
           {item.durationMonths !== null && `, ${item.durationMonths} months`}
         </p>
