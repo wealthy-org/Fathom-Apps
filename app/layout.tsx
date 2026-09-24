@@ -38,6 +38,10 @@ export const metadata: Metadata = {
   title: "Fathom — Know the Wallet Before You Trust It",
   description:
     "Fathom turns wallet history, economic relationships, behavioral signals, and attestations into verifiable trust evidence.",
+  icons: {
+    icon: [{ url: "/icon", type: "image/png" }],
+    apple: [{ url: "/icon", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {

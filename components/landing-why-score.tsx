@@ -2,7 +2,7 @@ import { LandingSectionHead } from "./landing-section-head";
 
 /**
  * Section 01 — Introduce. Explains score provenance with a sample
- * "Why 812?" walkthrough (input â†’ evidence â†’ weight â†’ result), the tier
+ * "Why 812?" walkthrough (input → evidence → weight → result), the tier
  * boundaries used by the engine, and the four evidence classes. Weights and
  * tier cuts mirror config/thresholds.ts (ScoreStrategyV1 / TierStrategyV1);
  * all figures are sample values consistent with the hero sample wallet
@@ -43,8 +43,8 @@ const WHY_ROWS: Array<{
   {
     input: "Risk signals",
     evidence: "Vouch concentration signal — clear",
-    weight: "max âˆ’300",
-    result: "âˆ’6",
+    weight: "max −300",
+    result: "−6",
     risk: true,
   },
 ];

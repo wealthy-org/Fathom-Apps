@@ -32,7 +32,7 @@ export const DEFAULT_NAV_LINKS: Array<[string, string]> = [
 export function Logo({ wordmark = true }: { wordmark?: boolean }) {
   return (
     <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-2.5">
-      {/* Mark warna accent #E34A32 — senada favicon (logo-accent.png). */}
+      {/* Logo — warna dari PNG itu sendiri, tanpa filter/CSS. */}
       <Image
         src="/logo-accent.png"
         alt="Fathom"
