@@ -97,7 +97,7 @@ function MarqueeCard({ item, isNew }: { item: FeedItem; isNew: boolean }) {
       <span className="relative mt-3 block">
         <ActionLine item={item} />
         <span
-          className="mt-1 block font-mono text-[11px] text-faint"
+          className="mt-1 block font-mono text-[11px] text-faint font-mono"
           title={new Date(item.occurredAt).toLocaleString()}
         >
           {timeAgo(item.occurredAt)}

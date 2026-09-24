@@ -89,12 +89,16 @@ export function MyActivityFeed({
           const rest = group.items.slice(PREVIEW_PER_DAY);
           return (
             <li key={group.key}>
-              <div className="flex items-center gap-3">
-                <h3 className="font-mono text-[10.5px] font-medium uppercase tracking-[0.09em] text-slate400">
+              <div className="flex items-center gap-3 py-2">
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-full border border-ink/15 bg-canvas"
+                />
+                <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                   {group.key}
                 </h3>
-                <span aria-hidden="true" className="h-px flex-1 bg-ink/10" />
-                <span className="font-mono text-[10.5px] uppercase tracking-[0.09em] text-slate400">
+                <span aria-hidden="true" className="h-px min-w-8 flex-1 bg-ink/10" />
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
                   {group.items.length}{" "}
                   {group.items.length === 1 ? "event" : "events"}
                 </span>

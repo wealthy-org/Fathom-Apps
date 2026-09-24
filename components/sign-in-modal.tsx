@@ -192,12 +192,9 @@ function AccountMenu({
           )}
         </button>
       </div>
+      {aliasLoaded && isOwner && (alias || editing) && (
       <div className="border-t border-black/5 px-1 py-2">
-        {!aliasLoaded ? (
-          <p className="text-xs text-slate400">Loading alias…</p>
-        ) : !isOwner ? (
-          <p className="text-xs text-slate400">Sign in to set alias.</p>
-        ) : editing ? (
+        {editing ? (
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -253,10 +250,11 @@ function AccountMenu({
             }}
             className="btn-brutal-light w-full px-3 py-2 text-xs"
           >
-            {alias ? "Edit alias" : "Set alias"}
+            Edit alias
           </button>
         )}
       </div>
+      )}
       <div className="border-t border-black/5 pt-1">
         <Link
           href="/activity/me"
