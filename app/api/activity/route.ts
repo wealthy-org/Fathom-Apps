@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { FEED_TABS, getActivityFeed } from "@/lib/activity/feed";
+import { FEED_KINDS, FEED_TABS, getActivityFeed } from "@/lib/activity/feed";
 import { ADDRESS_RE, normalizeAddress } from "@/lib/chain/address";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +9,7 @@ const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().datetime().optional(),
   tab: z.enum(FEED_TABS).default("latest"),
+  kind: z.enum(FEED_KINDS).optional(),
   wallet: z.string().regex(ADDRESS_RE).optional(),
 });
 
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
     limit: url.searchParams.get("limit") ?? undefined,
     cursor: url.searchParams.get("cursor") ?? undefined,
     tab: url.searchParams.get("tab") ?? undefined,
+    kind: url.searchParams.get("kind") ?? undefined,
     wallet: url.searchParams.get("wallet") ?? undefined,
   });
   if (!parsed.success) {

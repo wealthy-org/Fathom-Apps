@@ -1,4 +1,4 @@
-import { desc, eq, gt, inArray, lt } from "drizzle-orm";
+import { count, desc, eq, gt, inArray, lt } from "drizzle-orm";
 import { THRESHOLDS } from "@/config/thresholds";
 import { db } from "@/lib/db/client";
 import {
@@ -33,11 +33,14 @@ import {
 export const FEED_TABS = ["signal", "latest", "established", "disputed"] as const;
 export type FeedTab = (typeof FEED_TABS)[number];
 
-export function isFeedTab(value: unknown): value is FeedTab {
-  return (
-    typeof value === "string" && (FEED_TABS as readonly string[]).includes(value)
-  );
-}
+// Client-safe re-export: komponen client memakai FEED_KINDS tanpa
+// menarik modul db ke bundle browser.
+export {
+  FEED_KINDS,
+  isFeedKind,
+  type FeedKind,
+} from "@/lib/activity/kinds";
+import type { FeedKind } from "@/lib/activity/kinds";
 
 export type FeedItem =
   | {
@@ -50,6 +53,7 @@ export type FeedItem =
       relationship: string;
       durationMonths: number | null;
       onchain: boolean;
+      txHash: string | null;
     }
   | {
       kind: "dispute";
@@ -60,6 +64,7 @@ export type FeedItem =
       status: string;
       reason: string | null;
       onchain: boolean;
+      txHash: string | null;
     }
   | {
       kind: "vouch";
@@ -69,6 +74,7 @@ export type FeedItem =
       to: string;
       stakeWei: string;
       status: string;
+      txHash: string;
     }
   | {
       kind: "claim";
@@ -233,6 +239,7 @@ async function queryCandidates(input: {
           relationship: attestations.relationship,
           durationMonths: attestations.durationMonths,
           registryId: attestations.registryId,
+          txHash: attestations.txHash,
           createdAt: attestations.createdAt,
         })
         .from(attestations)
@@ -248,6 +255,7 @@ async function queryCandidates(input: {
               status: disputes.status,
               reason: disputes.reason,
               registryId: disputes.registryId,
+              txHash: disputes.txHash,
               openedAt: disputes.openedAt,
             })
             .from(disputes)
@@ -262,6 +270,7 @@ async function queryCandidates(input: {
           to: vouches.toAddress,
           stakeWei: vouches.stakeAmount,
           status: vouches.status,
+          txHash: vouches.txHash,
           createdAt: vouches.createdAt,
         })
         .from(vouches)
@@ -293,6 +302,7 @@ async function queryCandidates(input: {
         relationship: row.relationship,
         durationMonths: row.durationMonths,
         onchain: row.registryId !== null,
+        txHash: row.txHash,
       }),
     ),
     ...disputeRows.map(
@@ -305,6 +315,7 @@ async function queryCandidates(input: {
         status: row.status,
         reason: row.reason,
         onchain: row.registryId !== null,
+        txHash: row.txHash,
       }),
     ),
     ...vouchRows.map(
@@ -316,6 +327,7 @@ async function queryCandidates(input: {
         to: row.to,
         stakeWei: row.stakeWei,
         status: row.status,
+        txHash: row.txHash,
       }),
     ),
     ...claimRows.map(
@@ -348,14 +360,32 @@ export async function getActivityFeed(input: {
   limit: number;
   cursor?: string;
   tab?: FeedTab;
+  /**
+   * Kind filter (network feed UI). Takes precedence over `tab` when set.
+   * Single-kind streams paginate on their own table via the same
+   * occurredAt cursor, so paging stays gap-free per kind.
+   */
+  kind?: FeedKind;
   /** Lowercase address — only items touching this wallet are returned. */
   wallet?: string;
 }): Promise<FeedPage> {
-  const { limit, tab = "latest", wallet } = input;
+  const { limit, tab = "latest", kind, wallet } = input;
   const before = input.cursor ? new Date(input.cursor) : null;
 
   const byWallet = (item: FeedItem) =>
     wallet === undefined || involvedAddresses(item).includes(wallet);
+
+  if (kind !== undefined) {
+    const scanKinds =
+      kind === "attestation" || kind === "vouch"
+        ? "attestationVouch"
+        : "all";
+    const candidates = await queryCandidates({ limit, before, kinds: scanKinds });
+    const filtered = candidates
+      .filter((item) => (kind === "all" ? true : item.kind === kind))
+      .filter(byWallet);
+    return paginate(filtered, limit);
+  }
 
   if (tab === "latest") {
     // Per-table limit equals page limit: exact, no over-fetch needed.
@@ -434,4 +464,29 @@ export async function getActivityFeed(input: {
     )
     .map((entry) => entry.item);
   return paginate(ranked.filter(byWallet), limit);
+}
+
+/**
+ * Total row counts per kind for the toolbar pill counters. Display
+ * bounds only — count(*) per table, never a scoring input.
+ */
+export async function getActivityKindCounts(): Promise<{
+  attestation: number;
+  vouch: number;
+  dispute: number;
+  claim: number;
+}> {
+  const [attestationRows, vouchRows, disputeRows, claimRows] =
+    await Promise.all([
+      db.select({ value: count() }).from(attestations),
+      db.select({ value: count() }).from(vouches),
+      db.select({ value: count() }).from(disputes),
+      db.select({ value: count() }).from(profileClaims),
+    ]);
+  return {
+    attestation: attestationRows[0]?.value ?? 0,
+    vouch: vouchRows[0]?.value ?? 0,
+    dispute: disputeRows[0]?.value ?? 0,
+    claim: claimRows[0]?.value ?? 0,
+  };
 }

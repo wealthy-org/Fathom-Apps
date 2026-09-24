@@ -37,6 +37,7 @@ export async function getMyActivity(input: {
           relationship: attestations.relationship,
           durationMonths: attestations.durationMonths,
           registryId: attestations.registryId,
+          txHash: attestations.txHash,
           createdAt: attestations.createdAt,
         })
         .from(attestations)
@@ -56,6 +57,7 @@ export async function getMyActivity(input: {
           status: disputes.status,
           reason: disputes.reason,
           registryId: disputes.registryId,
+          txHash: disputes.txHash,
           openedAt: disputes.openedAt,
         })
         .from(disputes)
@@ -74,6 +76,7 @@ export async function getMyActivity(input: {
           to: vouches.toAddress,
           stakeWei: vouches.stakeAmount,
           status: vouches.status,
+          txHash: vouches.txHash,
           createdAt: vouches.createdAt,
         })
         .from(vouches)
@@ -113,6 +116,7 @@ export async function getMyActivity(input: {
         relationship: row.relationship,
         durationMonths: row.durationMonths,
         onchain: row.registryId !== null,
+        txHash: row.txHash,
       }),
     ),
     ...disputeRows.map(
@@ -125,6 +129,7 @@ export async function getMyActivity(input: {
         status: row.status,
         reason: row.reason,
         onchain: row.registryId !== null,
+        txHash: row.txHash,
       }),
     ),
     ...vouchRows.map(
@@ -136,6 +141,7 @@ export async function getMyActivity(input: {
         to: row.to,
         stakeWei: row.stakeWei,
         status: row.status,
+        txHash: row.txHash,
       }),
     ),
     ...claimRows.map(
