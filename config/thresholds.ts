@@ -254,5 +254,7 @@ export const THRESHOLDS = {
     riskNewsWindowHours: 24,
     // Batas deteksi yang diambil per query breaking-news.
     riskNewsLimit: 50,
+    // Window sparkline + insight halaman My Activity (hari, display-only).
+    myActivityInsightDays: 30,
   },
 } as const;

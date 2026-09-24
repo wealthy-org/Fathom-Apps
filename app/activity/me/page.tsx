@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
-import { getMyActivity } from "@/lib/activity/mine";
-import { ActivityFeedCard } from "@/components/activity-feed-card";
+import {
+  getMyActivity,
+  getMyActivityInsight,
+  getMyActivityStats,
+} from "@/lib/activity/mine";
+import { MyActivityHero } from "@/components/my-activity-hero";
+import { MyActivityStats } from "@/components/my-activity-stats";
+import { MyActivityFeed } from "@/components/my-activity-feed";
+import { MyActivityInsightPanel } from "@/components/my-activity-insight";
 
 export const dynamic = "force-dynamic";
 
@@ -13,87 +18,83 @@ export const metadata: Metadata = {
     "Your own reputation actions: attestations made, vouches given, disputes opened and your profile claim.",
 };
 
-const searchParamsSchema = z.object({
-  cursor: z.string().datetime().optional(),
-});
-
-function shortAddress(address: string) {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
-
 /**
- * "My Activity" (Spec 04 section 3.4) — history of the connected wallet.
- * Gated on the SIWE session server-side. Same cards as the public feed.
+ * "My Activity" — jejak reputasi personal wallet yang ter-autentikasi.
+ * Gate server-side via SIWE session. Feed page 1 server-rendered,
+ * halaman berikutnya via /api/activity/me (infinite scroll).
  */
-export default async function MyActivityPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ cursor?: string }>;
-}) {
+export default async function MyActivityPage() {
   const session = await getSession();
   if (!session.authenticated || !session.walletAddress) {
     return (
       <section aria-labelledby="my-activity-heading">
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
+          Personal reputation surface
+        </p>
         <h1
           id="my-activity-heading"
-          className="font-display text-2xl font-semibold sm:text-3xl"
+          className="mt-3 font-serif-accent text-4xl text-ink sm:text-5xl"
         >
           My Activity
         </h1>
-        <div className="panel-brutal mt-6 p-6 text-sm text-slate400">
-          Connect your wallet first — use the Connect button in the header.
-          Your attestations, vouches, disputes and claim will be listed here.
+        <div className="panel-brutal mt-6 p-6 text-sm leading-6 text-slate400">
+          Connect your wallet first — use the Connect button in the header. Your
+          attestations, vouches, disputes and claim will show up here as your
+          personal reputation trail.
         </div>
       </section>
     );
   }
 
   const address = session.walletAddress;
-  const raw = await searchParams;
-  const parsed = searchParamsSchema.safeParse(raw);
-  const cursor = parsed.success ? parsed.data.cursor : undefined;
-
-  const page = await getMyActivity({ address, limit: 20, cursor });
+  const [page, stats, insight] = await Promise.all([
+    getMyActivity({ address, limit: 20 }),
+    getMyActivityStats(address),
+    getMyActivityInsight(address),
+  ]);
 
   return (
-    <section aria-labelledby="my-activity-heading">
-      <h1
-        id="my-activity-heading"
-        className="font-display text-2xl font-semibold sm:text-3xl"
-      >
-        My Activity
-      </h1>
-      <p className="mt-2 max-w-2xl font-mono text-sm text-slate400">
-        {shortAddress(address)} — everything this wallet did, newest first.
-      </p>
+    <>
+      <section aria-labelledby="my-activity-heading">
+        <h2 id="my-activity-heading" className="sr-only">
+          My Activity
+        </h2>
+        <MyActivityHero address={address} />
 
-      {page.items.length === 0 ? (
-        <div className="panel-brutal mt-6 p-6 text-sm text-slate400">
-          No actions yet. Attest, vouch or open a dispute from any wallet
-          profile and it will show up here.
+        <div className="mt-8">
+          <MyActivityStats stats={stats} />
         </div>
-      ) : (
-        <>
-          <ul className="mt-6 space-y-3">
-            {page.items.map((item) => (
-              <ActivityFeedCard
-                key={`${item.kind}-${item.id}`}
-                item={item}
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1.7fr_1fr]">
+          <div className="min-w-0">
+            {page.items.length === 0 ? (
+              <div className="panel-brutal p-6 text-sm leading-6 text-slate400">
+                No actions yet. Attest, vouch or open a dispute from any wallet
+                profile and it will show up here — every entry is public
+                evidence you signed.
+              </div>
+            ) : (
+              <MyActivityFeed
+                initialItems={page.items}
+                initialCursor={page.nextCursor}
               />
-            ))}
-          </ul>
-          {page.nextCursor !== null && (
-            <div className="mt-6 text-center">
-              <Link
-                href={`/activity/me?cursor=${encodeURIComponent(page.nextCursor)}`}
-                className="btn-brutal inline-block px-5 py-2.5 text-sm"
-              >
-                Load more
-              </Link>
-            </div>
-          )}
-        </>
-      )}
-    </section>
+            )}
+          </div>
+          <aside className="min-w-0">
+            <MyActivityInsightPanel insight={insight} address={address} />
+          </aside>
+        </div>
+      </section>
+
+      <footer className="mt-12 border-t border-ink/10 pt-5">
+        <div className="mt-4 grid gap-2 border-t border-ink/10 pt-3 md:grid-cols-2 md:items-center">
+          <div className="text-xs leading-4 text-slate400">© 2026 Fathom</div>
+
+          <p className="text-xs leading-4 text-slate400 md:text-right">
+            Built for pseudonymous economic identities.
+          </p>
+        </div>
+      </footer>
+    </>
   );
 }

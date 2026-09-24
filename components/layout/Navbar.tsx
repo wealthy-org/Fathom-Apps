@@ -32,13 +32,13 @@ export const DEFAULT_NAV_LINKS: Array<[string, string]> = [
 export function Logo({ wordmark = true }: { wordmark?: boolean }) {
   return (
     <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-2.5">
-      {/* ponytail: mark is light-on-dark art; invert for the white pill */}
+      {/* Mark warna accent #E34A32 — senada favicon (logo-accent.png). */}
       <Image
-        src="/logo-no-bg.png"
+        src="/logo-accent.png"
         alt="Fathom"
         width={40}
         height={40}
-        className="h-8 w-8 shrink-0 invert sm:h-10 sm:w-10"
+        className="h-8 w-8 shrink-0 sm:h-10 sm:w-10"
       />
       {wordmark && (
         <span className="truncate font-display text-base font-semibold tracking-tight sm:text-lg font-mono">

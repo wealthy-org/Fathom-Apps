@@ -60,7 +60,7 @@ Explicitly undecided: none recorded beyond TBD threshold values tracked in `conf
 - Fonts: Inter (body), Space Grotesk (display), JetBrains Mono (mono).
 - Utility classes: `bg-grid`, `bg-stars`, `glow-spot`, `shine-border`, `glass`, `terminal-line`, `solana-button`, `process-line`.
 - Animation: GSAP + ScrollTrigger (`.animate-title`, `.card` scroll reveal, parallax glow). Icons: lucide (inline SVG), not Iconify. No Unicorn Studio.
-- Logo: `public/logo-no-bg.png`; favicon via `app/favicon.ico` + `app/icon.png`.
+- Logo: `public/logo-accent.png` (accent #E34A32, recolored from `logo-no-bg.png`); favicon via `app/favicon.ico` + `app/icon.png`.
 
 ## Evidence on Hand
 

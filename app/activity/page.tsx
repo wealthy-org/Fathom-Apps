@@ -62,12 +62,7 @@ export default async function ActivityPage({
           className="font-serif-accent text-4xl leading-tight text-ink sm:text-5xl"
         >
           The reputation network,{" "}
-          <span
-            className="italic bg-accent text-white"
-          >
-            alive
-          </span>{" "}
-          in public.
+          <span className="italic bg-accent text-white">alive</span> in public.
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate400">
           Attestations, vouches, disputes and claims as they happen. Expand an
@@ -88,10 +83,13 @@ export default async function ActivityPage({
       </section>
 
       <footer className="mt-12 border-t border-ink/10 pt-4">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-          Public evidence only — every event links back to on-chain facts or
-          signatures.
-        </p>
+        <div className="mt-4 grid gap-2 border-t border-ink/10 pt-3 md:grid-cols-2 md:items-center">
+          <div className="text-xs leading-4 text-slate400">© 2026 Fathom</div>
+
+          <p className="text-xs leading-4 text-slate400 md:text-right">
+            Built for pseudonymous economic identities.
+          </p>
+        </div>
       </footer>
     </>
   );
