@@ -7,6 +7,8 @@ import { ConnectButton } from "@/components/connect-button";
 
 const SHELL_LINKS: Array<[string, string]> = [
   ["Check Wallet", "/wallets"],
+  ["Activity", "/activity"],
+  ["My Activity", "/activity/me"],
   ["About", "/#about"],
   ["How It Works", "/#how"],
   ["FAQ", "/#faq"],

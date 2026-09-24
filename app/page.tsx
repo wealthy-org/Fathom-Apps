@@ -5,6 +5,7 @@ import { useLayoutEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SearchWalletForm } from "@/components/search-wallet-form";
+import { LandingActivitySnippet } from "@/components/landing-activity-snippet";
 import { CodeCard } from "@/components/code-card";
 import { Logo, Navbar } from "@/components/layout/Navbar";
 
@@ -12,6 +13,7 @@ const NAV_LINKS: Array<[string, string]> = [
   ["About", "#about"],
   ["How It Works", "#how"],
   ["FAQ", "#faq"],
+  ["Activity", "/activity"],
   ["Docs", "/docs"],
 ];
 
@@ -280,6 +282,25 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+          {/* ACTIVITY */}
+          <section className="px-6 py-20 lg:px-10 lg:py-28 xl:px-12">
+            <div className="mx-auto max-w-7xl">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
+                Network activity
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-medium tracking-tighter sm:text-4xl">
+                Live reputation events.
+              </h2>
+              <p className="mt-3 max-w-2xl text-base leading-7 text-slate400">
+                Attestations, disputes, vouches, and claims as they happen —
+                no posts, no comments, just on-chain and signed events.
+              </p>
+              <div className="mt-8">
+                <LandingActivitySnippet />
+              </div>
+            </div>
+          </section>
 
           {/* ABOUT */}
           <section id="about" className="px-6 py-20 lg:px-10 lg:py-28 xl:px-12">

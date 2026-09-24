@@ -670,7 +670,15 @@ function AttestationsSection({
 }) {
   return (
     <section id="attestations" className="mt-12">
-      <h2 className="font-display text-xl font-semibold">Attestations</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-display text-xl font-semibold">Attestations</h2>
+        <Link
+          href="/activity?tab=latest"
+          className="text-sm text-accent-ink hover:underline"
+        >
+          View in Activity Feed
+        </Link>
+      </div>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         Structured, signed claims from other wallets. Attestations are
         supporting evidence — they never replace on-chain behavior, and they do
@@ -757,7 +765,15 @@ function DisputesSection({
 }) {
   return (
     <section className="mt-12">
-      <h2 className="font-display text-xl font-semibold">Disputes</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-display text-xl font-semibold">Disputes</h2>
+        <Link
+          href="/activity?tab=disputed"
+          className="text-sm text-accent-ink hover:underline"
+        >
+          View in Activity Feed
+        </Link>
+      </div>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         Signed reports filed against this wallet. A dispute is a claim, not
         proof of wrongdoing — it never changes reputation or risk here. On-chain
@@ -851,7 +867,15 @@ function VouchesSection({
 }) {
   return (
     <section id="vouches" className="mt-12">
-      <h2 className="font-display text-xl font-semibold">Vouches</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-display text-xl font-semibold">Vouches</h2>
+        <Link
+          href="/activity?tab=latest"
+          className="text-sm text-accent-ink hover:underline"
+        >
+          View in Activity Feed
+        </Link>
+      </div>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
         On-chain vouch edges indexed from the Fathom registry (Spec 08). A vouch
         is economic-backing evidence — it never creates reputation score on its
