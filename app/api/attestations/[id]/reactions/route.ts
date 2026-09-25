@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { normalizeAddress } from "@/lib/chain/address";
 import { getSession } from "@/lib/auth/session";
 import { authError } from "@/lib/auth/http";
@@ -17,6 +17,78 @@ const bodySchema = z.object({
 
 function errorResponse(code: string, message: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
+}
+
+/**
+ * GET /api/attestations/{id}/reactions — counts publik + vote milik viewer.
+ * Count boleh dibaca anonim; myVote null bila belum login / belum vote.
+ * DISPLAY / SORTING ONLY dalam 1 wallet profile — field ini TIDAK PERNAH
+ * dibaca oleh score-strategy.ts atau file scoring manapun. Bukan
+ * upvote/downvote Ethos: tidak ada +1/-1 ke skor kredibilitas, tidak ada
+ * tulis snapshot, tidak ada output score.
+ */
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const parsedParams = paramsSchema.safeParse(await params);
+  if (!parsedParams.success) {
+    return errorResponse("invalid_request", "Attestation id must be a positive integer.", 400);
+  }
+  const attestationId = parsedParams.data.id;
+
+  try {
+    const exists = await db
+      .select({ id: attestations.id })
+      .from(attestations)
+      .where(eq(attestations.id, attestationId))
+      .limit(1);
+    if (exists.length === 0) {
+      return errorResponse("not_found", "Attestation not found.", 404);
+    }
+
+    const rows = await db
+      .select({
+        value: attestationReactions.value,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(attestationReactions)
+      .where(eq(attestationReactions.attestationId, attestationId))
+      .groupBy(attestationReactions.value);
+
+    let helpful = 0;
+    let notHelpful = 0;
+    for (const row of rows) {
+      if (row.value === "not_helpful") notHelpful += row.count;
+      else helpful += row.count;
+    }
+
+    let myVote: "helpful" | "not_helpful" | null = null;
+    try {
+      const session = await getSession();
+      if (session.authenticated && session.walletAddress) {
+        const voter = normalizeAddress(session.walletAddress);
+        const mine = await db
+          .select({ value: attestationReactions.value })
+          .from(attestationReactions)
+          .where(
+            and(
+              eq(attestationReactions.attestationId, attestationId),
+              eq(attestationReactions.voterAddress, voter),
+            ),
+          )
+          .limit(1);
+        const raw = mine[0]?.value;
+        myVote = raw === "helpful" || raw === "not_helpful" ? raw : null;
+      }
+    } catch {
+      // Session rusak = perlakukan sebagai anonim; counts tetap publik.
+    }
+
+    return NextResponse.json({ helpful, notHelpful, myVote });
+  } catch {
+    return errorResponse("server_error", "Could not load reactions.", 500);
+  }
 }
 
 /**

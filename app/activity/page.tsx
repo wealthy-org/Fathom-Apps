@@ -7,6 +7,7 @@ import {
   isFeedKind,
 } from "@/lib/activity/feed";
 import { getActivitySidebar } from "@/lib/activity/sidebar";
+import { getSession } from "@/lib/auth/session";
 import { ADDRESS_RE, normalizeAddress } from "@/lib/chain/address";
 import { ActivityNetwork } from "@/components/activity-network";
 
@@ -46,8 +47,14 @@ export default async function ActivityPage({
       ? normalizeAddress(parsed.data.wallet)
       : null;
 
+  const session = await getSession().catch(() => null);
+  const viewer =
+    session && session.authenticated && session.walletAddress
+      ? session.walletAddress
+      : null;
+
   const [page, counts, sidebar] = await Promise.all([
-    getActivityFeed({ limit: 20, kind }),
+    getActivityFeed({ limit: 20, kind, tab: "signal", viewer }),
     getActivityKindCounts(),
     getActivitySidebar(),
   ]);

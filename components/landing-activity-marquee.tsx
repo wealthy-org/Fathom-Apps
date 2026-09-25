@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { THRESHOLDS } from "@/config/thresholds";
 import type { FeedItem } from "@/lib/activity/feed";
 import { formatNative, shortAddress } from "@/components/activity-feed-card";
-import { RandomAvatar } from "@/components/random-avatar";
+import { WalletAvatar } from "@/components/wallet-avatar";
 
 const LIMIT = THRESHOLDS.activity.landingMarqueeLimit;
 const POLL_MS = THRESHOLDS.activity.landingPollMs;
@@ -85,11 +85,8 @@ function MarqueeCard({ item, isNew }: { item: FeedItem; isNew: boolean }) {
         isNew ? "animate-marquee-new" : ""
       }`}
     >
-      {/* <span className="pointer-events-none absolute -right-8 -top-8 opacity-20">
-        <RandomAvatar size={140} />
-      </span> */}
       <span className="relative flex items-center gap-2.5">
-        <RandomAvatar size={36} />
+        <WalletAvatar address={actor} size={36} />
         <span className="truncate font-mono text-sm font-medium text-ink">
           {shortAddress(actor)}
         </span>

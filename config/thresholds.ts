@@ -256,5 +256,8 @@ export const THRESHOLDS = {
     riskNewsLimit: 50,
     // Window sparkline + insight halaman My Activity (hari, display-only).
     myActivityInsightDays: 30,
+    // PROVISIONAL display-order boost personalisasi viewer (Spec 04,
+    // Fase 13 tuning) — item sentuh wallet relevan viewer naik urutan.
+    signalPersonalBoost: 2,
   },
 } as const;

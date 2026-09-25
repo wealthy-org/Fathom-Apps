@@ -25,8 +25,16 @@ export interface ActivityKindCounts {
   claim: number;
 }
 
-function feedUrl(kind: FeedKind, cursor: string | null, wallet: string | null) {
-  const params = new URLSearchParams({ limit: String(PAGE_SIZE), kind });
+function feedUrl(
+  kind: FeedKind,
+  cursor: string | null,
+  wallet: string | null,
+) {
+  const params = new URLSearchParams({
+    limit: String(PAGE_SIZE),
+    kind,
+    tab: "signal",
+  });
   if (cursor) params.set("cursor", cursor);
   if (wallet) params.set("wallet", wallet);
   return `/api/activity?${params.toString()}`;
@@ -72,10 +80,15 @@ export function ActivityNetwork({
   const [cursor, setCursor] = useState(initialCursor);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const loadedKeyRef = useRef(`${initialKind}:${initialWallet ?? ""}`);
+  const loadedKeyRef = useRef(
+    `${initialKind}:${initialWallet ?? ""}`,
+  );
 
   const reload = useCallback(
-    async (nextKind: FeedKind, nextWallet: string | null) => {
+    async (
+      nextKind: FeedKind,
+      nextWallet: string | null,
+    ) => {
       setLoading(true);
       try {
         const res = await fetch(feedUrl(nextKind, null, nextWallet));

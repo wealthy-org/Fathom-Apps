@@ -15,6 +15,7 @@ import { buildSiweMessage } from "@/lib/auth/message";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { trackEvent } from "@/lib/analytics/track";
 import { useSession } from "@/components/use-session";
+import { SignInModal } from "@/components/sign-in-modal";
 import {
   handleMissingWallet,
   resolvePhantomConnector,
@@ -58,6 +59,7 @@ export function ClaimFlow({
   const { signMessageAsync, isPending: isSigning } = useSignMessage();
   const { session, isLoading: isSessionLoading, refresh } = useSession();
   const [open, setOpen] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("connect");
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +100,7 @@ export function ClaimFlow({
   }
 
   const connected = isConnected ? (address ?? null) : null;
+  const signedIn = !!session?.authenticated && !!session.walletAddress;
   const matches =
     connected !== null && connected.toLowerCase() === profileAddress.toLowerCase();
   const sessionMismatch =
@@ -214,8 +217,14 @@ export function ClaimFlow({
         <button
           type="button"
           onClick={() => {
+            // Belum sign-in: munculkan modal sign-in dulu. Modal hanya
+            // menutup; user klik claim lagi untuk lanjut stepper.
+            if (!connected || !signedIn) {
+              setSignInOpen(true);
+              return;
+            }
             setOpen(true);
-            setPhase(connected ? "sign" : "connect");
+            setPhase("sign");
           }}
           className="btn-brutal-light mt-2 px-4 py-2 text-xs"
         >
@@ -369,6 +378,7 @@ export function ClaimFlow({
           )}
         </div>
       )}
+      {signInOpen && <SignInModal onClose={() => setSignInOpen(false)} />}
     </div>
   );
 }

@@ -440,7 +440,7 @@ export default function Home() {
               <ul className="mt-1.5">
                 {(
                   [
-                    ["Check a Wallet", "/wallets"],
+                    ["Check a Wallet", "/"],
                     ["Activity", "/activity"],
                     ["How It Works", "/#how"],
                     ["Trust Graph", `/wallets/${EXAMPLE_WALLET}#graph`],

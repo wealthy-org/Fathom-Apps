@@ -41,8 +41,8 @@ export default function WalletProfileError({
         >
           Try again
         </button>
-        <Link href="/wallets" className="btn-brutal-light px-4 py-2 text-xs">
-          Back to search
+        <Link href="/" className="btn-brutal-light px-4 py-2 text-xs">
+          Back to home
         </Link>
       </div>
     </div>

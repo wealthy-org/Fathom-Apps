@@ -519,6 +519,30 @@ export const riskDetections = pgTable(
 );
 
 /**
+ * Wallet yang dipantau viewer (Spec 04 personalisasi feed).
+ * Satu baris = viewer pernah menekan watch pada target.
+ * Murni display-order source untuk ranking feed viewer itu saja —
+ * TIDAK PERNAH dibaca oleh score-strategy/score-engine.
+ */
+export const watches = pgTable(
+  "watches",
+  {
+    watcherAddress: char("watcher_address", { length: 42 })
+      .notNull()
+      .references(() => wallets.address),
+    targetAddress: char("target_address", { length: 42 })
+      .notNull()
+      .references(() => wallets.address),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.watcherAddress, t.targetAddress] }),
+    index("idx_watches_watcher").on(t.watcherAddress),
+    index("idx_watches_target").on(t.targetAddress),
+  ],
+);
+
+/**
  * Reaksi non-skoring "Helpful / Not helpful" pada attestation
  * (Spec 04 section 3.3). Satu suara per wallet per attestation, bisa
  * diubah (upsert). DISPLAY/SORTING ONLY di dalam satu wallet profile —

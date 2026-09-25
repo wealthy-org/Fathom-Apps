@@ -80,6 +80,49 @@ function WalletChip({ address }: { address: string }) {
   );
 }
 
+function SignalPills({ item }: { item: FeedItem }) {
+  const signals = item.signals ?? [];
+  if (signals.length === 0) return null;
+  const labels: Record<string, { text: string; className: string }> = {
+    "risk-news": {
+      text: "fresh risk",
+      className: "border-accent/40 bg-accent/10 text-accent-ink",
+    },
+    "first-clean": {
+      text: "first dispute",
+      className: "border-accent/40 bg-accent/10 text-accent-ink",
+    },
+    personal: {
+      text: "for you",
+      className: "border-purple/40 bg-purple/10 text-purple",
+    },
+    established: {
+      text: "established actor",
+      className: "border-ink/30 bg-mist text-ink",
+    },
+    disputed: {
+      text: "disputed",
+      className: "border-ink/15 bg-white text-slate400",
+    },
+  };
+  return (
+    <>
+      {signals.map((signal) => {
+        const label = labels[signal];
+        if (!label) return null;
+        return (
+          <span
+            key={signal}
+            className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.09em] ${label.className}`}
+          >
+            {label.text}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 function StatusPill({ item }: { item: FeedItem }) {
   if (item.kind === "dispute") {
     const open = item.status === "open";
@@ -366,6 +409,7 @@ export function ActivityEventCard({ item }: { item: FeedItem }) {
       <div className="px-4 pb-4 pt-2 sm:px-5 sm:pb-5">
         <p className="text-sm leading-6 text-ink">{sentenceFor(item)}</p>
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <SignalPills item={item} />
           <StatusPill item={item} />
           <OriginPill item={item} />
           {meta && (

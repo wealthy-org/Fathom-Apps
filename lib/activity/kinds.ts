@@ -1,7 +1,7 @@
 /**
  * Kind filter untuk network feed — module client-safe (tanpa import db).
- * "all" = urutan waktu murni semua kind. Legacy tab params tetap
- * didukung di lib + API; UI /activity memakai kinds saja.
+ * "all" + order signal = ranking display default; order latest = waktu
+ * murni. Legacy tab params tetap didukung di lib + API.
  */
 export const FEED_KINDS = [
   "all",

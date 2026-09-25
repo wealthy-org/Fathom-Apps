@@ -391,7 +391,7 @@ export function SignInButton() {
   );
 }
 
-function SignInModal({ onClose }: { onClose: () => void }) {
+export function SignInModal({ onClose }: { onClose: () => void }) {
   // ponytail: portal ke body — navbar punya backdrop-blur yang jadi
   // containing block untuk fixed descendant (modal nempel di navbar).
   const mounted = useSyncExternalStore(

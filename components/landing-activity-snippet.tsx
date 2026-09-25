@@ -60,10 +60,10 @@ export function LandingActivitySnippet() {
         </div>
         <div className="mt-5">
           <Link
-            href="/wallets"
+            href="/activity"
             className="btn-brutal inline-block px-5 py-2.5 text-sm"
           >
-            Check a wallet
+            Check activity
           </Link>
         </div>
       </div>

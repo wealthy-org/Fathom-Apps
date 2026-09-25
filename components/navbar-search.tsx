@@ -111,7 +111,7 @@ export function NavbarSearch() {
         )}
       </form>
       <Link
-        href="/wallets"
+        href="/"
         aria-label="Search a wallet"
         className="inline-flex min-touch items-center justify-center rounded-full p-2 text-slate400 transition hover:text-ink md:hidden"
       >

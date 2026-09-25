@@ -17,6 +17,7 @@ import { ClaimFlow } from "@/components/claim-flow";
 import { OwnWalletTracker } from "@/components/own-wallet-tracker";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { AttestationForm } from "@/components/attestation-form";
+import { AttestationReactions } from "@/components/attestation-reactions";
 import { DisputeForm } from "@/components/dispute-form";
 import { VouchForm } from "@/components/vouch-form";
 import { VouchWithdrawButton } from "@/components/vouch-withdraw-button";
@@ -664,7 +665,7 @@ function AttestationsSection({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-xl font-semibold">Attestations</h2>
         <Link
-          href={`/activity?tab=latest&wallet=${address}`}
+          href={`/activity?wallet=${address}`}
           className="text-sm text-accent-ink hover:underline"
         >
           View in Activity Feed
@@ -737,6 +738,14 @@ function AttestationsSection({
                     </pre>
                   </details>
                 )}
+              {/* Reaksi non-scoring Helpful/Not helpful (Spec 04 3.3):
+                  display/sorting dalam profile ini saja — tidak pernah
+                  dibaca score-strategy.ts / scoring manapun. */}
+              <AttestationReactions
+                attestationId={attestation.id}
+                initialHelpful={attestation.helpful}
+                initialNotHelpful={attestation.notHelpful}
+              />
             </li>
           ))}
         </ul>
@@ -861,7 +870,7 @@ function VouchesSection({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-xl font-semibold">Vouches</h2>
         <Link
-          href={`/activity?tab=latest&wallet=${address}`}
+          href={`/activity?wallet=${address}`}
           className="text-sm text-accent-ink hover:underline"
         >
           View in Activity Feed
