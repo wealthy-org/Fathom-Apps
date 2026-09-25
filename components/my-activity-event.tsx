@@ -10,46 +10,19 @@ import {
   formatRelative,
   shortAddress,
 } from "@/components/activity-utils";
+import {
+  fetchWalletMiniStats,
+  type WalletMiniStats,
+} from "@/components/wallet-mini-stats";
 
 /**
  * Kartu event My Activity — struktur & style identik dengan kartu di
- * /activity (ActivityEventCard): header toggle kind + tanggal, kalimat
+ * feed (ActivityEventCard): header toggle kind + tanggal, kalimat
  * dengan chip wallet, pill status/origin, expand berisi mini-card skor
  * per wallet (lazy fetch /api/reputation), "what this means" dan tx hash.
  * Bedanya: kalimat first-person ("You attested …") dan chip menuju halaman
  * wallet, bukan focus network.
  */
-
-interface WalletMiniStats {
-  score: number | null;
-  tierLabel: string | null;
-  attestations: number | null;
-  activeDisputes: number | null;
-}
-
-interface ReputationResponse {
-  score?: unknown;
-  tier?: unknown;
-  attestations?: unknown;
-  activeDisputes?: unknown;
-}
-
-function parseMiniStats(data: unknown): WalletMiniStats {
-  const raw = (data ?? {}) as ReputationResponse;
-  const tier =
-    typeof raw.tier === "object" &&
-    raw.tier !== null &&
-    typeof (raw.tier as { label?: unknown }).label === "string"
-      ? (raw.tier as { label: string }).label
-      : null;
-  return {
-    score: typeof raw.score === "number" ? raw.score : null,
-    tierLabel: tier,
-    attestations: typeof raw.attestations === "number" ? raw.attestations : null,
-    activeDisputes:
-      typeof raw.activeDisputes === "number" ? raw.activeDisputes : null,
-  };
-}
 
 function WalletChip({ address }: { address: string }) {
   return (
@@ -191,23 +164,23 @@ interface FetchState {
 function WalletMiniCard({
   address,
   role,
+  active,
 }: {
   address: string;
   role: string;
+  /** Fetch hanya saat kartu expanded — collapsed tak boleh request. */
+  active: boolean;
 }) {
   const [state, setState] = useState<FetchState | null>(null);
 
-  // Lazy fetch sekali saat mount — pola sama dengan kartu /activity:
-  // satu state object, loading diturunkan dari state?.address !== address
-  // (tanpa setState langsung di dalam effect body).
+  // Fetch sekali saat pertama expanded; hasil di-cache modul helper
+  // sehingga wallet yang sama di banyak kartu hanya request sekali.
   useEffect(() => {
+    if (!active) return;
     let cancelled = false;
-    fetch(`/api/reputation/${address}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("http"))))
-      .then((data) => {
-        if (!cancelled) {
-          setState({ address, stats: parseMiniStats(data), failed: false });
-        }
+    fetchWalletMiniStats(address)
+      .then((stats) => {
+        if (!cancelled) setState({ address, stats, failed: false });
       })
       .catch(() => {
         if (!cancelled) setState({ address, stats: null, failed: true });
@@ -215,7 +188,7 @@ function WalletMiniCard({
     return () => {
       cancelled = true;
     };
-  }, [address]);
+  }, [address, active]);
 
   const loaded = state !== null && state.address === address ? state : null;
   const failed = loaded?.failed ?? false;
@@ -361,6 +334,7 @@ export function MyActivityEvent({ item }: { item: FeedItem }) {
                   key={`${pair.address}-${pair.role}`}
                   address={pair.address}
                   role={pair.role}
+                  active={expanded}
                 />
               ))}
             </div>

@@ -7,7 +7,7 @@ import {
 } from "@/lib/db/schema";
 
 /**
- * Sidebar data for /activity (Spec 04 section 3.2).
+ * Sidebar data for the activity feed (Spec 04 section 3.2).
  * Three small read-only lists, display only — never scoring input.
  */
 

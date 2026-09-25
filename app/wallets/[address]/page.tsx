@@ -745,7 +745,7 @@ function AttestationsSection({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-xl font-semibold">Attestations</h2>
         <Link
-          href={`/activity?wallet=${address}`}
+          href={`/?wallet=${address}`}
           className="text-sm text-accent-ink hover:underline"
         >
           View in Activity Feed
@@ -848,7 +848,7 @@ function DisputesSection({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-xl font-semibold">Disputes</h2>
         <Link
-          href={`/activity?tab=disputed&wallet=${address}`}
+          href={`/?tab=disputed&wallet=${address}`}
           className="text-sm text-accent-ink hover:underline"
         >
           View in Activity Feed
@@ -950,7 +950,7 @@ function VouchesSection({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-xl font-semibold">Vouches</h2>
         <Link
-          href={`/activity?wallet=${address}`}
+          href={`/?wallet=${address}`}
           className="text-sm text-accent-ink hover:underline"
         >
           View in Activity Feed
@@ -1625,9 +1625,7 @@ export default async function WalletProfilePage({
           Fathom
         </Link>
         <span aria-hidden="true">/</span>
-        <Link href="/activity" className="hover:text-accent-ink hover:underline">
-          Wallets
-        </Link>
+        <span className="text-slate400">Wallets</span>
         <span aria-hidden="true">/</span>
         <span aria-current="page" className="text-ink">
           {shortAddress(address)}

@@ -30,8 +30,9 @@ function SearchIcon() {
 
 /**
  * Inline search untuk navbar — validasi + redirect identik dengan
- * SearchWalletForm hero (regex, history, analytics, /wallets/{address}).
- * Lebar terbatas; di layar sempit (< md) collapse jadi ikon menuju /wallets.
+ * SearchWalletForm (regex, history, analytics, /wallets/{address}).
+ * Lebar terbatas; di layar sempit (< md) collapse jadi ikon menuju / (activity,
+ * memuat search di sidebar).
  */
 export function NavbarSearch() {
   const router = useRouter();

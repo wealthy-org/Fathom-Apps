@@ -38,7 +38,7 @@ export function SearchWalletForm({
   size?: "md" | "sm";
   defaultValue?: string;
   submitLabel?: string;
-  /** Landing demo mode: skip navigation, hand the short address to the caller. */
+  /** Demo mode: skip navigation, hand the short address to the caller. */
   onDemoSubmit?: (shortAddress: string) => void;
 }) {
   const router = useRouter();
@@ -68,8 +68,7 @@ export function SearchWalletForm({
     // History records validated checks only — invalid input never reaches here.
     recordRecentSearch(trimmed);
     // Phase 0 instrumentation — analytics must never break search flow.
-    // own_wallet_checked fires from OwnWalletTracker inside WagmiProvider
-    // (SearchWalletForm also renders on landing, outside any provider).
+    // own_wallet_checked fires from OwnWalletTracker inside WagmiProvider.
     try {
       const normalized = normalizeAddress(trimmed);
       trackEvent(ANALYTICS_EVENTS.walletSearched, { address: normalized });

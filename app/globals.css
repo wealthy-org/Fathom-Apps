@@ -219,15 +219,14 @@ body::before {
   html {
     scroll-behavior: auto;
   }
-  .animate-marquee,
-  .animate-marquee-new {
+  .pulse-track {
     animation: none;
   }
 }
 
-/* Landing live-activity strip: slider horizontal jalan sendiri.
-   Track diduplikasi di component; translate -50% = satu putaran mulus. */
-@keyframes marquee {
+/* Pulse strip ticker: track diduplikasi di component;
+   translate -50% = satu putaran mulus. */
+@keyframes pulse-scroll {
   from {
     transform: translateX(0);
   }
@@ -236,28 +235,12 @@ body::before {
   }
 }
 
-/* Item baru dari polling: fade + naik sedikit saat masuk. */
-@keyframes marquee-new {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.pulse-track {
+  animation: pulse-scroll 40s linear infinite;
 }
 
-.animate-marquee {
-  animation: marquee 40s linear infinite;
-}
-
-.animate-marquee-new {
-  animation: marquee-new 500ms ease both;
-}
-
-/* Pause saat hover/fokus — parent .marquee-paused di component. */
-.marquee-paused:hover .animate-marquee,
-.marquee-paused:focus-within .animate-marquee {
+/* Pause saat hover/fokus — parent .pulse-paused di component. */
+.pulse-paused:hover .pulse-track,
+.pulse-paused:focus-within .pulse-track {
   animation-play-state: paused;
 }

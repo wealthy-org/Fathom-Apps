@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   ...(process.env.NEXT_PUBLIC_SITE_URL
     ? { metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL) }
     : {}),
-  title: "Fathom — Know the Wallet Before You Trust It",
+  title: "Fathom — Live Reputation Network",
   description:
-    "Fathom turns wallet history, economic relationships, behavioral signals, and attestations into verifiable trust evidence.",
+    "Latest public reputation evidence: attestations, disputes, vouches and profile claims across all wallets.",
   icons: {
     icon: [{ url: "/icon", type: "image/png" }],
     apple: [{ url: "/icon", type: "image/png" }],

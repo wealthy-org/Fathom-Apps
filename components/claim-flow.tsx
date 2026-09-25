@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useAccount,
@@ -78,13 +77,7 @@ export function ClaimFlow({
           Claimed
         </span>
         Verified owner · {claimedLabel}. Claiming proves control only — it
-        says nothing about trustworthiness.{" "}
-        <span className="whitespace-nowrap">
-          Pseudonymous by default ·{" "}
-          <Link href="/#identity" className="underline hover:text-ink">
-            Privacy Model
-          </Link>
-        </span>
+        says nothing about trustworthiness. Pseudonymous by default.
       </p>
     );
   }
@@ -205,13 +198,8 @@ export function ClaimFlow({
   return (
     <div className="mt-3">
       <p className="text-xs text-slate400">
-        Unclaimed — owner has not verified control of this address.{" "}
-        <span className="whitespace-nowrap">
-          Pseudonymous by default ·{" "}
-          <Link href="/#identity" className="underline hover:text-ink">
-            Privacy Model
-          </Link>
-        </span>
+        Unclaimed — owner has not verified control of this address.
+        Pseudonymous by default.
       </p>
       {!open ? (
         <button

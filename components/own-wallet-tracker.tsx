@@ -9,7 +9,7 @@ import { trackEvent } from "@/lib/analytics/track";
  * Phase 0 instrumentation - fires own_wallet_checked once when the
  * connected wallet views its own profile. Mounted only under
  * WalletsLayout WagmiProvider. SearchWalletForm cannot do this: it
- * also renders on landing, outside any provider.
+ * also renders inside the plain Navbar provider.
  */
 export function OwnWalletTracker({
   profileAddress,

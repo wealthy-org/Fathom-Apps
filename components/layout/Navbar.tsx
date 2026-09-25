@@ -6,27 +6,36 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 import { wagmiConfig } from "@/lib/wallet/config";
 import { NavbarSearch } from "@/components/navbar-search";
-import { SignInButton } from "@/components/sign-in-modal";
+import {
+  AUTH_GATE_COPY,
+  SignInButton,
+  SignInModal,
+} from "@/components/sign-in-modal";
+import { useSession } from "@/components/use-session";
 
 /**
- * Single shared navbar for landing and wallet pages.
+ * Single shared navbar for activity and wallet pages.
  *
  * Floating glass pill, identical spacing/typography/mobile behavior
  * everywhere. Links seragam via DEFAULT_NAV_LINKS; callers jarang perlu
  * pass links sendiri.
  */
 
+export interface NavLink {
+  label: string;
+  href: string;
+  /** True = klik tanpa sesi SIWE membuka modal gate, bukan navigasi. */
+  requiresAuth?: boolean;
+}
+
 /**
- * Set link navbar seragam untuk semua halaman: landing, wallet, activity.
- * Anchor landing ditulis absolut (/#about) agar berfungsi dari halaman mana pun.
- * My Activity sengaja tidak di navbar — ada di dropdown avatar (connected saja).
+ * Set link navbar seragam untuk semua halaman.
+ * My Activity ada di navbar langsung (tanpa dropdown avatar).
  */
-export const DEFAULT_NAV_LINKS: Array<[string, string]> = [
-  ["Activity", "/activity"],
-  ["Why Fathom", "/#why"],
-  ["How It Works", "/#explain"],
-  ["FAQ", "/#faq"],
-  ["Docs", "/docs"],
+export const DEFAULT_NAV_LINKS: NavLink[] = [
+  { label: "Feed", href: "/" },
+  { label: "Check a Wallet", href: "/wallets" },
+  { label: "My Activity", href: "/me", requiresAuth: true },
 ];
 
 export function Logo({ wordmark = true }: { wordmark?: boolean }) {
@@ -81,11 +90,27 @@ export function Navbar({
   links = DEFAULT_NAV_LINKS,
   actions,
 }: {
-  links?: Array<[string, string]>;
+  links?: NavLink[];
   actions?: ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
+  const { session } = useSession();
   const navRef = useRef<HTMLElement>(null);
+
+  // Link requiresAuth tanpa sesi SIWE = modal gate, bukan navigasi.
+  // Session masih loading (null) = teruskan agar tak ada blok palsu.
+  function gateClick(e: React.MouseEvent, link: NavLink) {
+    if (
+      link.requiresAuth &&
+      session !== null &&
+      !session.authenticated
+    ) {
+      e.preventDefault();
+      setMenuOpen(false);
+      setGateOpen(true);
+    }
+  }
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -106,8 +131,8 @@ export function Navbar({
   }, [menuOpen]);
 
   return (
-    // ponytail: provider di dalam Navbar — landing tidak punya WagmiProvider
-    // sendiri (hanya /wallets dan /activity). Config singleton, state shared,
+    // ponytail: provider di dalam Navbar — halaman tanpa route layout
+    // WagmiProvider sendiri tetap dapat wagmi. Config singleton, state shared,
     // aman double-wrap dengan route layout.
     <WagmiProvider config={wagmiConfig}>
       <nav
@@ -121,13 +146,14 @@ export function Navbar({
           </div>
           {links.length > 0 && (
             <div className="hidden items-center gap-5 text-sm text-slate400 md:flex">
-              {links.map(([t, href]) => (
+              {links.map((link) => (
                 <a
-                  key={t}
-                  href={href}
+                  key={link.label}
+                  href={link.href}
+                  onClick={(e) => gateClick(e, link)}
                   className="inline-flex min-touch items-center px-2 transition hover:text-ink"
                 >
-                  {t}
+                  {link.label}
                 </a>
               ))}
             </div>
@@ -160,20 +186,30 @@ export function Navbar({
               </div>
             )}
             <div className="grid gap-1 text-sm">
-              {links.map(([t, href]) => (
+              {links.map((link) => (
                 <a
-                  key={t}
-                  href={href}
-                  onClick={() => setMenuOpen(false)}
+                  key={link.label}
+                  href={link.href}
+                  onClick={(e) => {
+                    gateClick(e, link);
+                    if (!e.defaultPrevented) setMenuOpen(false);
+                  }}
                   className="flex min-touch items-center rounded-2xl px-4 text-slate400 transition hover:bg-black/5 hover:text-ink"
                 >
-                  {t}
+                  {link.label}
                 </a>
               ))}
             </div>
           </div>
         )}
       </nav>
+      {gateOpen && (
+        <SignInModal
+          title={AUTH_GATE_COPY.title}
+          description={AUTH_GATE_COPY.description}
+          onClose={() => setGateOpen(false)}
+        />
+      )}
     </WagmiProvider>
   );
 }

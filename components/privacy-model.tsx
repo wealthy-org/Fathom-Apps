@@ -3,8 +3,7 @@
  *
  * States Fathom's pseudonymous identity model: wallet address required,
  * alias optional, real-world identity never required; Fathom evaluates
- * economic identity, not real-world identity. Reused on the landing page;
- * linked subtly from the wallet header. Claims stay limited to what the
+ * economic identity, not real-world identity. Claims stay limited to what the
  * product implements — no absolute-anonymity language.
  */
 

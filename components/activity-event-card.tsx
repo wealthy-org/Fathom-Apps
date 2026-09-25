@@ -10,6 +10,10 @@ import {
   formatDate,
   shortAddress,
 } from "@/components/activity-utils";
+import {
+  fetchWalletMiniStats,
+  type WalletMiniStats,
+} from "@/components/wallet-mini-stats";
 
 /**
  * Satu kartu event di timeline network: collapsed = kalimat ringkas
@@ -17,37 +21,6 @@ import {
  * GET /api/reputation/[address], lazy fetch sekali), blok "what this
  * means", tx hash, tombol focus. Tanpa posting bebas, tanpa skor input.
  */
-
-interface WalletMiniStats {
-  score: number | null;
-  tierLabel: string | null;
-  attestations: number | null;
-  activeDisputes: number | null;
-}
-
-interface ReputationResponse {
-  score?: unknown;
-  tier?: unknown;
-  attestations?: unknown;
-  activeDisputes?: unknown;
-}
-
-function parseMiniStats(data: unknown): WalletMiniStats {
-  const raw = (data ?? {}) as ReputationResponse;
-  const tier =
-    typeof raw.tier === "object" &&
-    raw.tier !== null &&
-    typeof (raw.tier as { label?: unknown }).label === "string"
-      ? (raw.tier as { label: string }).label
-      : null;
-  return {
-    score: typeof raw.score === "number" ? raw.score : null,
-    tierLabel: tier,
-    attestations: typeof raw.attestations === "number" ? raw.attestations : null,
-    activeDisputes:
-      typeof raw.activeDisputes === "number" ? raw.activeDisputes : null,
-  };
-}
 
 function WalletAvatar({ address }: { address: string }) {
   const hue = avatarHue(address);
@@ -251,20 +224,21 @@ interface FetchState {
 function WalletMiniCard({
   address,
   role,
+  active,
 }: {
   address: string;
   role: string;
+  /** Fetch hanya saat kartu expanded — collapsed tak boleh request. */
+  active: boolean;
 }) {
   const [state, setState] = useState<FetchState | null>(null);
 
   useEffect(() => {
+    if (!active) return;
     let cancelled = false;
-    fetch(`/api/reputation/${address}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("http"))))
-      .then((data) => {
-        if (!cancelled) {
-          setState({ address, stats: parseMiniStats(data), failed: false });
-        }
+    fetchWalletMiniStats(address)
+      .then((stats) => {
+        if (!cancelled) setState({ address, stats, failed: false });
       })
       .catch(() => {
         if (!cancelled) setState({ address, stats: null, failed: true });
@@ -272,7 +246,7 @@ function WalletMiniCard({
     return () => {
       cancelled = true;
     };
-  }, [address]);
+  }, [address, active]);
 
   // address berbeda = masih memuat ulang; state lama tidak dipakai.
   const loaded = state !== null && state.address === address ? state : null;
@@ -351,6 +325,13 @@ function FocusButton({ address, label }: { address: string; label: string }) {
   );
 }
 
+const KIND_BORDER: Record<FeedItem["kind"], string> = {
+  attestation: "border-l-ink",
+  vouch: "border-l-purple",
+  dispute: "border-l-accent",
+  claim: "border-l-slate400",
+};
+
 export function ActivityEventCard({ item }: { item: FeedItem }) {
   const [expanded, setExpanded] = useState(false);
   const hash = txHashFor(item);
@@ -376,9 +357,7 @@ export function ActivityEventCard({ item }: { item: FeedItem }) {
 
   return (
     <div
-      className={`rounded-3xl border border-ink/10 bg-white shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_14px_30px_-18px_rgba(35,36,39,0.25)] ${
-        item.kind === "dispute" ? "border-l-[3px] border-l-accent" : ""
-      }`}
+      className={`rounded-3xl border border-ink/10 bg-white border-l-[3px] ${KIND_BORDER[item.kind]} shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_14px_30px_-18px_rgba(35,36,39,0.25)]`}
     >
       <button
         type="button"
@@ -438,6 +417,7 @@ export function ActivityEventCard({ item }: { item: FeedItem }) {
                   key={`${pair.address}-${pair.role}`}
                   address={pair.address}
                   role={pair.role}
+                  active={expanded}
                 />
               ))}
             </div>

@@ -89,10 +89,12 @@ function AccountMenu({
   address,
   onNavigate,
   onDisconnect,
+  onRequireAuth,
 }: {
   address: string;
   onNavigate: () => void;
   onDisconnect: () => void;
+  onRequireAuth: () => void;
 }) {
   const { session } = useSession();
   const lower = address.toLowerCase();
@@ -257,9 +259,17 @@ function AccountMenu({
       )}
       <div className="border-t border-black/5 pt-1">
         <Link
-          href="/activity/me"
+          href="/me"
           role="menuitem"
-          onClick={onNavigate}
+          onClick={(e) => {
+            // Connect saja belum cukup — butuh sesi SIWE.
+            if (session !== null && !session.authenticated) {
+              e.preventDefault();
+              onRequireAuth();
+              return;
+            }
+            onNavigate();
+          }}
           className="flex min-touch items-center rounded-2xl px-4 text-sm text-ink/80 transition hover:bg-black/5 hover:text-ink"
         >
           My Activity
@@ -308,6 +318,7 @@ export function SignInButton() {
   const { refresh } = useSession();
   const [modalOpen, setModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // ponytail: mount gate — SSR/client render pertama harus identik.
@@ -318,11 +329,12 @@ export function SignInButton() {
   );
 
   useEffect(() => {
-    if (!menuOpen && !modalOpen) return;
+    if (!menuOpen && !modalOpen && !gateOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setMenuOpen(false);
         setModalOpen(false);
+        setGateOpen(false);
       }
     };
     const onPointerDown = (e: PointerEvent) => {
@@ -336,7 +348,7 @@ export function SignInButton() {
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [menuOpen, modalOpen]);
+  }, [menuOpen, modalOpen, gateOpen]);
 
   async function handleDisconnect() {
     setMenuOpen(false);
@@ -347,9 +359,10 @@ export function SignInButton() {
 
   if (!mounted || status === "reconnecting") {
     return (
-      <button type="button" disabled className="btn-brutal px-5 py-2.5 text-sm font-mono">
-        <span>Sign In</span>
-      </button>
+      <span
+        aria-hidden="true"
+        className="inline-block h-9 w-9 animate-pulse rounded-full bg-black/10 motion-reduce:animate-none"
+      />
     );
   }
 
@@ -360,17 +373,29 @@ export function SignInButton() {
           type="button"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
+          aria-label={`Account ${shortAddress(address)}`}
+          title={shortAddress(address)}
           onClick={() => setMenuOpen((v) => !v)}
-          className="inline-flex min-touch items-center gap-2 rounded-full border border-black/10 bg-white py-2 pl-2.5 pr-4 font-mono text-sm text-ink shadow-sm transition hover:border-black/25 font-mono"
+          className="min-touch rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          <WalletAvatar address={address} />
-          {shortAddress(address)}
+          <WalletAvatar address={address} size={36} />
         </button>
         {menuOpen && (
           <AccountMenu
             address={address}
             onNavigate={() => setMenuOpen(false)}
             onDisconnect={() => void handleDisconnect()}
+            onRequireAuth={() => {
+              setMenuOpen(false);
+              setGateOpen(true);
+            }}
+          />
+        )}
+        {gateOpen && (
+          <SignInModal
+            title={AUTH_GATE_COPY.title}
+            description={AUTH_GATE_COPY.description}
+            onClose={() => setGateOpen(false)}
           />
         )}
       </div>
@@ -391,7 +416,22 @@ export function SignInButton() {
   );
 }
 
-export function SignInModal({ onClose }: { onClose: () => void }) {
+/** Copy modal gate untuk link yang butuh SIWE (My Activity). */
+export const AUTH_GATE_COPY = {
+  title: "Sign in required",
+  description:
+    "You must sign in first to view your activity. Connect your wallet to continue.",
+} as const;
+
+export function SignInModal({
+  onClose,
+  title = "Sign In",
+  description = "Connect your wallet to claim your profile and sign attestations.",
+}: {
+  onClose: () => void;
+  title?: string;
+  description?: string;
+}) {
   // ponytail: portal ke body — navbar punya backdrop-blur yang jadi
   // containing block untuk fixed descendant (modal nempel di navbar).
   const mounted = useSyncExternalStore(
@@ -422,9 +462,9 @@ export function SignInModal({ onClose }: { onClose: () => void }) {
         >
           <CloseIcon />
         </button>
-        <h2 className="font-display text-xl font-semibold font-mono">Sign In</h2>
+        <h2 className="font-display text-xl font-semibold font-mono">{title}</h2>
         <p className="mt-2 text-sm leading-6 text-slate400 font-mono">
-          Connect your wallet to claim your profile and sign attestations.
+          {description}
         </p>
         <div className="mt-5">
           <ConnectButton

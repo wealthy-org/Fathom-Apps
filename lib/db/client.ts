@@ -15,6 +15,8 @@ function connectionString(): string {
 // idle_timeout membuang koneksi idle SEBELUM pooler menutupnya di sisi server
 // (soket setengah-terbuka = query gantung lalu CONNECTION_CLOSED);
 // connect_timeout agar gagal cepat, bukan gantung menit-menit.
+// (connection.statement_timeout startup param DICOBA tapi diabaikan
+// Supavisor transaction pooler — verifikasi pg_sleep(15) tak dibatalkan.)
 const globalForDb = globalThis as unknown as { postgresClient?: postgres.Sql };
 
 const client =

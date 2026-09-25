@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import {
@@ -9,10 +8,7 @@ import {
   relativeTime,
   subscribeRecentSearches,
 } from "@/lib/wallet/search-history";
-
-function shortAddress(address: string) {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
+import { CheckedWalletRow } from "@/components/checked-wallet-row";
 
 const EXAMPLES: Array<[string, string]> = [
   ["0xa6d9e296e6833d211278faf255c76ed193c9ac19", "Active wallet"],
@@ -39,24 +35,26 @@ export function RecentlyChecked() {
     <div className="mt-10">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-          On this device
+          Recently search
         </div>
-        {items.length > 0 && (
-          <button
-            type="button"
-            onClick={() => clearRecentSearches()}
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
             className="font-mono text-[11px] text-slate400 underline hover:text-ink"
           >
-            Clear
-          </button>
-        )}
+            See public activity
+          </Link>
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={() => clearRecentSearches()}
+              className="font-mono text-[11px] text-slate400 underline hover:text-ink"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
-      <p className="mt-2 text-xs text-slate400">
-        Your private search history, stored only in this browser.{" "}
-        <Link href="/activity" className="underline hover:text-ink">
-          See public activity
-        </Link>
-      </p>
       {items.length === 0 ? (
         <div>
           <p className="mt-3 text-sm text-slate400">
@@ -70,7 +68,7 @@ export function RecentlyChecked() {
                   className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm text-ink/80 shadow-sm transition hover:-translate-y-px"
                 >
                   <span className="font-mono text-accent-ink">
-                    {shortAddress(address)}
+                    {`${address.slice(0, 6)}…${address.slice(-4)}`}
                   </span>
                   <span className="text-xs text-slate400">{label}</span>
                 </Link>
@@ -82,22 +80,10 @@ export function RecentlyChecked() {
         <ul className="mt-4 space-y-2">
           {items.map((item) => (
             <li key={item.address}>
-              <Link
-                href={`/wallets/${item.address}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm shadow-sm transition hover:-translate-y-px"
-              >
-                <span>
-                  <span className="font-mono text-accent-ink">
-                    {shortAddress(item.address)}
-                  </span>
-                  <span className="ml-3 text-xs text-slate400">
-                    Checked {relativeTime(item.at)}
-                  </span>
-                </span>
-                <span className="text-xs font-medium text-ink/70">
-                  Open
-                </span>
-              </Link>
+              <CheckedWalletRow
+                address={item.address}
+                checkedAgo={`Checked ${relativeTime(item.at)}`}
+              />
             </li>
           ))}
         </ul>

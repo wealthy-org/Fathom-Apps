@@ -9,6 +9,7 @@ import { MyActivityHero } from "@/components/my-activity-hero";
 import { MyActivityStats } from "@/components/my-activity-stats";
 import { MyActivityFeed } from "@/components/my-activity-feed";
 import { MyActivityInsightPanel } from "@/components/my-activity-insight";
+import { WalletShell } from "@/components/wallet-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -27,22 +28,24 @@ export default async function MyActivityPage() {
   const session = await getSession();
   if (!session.authenticated || !session.walletAddress) {
     return (
-      <section aria-labelledby="my-activity-heading">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-          Personal reputation surface
-        </p>
-        <h1
-          id="my-activity-heading"
-          className="mt-3 font-serif-accent text-4xl text-ink sm:text-5xl"
-        >
-          My Activity
-        </h1>
-        <div className="panel-brutal mt-6 p-6 text-sm leading-6 text-slate400">
-          Connect your wallet first — use the Connect button in the header. Your
-          attestations, vouches, disputes and claim will show up here as your
-          personal reputation trail.
-        </div>
-      </section>
+      <WalletShell>
+        <section aria-labelledby="my-activity-heading">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
+            Personal reputation surface
+          </p>
+          <h1
+            id="my-activity-heading"
+            className="mt-3 font-serif-accent text-4xl text-ink sm:text-5xl"
+          >
+            My Activity
+          </h1>
+          <div className="panel-brutal mt-6 p-6 text-sm leading-6 text-slate400">
+            Connect your wallet first — use the Connect button in the header.
+            Your attestations, vouches, disputes and claim will show up here as
+            your personal reputation trail.
+          </div>
+        </section>
+      </WalletShell>
     );
   }
 
@@ -54,7 +57,7 @@ export default async function MyActivityPage() {
   ]);
 
   return (
-    <>
+    <WalletShell>
       <section aria-labelledby="my-activity-heading">
         <h2 id="my-activity-heading" className="sr-only">
           My Activity
@@ -95,6 +98,6 @@ export default async function MyActivityPage() {
           </p>
         </div>
       </footer>
-    </>
+    </WalletShell>
   );
 }

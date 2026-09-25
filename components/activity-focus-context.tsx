@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 
 /**
- * Focus mode context untuk /activity — satu wallet difokuskan, feed
+ * Focus mode context untuk feed activity (/) — satu wallet difokuskan, feed
  * terfilter ke event yang menyentuh wallet itu. Null di luar provider.
  */
 export interface ActivityFocusValue {

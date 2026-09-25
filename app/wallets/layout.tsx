@@ -3,7 +3,8 @@
 import { WagmiProvider } from "wagmi";
 import { wagmiConfig } from "@/lib/wallet/config";
 
-// ponytail: wagmi hanya untuk route /wallets — landing tidak ikut bayar bundle.
+// ponytail: wagmi hanya untuk route /wallets — halaman statis (docs)
+// tidak ikut bayar bundle.
 export default function WalletsLayout({
   children,
 }: {
