@@ -5,6 +5,9 @@
  * pola sama (grid 5x5 mirror ala Jazzicon, hue dari hash address).
  * Dipakai navbar profile + dropdown profile, bukan lingkaran warna polos.
  * Tanpa dependency identicon: hash sederhana → sel + hue.
+ * Address dinormalisasi ke lowercase dulu: wagmi memberi checksummed
+ * (mixed case), halaman profile memberi lowercase — tanpa ini wallet yang
+ * sama tampil beda pola di navbar vs profile.
  */
 export function WalletAvatar({
   address,
@@ -13,9 +16,10 @@ export function WalletAvatar({
   address: string;
   size?: number;
 }) {
+  const normalized = address.toLowerCase();
   let hash = 0;
-  for (let i = 0; i < address.length; i++) {
-    hash = (hash * 31 + address.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < normalized.length; i++) {
+    hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0;
   }
   const hue = hash % 360;
   // PRNG mulberry-ish dari hash untuk isi sel grid.
