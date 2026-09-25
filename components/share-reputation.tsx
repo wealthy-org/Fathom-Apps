@@ -29,6 +29,7 @@ export function ShareReputation({
   tierLabel: string | null;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const url = () =>
     `${window.location.origin}${profileUrl(address)}`;
@@ -38,14 +39,15 @@ export function ShareReputation({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(url());
-      setNotice("Profile link copied.");
+      // ponytail: label button jadi "Copied" seperti Copy address —
+      // notice hanya untuk failure / native share path.
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
       // Phase 0 instrumentation — copy counts as share.
       trackEvent(ANALYTICS_EVENTS.reputationCardShared, {
         address: address.toLowerCase(),
         method: "copy",
       });
-      // ponytail: auto-hilang seperti "Copied" — notice bukan isi permanen.
-      window.setTimeout(() => setNotice(null), 2000);
     } catch {
       setNotice("Copy failed — long-press the address instead.");
     }
@@ -91,7 +93,7 @@ export function ShareReputation({
         onClick={() => void copyLink()}
         className="btn-brutal-light min-touch w-full px-4 py-2 text-xs sm:w-auto"
       >
-        Copy link
+        {copied ? "Copied" : "Copy link"}
       </button>
       <a
         href={`${profileUrl(address)}/opengraph-image`}

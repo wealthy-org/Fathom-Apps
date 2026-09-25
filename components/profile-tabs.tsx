@@ -31,6 +31,21 @@ function tabIdFromHash(hash: string): ProfileTabId | null {
   return TABS.some((t) => t.id === id) ? (id as ProfileTabId) : null;
 }
 
+/** Element id after the tab in a deep link, e.g. #evidence/proof-wallet_age. */
+function elementIdFromHash(hash: string): string | null {
+  const parts = hash.replace(/^#/, "").split("/");
+  return parts.length > 1 && parts[1] ? parts[1] : null;
+}
+
+/**
+ * Deep-link helper: switch tab + scroll target card into view + flash.
+ * Plain <a href="#evidence/proof-x"> links work via the hash sync below —
+ * call this from client handlers when a button (not a link) triggers it.
+ */
+export function gotoProfile(tab: ProfileTabId, elementId?: string) {
+  window.location.hash = elementId ? `${tab}/${elementId}` : tab;
+}
+
 // ponytail: no tab dep — 5 buttons + hash sync. All panels server-render
 // once, so switching is instant with zero refetch.
 export function ProfileTabs({
@@ -57,7 +72,8 @@ export function ProfileTabs({
 
   useEffect(() => {
     const sync = () => {
-      const id = tabIdFromHash(window.location.hash);
+      const hash = window.location.hash;
+      const id = tabIdFromHash(hash);
       if (!id) return;
       setActive((prev) => (prev === id ? prev : id));
       // Panels are hidden pre-hydration, so the browser's native hash
@@ -68,6 +84,20 @@ export function ProfileTabs({
         tablistRef.current?.scrollIntoView({ block: "start" });
       }
       ownHashNav.current = false;
+      // Deep link to a card inside the tab (#evidence/proof-x):
+      // panel unhides on this tick, so scroll + flash after paint.
+      const elId = elementIdFromHash(hash);
+      if (elId) {
+        requestAnimationFrame(() =>
+          setTimeout(() => {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            el.scrollIntoView({ block: "center" });
+            el.classList.add("flash");
+            setTimeout(() => el.classList.remove("flash"), 1800);
+          }, 60),
+        );
+      }
     };
     sync();
     window.addEventListener("hashchange", sync);

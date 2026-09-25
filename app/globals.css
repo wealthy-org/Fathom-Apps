@@ -173,6 +173,28 @@ body::before {
     letter-spacing: 0.18em;
   }
 
+  /* Small section label: mono uppercase slate. */
+  .lab {
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--color-slate400);
+  }
+
+  /* Flash highlight for deep-linked cards (goto helper target). */
+  .flash {
+    animation: flash-ring 1.6s ease-out 1;
+  }
+  @keyframes flash-ring {
+    0% {
+      box-shadow: 0 0 0 3px rgba(227, 74, 50, 0.45), var(--shadow-brutal);
+    }
+    100% {
+      box-shadow: var(--shadow-brutal);
+    }
+  }
+
   .input-brutal {
     border-radius: 9999px;
     border: 1px solid rgba(35, 36, 39, 0.1);

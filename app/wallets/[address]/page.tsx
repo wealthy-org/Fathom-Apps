@@ -10,6 +10,7 @@ import type { Proof, ProofType } from "@/lib/score/proofs";
 import type { RiskState } from "@/lib/score/risk";
 import type { Address } from "@/lib/score/types";
 import { CopyAddress } from "@/components/copy-address";
+import { WalletAvatar } from "@/components/wallet-avatar";
 import { ShareReputation } from "@/components/share-reputation";
 import { NextSteps } from "@/components/next-steps";
 import { AliasEditor } from "@/components/alias-editor";
@@ -58,7 +59,8 @@ function ScoreSection({
 }) {
   return (
     <section className="mt-12" aria-labelledby="reputation-score">
-      <h2 id="reputation-score" className="font-display text-xl font-semibold">
+      <div className="lab">01 — Proof of reputation</div>
+      <h2 id="reputation-score" className="mt-2 font-display text-xl font-semibold">
         Reputation Score
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-slate400">
@@ -623,6 +625,84 @@ function ProofDetail({
   );
 }
 
+/**
+ * Shared proof card — Evidence tab list + Overview recent proofs.
+ * Anchor id `proof-{type}-{index}` for #evidence/proof-* deep links
+ * (ProfileTabs scroll + .flash). All content reuses formatProofValue,
+ * TxLink, ProofDetail — no new queries, no new semantics.
+ */
+function ProofCard({
+  proof,
+  graph,
+  index,
+}: {
+  proof: Proof;
+  graph: TrustGraphSummary;
+  index: number;
+}) {
+  const txLevel =
+    (proof.evidence_references ?? []).length > 0;
+  const extraRefs = (proof.evidence_references ?? []).slice(1);
+  return (
+    <li
+      id={`proof-${proof.type}-${index}`}
+      className="panel-brutal scroll-mt-32 p-5"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="lab">{PROOF_LABELS[proof.type]}</span>
+        <span
+          className={`rounded px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] ${
+            txLevel
+              ? "border border-accent-ink/40 text-accent-ink"
+              : "border border-black/10 text-slate400"
+          }`}
+        >
+          {txLevel ? "transaction-level" : "address-level"}
+        </span>
+      </div>
+      <p className="mt-2 font-mono text-sm text-ink">
+        {formatProofValue(proof)}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[11px] text-slate400">
+        <span>source: {proof.source}</span>
+        <span>method: {proof.verification_method}</span>
+        <span>confidence: {proof.confidence}</span>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <a
+          href={proof.evidence_reference}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block break-all font-mono text-[11px] text-accent-ink hover:underline"
+        >
+          {proof.evidence_reference}
+        </a>
+      </div>
+      {extraRefs.length > 0 && (
+        <div className="mt-2">
+          <div className="lab">
+            Evidence: {extraRefs.length + 1} transactions
+          </div>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {extraRefs.map((ref, i) => (
+              <a
+                key={ref}
+                href={ref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-touch items-center rounded-full border border-black/10 px-3 py-2 font-mono text-[11px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
+              >
+                tx {i + 2}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+      <ProofDetail proof={proof} graph={graph} />
+    </li>
+  );
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return "Not available";
   return new Date(iso).toLocaleDateString("en-US", {
@@ -1063,6 +1143,55 @@ function RiskSection({ states }: { states: RiskState[] }) {
   );
 }
 
+/**
+ * "What Matters" — generative summary from data already on the profile:
+ * strongest score dimension, risk posture, indexing completeness.
+ * Fallback when evidence is thin. Words only, no new queries.
+ */
+function WhatMatters({ profile }: { profile: WalletProfile }) {
+  const dims = profile.reputation.breakdown.dimensions.filter(
+    (d) => d.available && d.contribution > 0,
+  );
+  const top = dims.sort((a, b) => b.contribution - a.contribution)[0];
+  const detectedCount = profile.riskStates.filter(
+    (s) => s.status === "detected",
+  ).length;
+  const items: string[] = [];
+  if (top) {
+    items.push(
+      `Strongest signal: ${top.id.replaceAll("_", " ")} (${top.contribution} pts) — ${top.explanation}`,
+    );
+  }
+  items.push(
+    detectedCount > 0
+      ? `${detectedCount} risk signal${detectedCount === 1 ? "" : "s"} need${detectedCount === 1 ? "s" : ""} a look before trusting — see the Risk tab.`
+      : "No risk signals detected in the currently evaluated rules.",
+  );
+  if (profile.reputation.completeness !== "complete") {
+    items.push(
+      "Evidence still being indexed — numbers marked ≥ are lower bounds.",
+    );
+  }
+  if (items.length === 0 || !top) {
+    items.unshift(
+      "Not enough indexed evidence yet — check back after indexing completes.",
+    );
+  }
+  return (
+    <section aria-labelledby="what-matters" className="panel-brutal mt-12 p-6">
+      <div className="lab">What matters</div>
+      <h2 id="what-matters" className="mt-2 font-display text-xl font-semibold">
+        Read this first
+      </h2>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-ink">
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -1433,14 +1562,12 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
           ) : (
             <ul className="mt-5 space-y-3">
               {recentProofs.map((proof, index) => (
-                <li key={`${proof.type}-${index}`} className="panel-brutal p-5">
-                  <div className="font-display text-base">
-                    {PROOF_LABELS[proof.type]}
-                  </div>
-                  <p className="mt-1 font-mono text-sm text-ink">
-                    {formatProofValue(proof)}
-                  </p>
-                </li>
+                <ProofCard
+                  key={`${proof.type}-${index}`}
+                  proof={proof}
+                  graph={profile.trustGraph}
+                  index={index}
+                />
               ))}
             </ul>
           )}
@@ -1452,6 +1579,8 @@ function OverviewSection({ profile }: { profile: WalletProfile }) {
           </a>
         </section>
       </div>
+
+      <WhatMatters profile={profile} />
 
       <NextSteps
         address={profile.address}
@@ -1491,24 +1620,61 @@ export default async function WalletProfilePage({
   return (
     <>
       <OwnWalletTracker profileAddress={address} />
-      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate400">
-        Wallet profile
-      </p>
-      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-        <h1 className="min-w-0 break-all font-display text-2xl font-medium sm:break-normal sm:text-4xl">
+      <nav aria-label="Breadcrumb" className="lab flex flex-wrap gap-x-2">
+        <Link href="/" className="hover:text-accent-ink hover:underline">
+          Fathom
+        </Link>
+        <span aria-hidden="true">/</span>
+        <Link href="/activity" className="hover:text-accent-ink hover:underline">
+          Wallets
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page" className="text-ink">
           {shortAddress(address)}
-        </h1>
-        <CopyAddress address={address} />
-        <ShareReputation
-          address={address}
-          totalScore={profile.reputation.totalScore}
-          tierLabel={profile.reputation.tier?.label ?? null}
-        />
-        {profile.alias && (
-          <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-sm text-ink shadow-sm">
-            {profile.alias}
-          </span>
-        )}
+        </span>
+      </nav>
+      <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <WalletAvatar address={address} size={48} />
+          <div className="min-w-0">
+            <h1 className="min-w-0 break-all font-display text-2xl font-medium sm:text-4xl">
+              {profile.alias ?? shortAddress(address)}
+            </h1>
+            <p className="mt-1 break-all font-mono text-xs text-slate400">
+              {address}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <CopyAddress address={address} />
+              <ShareReputation
+                address={address}
+                totalScore={profile.reputation.totalScore}
+                tierLabel={profile.reputation.tier?.label ?? null}
+              />
+              {(profile.claim ?? profile.claimedAt) && (
+                <span className="chip-mono text-ink">claimed</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="panel-brutal shrink-0 px-6 py-4 text-right">
+          <div className="lab">Fathom Score</div>
+          <div className="mt-1 font-mono text-4xl tabular-nums text-ink">
+            {profile.reputation.totalScore}
+            <span className="text-base text-slate400">
+              /{THRESHOLDS.score.maxScore}
+            </span>
+          </div>
+          <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">
+            {profile.reputation.tier
+              ? profile.reputation.tier.label
+              : "No tier — partial"}
+          </div>
+          <div className="mt-1 text-xs text-slate400">
+            {profile.reputation.completeness === "complete"
+              ? "Evidence complete"
+              : "Evidence still being indexed"}
+          </div>
+        </div>
       </div>
       {/* Full address sengaja tidak ditampilkan — h1 sudah menunjukkan
           short form, dan Copy address menyediakan salinan lengkap. */}
@@ -1533,7 +1699,8 @@ export default async function WalletProfilePage({
           <>
             <ScoreSection reputation={profile.reputation} />
             <section id="why-evidence" className="mt-12">
-              <h2 className="font-display text-xl font-semibold">
+              <div className="lab">02 — Evidence</div>
+              <h2 className="mt-2 font-display text-xl font-semibold">
                 Recent Proofs
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-slate400">
@@ -1556,86 +1723,20 @@ export default async function WalletProfilePage({
               ) : (
                 <ul className="mt-5 space-y-3">
                   {profile.proofs.map((proof, index) => (
-                    <li
+                    <ProofCard
                       key={`${proof.type}-${index}`}
-                      className="panel-brutal p-5"
-                    >
-                      <details>
-                        <summary className="cursor-pointer">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="font-display text-base">
-                              {PROOF_LABELS[proof.type]}
-                            </span>
-                            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-                              {proof.type}
-                            </span>
-                          </div>
-                          <p className="mt-2 font-mono text-sm text-ink">
-                            {formatProofValue(proof)}
-                          </p>
-                        </summary>
-                        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[11px] text-slate400">
-                          <span>source: {proof.source}</span>
-                          <span>method: {proof.verification_method}</span>
-                          <span>confidence: {proof.confidence}</span>
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <a
-                            href={proof.evidence_reference}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-block break-all font-mono text-[11px] text-accent-ink hover:underline"
-                          >
-                            {proof.evidence_reference}
-                          </a>
-                          <span
-                            className={`rounded px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] ${
-                              proof.evidence_references &&
-                              proof.evidence_references.length > 0
-                                ? "border border-accent-ink/40 text-accent-ink"
-                                : "border border-black/10 text-slate400"
-                            }`}
-                          >
-                            {proof.evidence_references &&
-                            proof.evidence_references.length > 0
-                              ? "transaction-level"
-                              : "address-level"}
-                          </span>
-                        </div>
-                        {(proof.evidence_references ?? []).length > 1 && (
-                          <div className="mt-2">
-                            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate400">
-                              Evidence:{" "}
-                              {(proof.evidence_references ?? []).length}{" "}
-                              transactions
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-2">
-                              {(proof.evidence_references ?? [])
-                                .slice(1)
-                                .map((ref, i) => (
-                                  <a
-                                    key={ref}
-                                    href={ref}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex min-touch items-center rounded-full border border-black/10 px-3 py-2 font-mono text-[11px] text-ink/70 hover:border-accent-ink hover:text-accent-ink"
-                                  >
-                                    tx {i + 2}
-                                  </a>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-                        <ProofDetail proof={proof} graph={profile.trustGraph} />
-                      </details>
-                    </li>
+                      proof={proof}
+                      graph={profile.trustGraph}
+                      index={index}
+                    />
                   ))}
                 </ul>
               )}
             </section>
 
             <section className="mt-12">
-              <h2 className="font-display text-xl font-semibold">
+              <div className="lab">Why this evidence</div>
+              <h2 className="mt-2 font-display text-xl font-semibold">
                 Why This Evidence?
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-slate400">

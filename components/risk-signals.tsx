@@ -419,7 +419,9 @@ function SignalCard({ state }: { state: RiskState }) {
   const detected = state.status === "detected";
   return (
     <details
-      className={`panel-brutal p-5 ${
+      id={`r-${state.id}`}
+      open={detected}
+      className={`panel-brutal scroll-mt-32 p-5 ${
         detected ? "border-l-4 border-l-accent-ink bg-accent/5" : ""
       }`}
     >

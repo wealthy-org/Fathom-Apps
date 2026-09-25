@@ -335,6 +335,7 @@ function rankItems(
   return prescan.map((item) => {
     let rank = 0;
     const signals: FeedSignal[] = [];
+    const relevant = input.relevant;
     if (input.established.has(primaryActor(item))) {
       rank += SIGNAL_ESTABLISHED_BOOST;
       signals.push("established");
@@ -352,8 +353,8 @@ function rankItems(
       signals.push("risk-news");
     }
     if (
-      input.relevant !== null &&
-      involvedAddresses(item).some((address) => input.relevant.has(address))
+      relevant !== null &&
+      involvedAddresses(item).some((address) => relevant.has(address))
     ) {
       rank += SIGNAL_PERSONAL_BOOST;
       signals.push("personal");
