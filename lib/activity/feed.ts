@@ -1,15 +1,21 @@
-import { count, desc, eq, gt, inArray, lt } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, lt } from "drizzle-orm";
 import { THRESHOLDS } from "@/config/thresholds";
 import { db } from "@/lib/db/client";
 import {
+  attestationReactions,
   attestations,
+  disputeReactions,
   disputes,
+  profileClaimReactions,
   profileClaims,
   riskDetections,
   scoreSnapshots,
+  vouchReactions,
   vouches,
   watches,
 } from "@/lib/db/schema";
+import type { ReactionCounts, ReactionKind } from "@/lib/reactions/service";
+import { getSession } from "@/lib/auth/session";
 
 /**
  * Public activity feed source (Spec 04, Phase 1 slices S1+S2).
@@ -65,6 +71,7 @@ export type FeedItem =
       onchain: boolean;
       txHash: string | null;
       signals?: FeedSignal[];
+      reactions?: ReactionCounts;
     }
   | {
       kind: "dispute";
@@ -77,6 +84,7 @@ export type FeedItem =
       onchain: boolean;
       txHash: string | null;
       signals?: FeedSignal[];
+      reactions?: ReactionCounts;
     }
   | {
       kind: "vouch";
@@ -88,6 +96,7 @@ export type FeedItem =
       status: string;
       txHash: string;
       signals?: FeedSignal[];
+      reactions?: ReactionCounts;
     }
   | {
       kind: "claim";
@@ -95,6 +104,7 @@ export type FeedItem =
       occurredAt: string;
       address: string;
       signals?: FeedSignal[];
+      reactions?: ReactionCounts;
     };
 
 export interface FeedPage {
@@ -370,9 +380,7 @@ async function queryCandidates(input: {
 }): Promise<FeedItem[]> {
   const { limit, before } = input;
   const wantDisputes = input.kinds === "all";
-  const wantClaims = input.kinds === "all";
-
-  const [attestationRows, disputeRows, vouchRows, claimRows] =
+  const wantClaims = input.kinds === "all";  const [attestationRows, disputeRows, vouchRows, claimRows] =
     await Promise.all([
       db
         .select({
@@ -489,7 +497,144 @@ async function queryCandidates(input: {
       ? a.kind.localeCompare(b.kind)
       : b.occurredAt.localeCompare(a.occurredAt),
   );
-  return items;
+  return withReactions(items);
+}
+
+/**
+ * Isi reactions (helpful/notHelpful/myVote) tiap item — DISPLAY ONLY,
+ * tidak pernah dibaca file scoring. Max 4 query counts + 4 query
+ * myVote per halaman (inArray per kind), bukan per kartu. Gagal =
+ * field tetap undefined → kartu render 0/0 tanpa vote.
+ */
+async function withReactions(items: FeedItem[]): Promise<FeedItem[]> {
+  if (items.length === 0) return items;
+
+  const idsByKind: Record<ReactionKind, string[]> = {
+    attestation: [],
+    dispute: [],
+    vouch: [],
+    claim: [],
+  };
+  for (const item of items) {
+    idsByKind[item.kind].push(String(item.id));
+  }
+
+  const counts = new Map<string, ReactionCounts>();
+  await Promise.all(
+    (Object.keys(idsByKind) as ReactionKind[]).map(async (kind) => {
+      const ids = idsByKind[kind];
+      if (ids.length === 0) return;
+      const numeric = kind !== "claim";
+      const where = numeric
+        ? inArray(
+            kind === "attestation"
+              ? attestationReactions.attestationId
+              : kind === "dispute"
+                ? disputeReactions.disputeId
+                : vouchReactions.vouchId,
+            ids.map(Number),
+          )
+        : inArray(profileClaimReactions.claimAddress, ids);
+      const table =
+        kind === "attestation"
+          ? attestationReactions
+          : kind === "dispute"
+            ? disputeReactions
+            : kind === "vouch"
+              ? vouchReactions
+              : profileClaimReactions;
+      const idColumn =
+        kind === "attestation"
+          ? attestationReactions.attestationId
+          : kind === "dispute"
+            ? disputeReactions.disputeId
+            : kind === "vouch"
+              ? vouchReactions.vouchId
+              : profileClaimReactions.claimAddress;
+      const rows = await db
+        .select({
+          id: idColumn,
+          value: table.value,
+          total: count(),
+        })
+        .from(table)
+        .where(where)
+        .groupBy(idColumn, table.value);
+      for (const row of rows) {
+        const key = `${kind}:${String(row.id)}`;
+        const entry = counts.get(key) ?? {
+          helpful: 0,
+          notHelpful: 0,
+          myVote: null,
+        };
+        if (row.value === "not_helpful") entry.notHelpful += Number(row.total);
+        else entry.helpful += Number(row.total);
+        counts.set(key, entry);
+      }
+    }),
+  );
+
+  let viewer: string | null = null;
+  try {
+    const session = await getSession();
+    if (session.authenticated && session.walletAddress) {
+      viewer = session.walletAddress.toLowerCase();
+    }
+  } catch {
+    viewer = null;
+  }
+  if (viewer !== null) {
+    await Promise.all(
+      (Object.keys(idsByKind) as ReactionKind[]).map(async (kind) => {
+        const ids = idsByKind[kind];
+        if (ids.length === 0) return;
+        const idColumn =
+          kind === "attestation"
+            ? attestationReactions.attestationId
+            : kind === "dispute"
+              ? disputeReactions.disputeId
+              : kind === "vouch"
+                ? vouchReactions.vouchId
+                : profileClaimReactions.claimAddress;
+        const table =
+          kind === "attestation"
+            ? attestationReactions
+            : kind === "dispute"
+              ? disputeReactions
+              : kind === "vouch"
+                ? vouchReactions
+                : profileClaimReactions;
+        const rows = await db
+          .select({ id: idColumn, value: table.value })
+          .from(table)
+          .where(
+            and(
+              inArray(idColumn, kind === "claim" ? ids : ids.map(Number)),
+              eq(table.voterAddress, viewer),
+            ),
+          );
+        for (const row of rows) {
+          const key = `${kind}:${String(row.id)}`;
+          const entry = counts.get(key);
+          if (
+            entry &&
+            (row.value === "helpful" || row.value === "not_helpful")
+          ) {
+            entry.myVote = row.value;
+          }
+        }
+      }),
+    );
+  }
+
+  return items.map((item) => ({
+    ...item,
+    reactions: counts.get(`${item.kind}:${String(item.id)}`) ?? {
+      helpful: 0,
+      notHelpful: 0,
+      myVote: null,
+    },
+  }));
 }
 
 function paginateSignal(

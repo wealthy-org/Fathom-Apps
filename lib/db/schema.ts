@@ -572,3 +572,73 @@ export const attestationReactions = pgTable(
     index("idx_attestation_reactions_attestation").on(t.attestationId),
   ],
 );
+
+/**
+ * Reaksi "Helpful / Not helpful" untuk kartu feed selain attestation
+ * (dispute, vouch, claim). Aturan sama dengan attestation_reactions:
+ * satu suara per wallet per target, upsert, DISPLAY-ONLY — tidak pernah
+ * dibaca file scoring manapun (guard: scoring-isolation.test.ts).
+ */
+export const disputeReactions = pgTable(
+  "dispute_reactions",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    disputeId: bigint("dispute_id", { mode: "number" })
+      .notNull()
+      .references(() => disputes.id, { onDelete: "cascade" }),
+    voterAddress: char("voter_address", { length: 42 })
+      .notNull()
+      .references(() => wallets.address),
+    value: varchar("value", { length: 16 }).notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("dispute_reactions_identity").on(t.disputeId, t.voterAddress),
+    index("idx_dispute_reactions_dispute").on(t.disputeId),
+  ],
+);
+
+export const vouchReactions = pgTable(
+  "vouch_reactions",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    vouchId: bigint("vouch_id", { mode: "number" })
+      .notNull()
+      .references(() => vouches.id, { onDelete: "cascade" }),
+    voterAddress: char("voter_address", { length: 42 })
+      .notNull()
+      .references(() => wallets.address),
+    value: varchar("value", { length: 16 }).notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("vouch_reactions_identity").on(t.vouchId, t.voterAddress),
+    index("idx_vouch_reactions_vouch").on(t.vouchId),
+  ],
+);
+
+/** Target reaction claim = address (PK profile_claims char(42)). */
+export const profileClaimReactions = pgTable(
+  "profile_claim_reactions",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    claimAddress: char("claim_address", { length: 42 })
+      .notNull()
+      .references(() => profileClaims.address, { onDelete: "cascade" }),
+    voterAddress: char("voter_address", { length: 42 })
+      .notNull()
+      .references(() => wallets.address),
+    value: varchar("value", { length: 16 }).notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("profile_claim_reactions_identity").on(
+      t.claimAddress,
+      t.voterAddress,
+    ),
+    index("idx_profile_claim_reactions_claim").on(t.claimAddress),
+  ],
+);

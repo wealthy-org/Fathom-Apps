@@ -423,6 +423,13 @@ export const AUTH_GATE_COPY = {
     "You must sign in first to view your activity. Connect your wallet to continue.",
 } as const;
 
+/** Copy modal gate untuk vote Helpful/Not helpful (Spec 04 3.3). */
+export const REACTION_GATE_COPY = {
+  title: "Sign in required",
+  description:
+    "You must sign in first to rate this. Connect your wallet to continue.",
+} as const;
+
 export function SignInModal({
   onClose,
   title = "Sign In",

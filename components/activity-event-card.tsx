@@ -14,6 +14,7 @@ import {
   fetchWalletMiniStats,
   type WalletMiniStats,
 } from "@/components/wallet-mini-stats";
+import { EventReactions } from "@/components/event-reactions";
 
 /**
  * Satu kartu event di timeline network: collapsed = kalimat ringkas
@@ -396,6 +397,17 @@ export function ActivityEventCard({ item }: { item: FeedItem }) {
               {meta}
             </span>
           )}
+        </div>
+        {/* Reaksi non-scoring (Spec 04 3.3) — selalu tampil, count di-seed
+            server; klik anonim membuka modal sign-in, tanpa POST. */}
+        <div className="mt-3">
+          <EventReactions
+            kind={item.kind}
+            targetId={String(item.id)}
+            initialHelpful={item.reactions?.helpful ?? 0}
+            initialNotHelpful={item.reactions?.notHelpful ?? 0}
+            initialMyVote={item.reactions?.myVote ?? null}
+          />
         </div>
       </div>
 

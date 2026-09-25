@@ -23,6 +23,12 @@ const DISPLAY_ONLY_SYMBOLS = [
   "riskDetections",
   "attestation_reactions",
   "risk_detections",
+  "disputeReactions",
+  "vouchReactions",
+  "profileClaimReactions",
+  "dispute_reactions",
+  "vouch_reactions",
+  "profile_claim_reactions",
 ];
 
 describe("scoring never reads display-only feed tables", () => {
